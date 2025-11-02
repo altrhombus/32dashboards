@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auction Admin</title>
+  <!-- Load fonts from Google Fonts so admin doesn't rely on locally-installed fonts -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Quantico&family=Share+Tech+Mono&family=IBM+Plex+Mono&family=Roboto+Mono&family=VT323&display=swap">
+  <link rel="stylesheet" href="style.css?v=20251028-13" />
+  <style>
+    body { overflow-y: auto; overflow-x: hidden; }
+    .admin { max-width: 720px; margin: 5rem auto; background: #1c2140; color: #fff; padding: 1rem; border: 2px solid #ffd700; border-radius: 2px; }
+    .admin h1 { margin-top: 0; color: #ffd700; }
+    .admin label { display:block; margin: .75rem 0 .25rem; }
+    .admin input[type="text"],
+    .admin input[type="datetime-local"],
+    .admin input[type="number"],
+    .admin textarea { width: 100%; padding:.5rem; border-radius:2px; border:1px solid #444; background:#0f1230; color:#fff; font-family: inherit; }
+    .admin textarea { resize: vertical; min-height: 120px; }
+    .admin .row { display:flex; gap:1rem; }
+    .admin .row > div { flex:1; }
+    .admin button { margin-top: 1rem; background:#ffd700; border:none; padding:.6rem 1rem; border-radius:2px; color:#111; font-weight:bold; cursor:pointer; }
+    .admin .status { margin-top:.75rem; min-height:1.25rem; }
+    .switch-row { display:flex; align-items:center; gap:.5rem; margin-top:1rem; }
+    .switch-row input[type="checkbox"] { width:1.2rem; height:1.2rem; }
+    .hint { font-size: .85rem; color:#b0b6d8; margin-top:.25rem; }
+    .askme-panel { border:1px solid rgba(255,215,0,0.25); border-radius:4px; padding:1rem; margin-top:1.5rem; background:rgba(17,20,48,0.65); }
+    .askme-panel h2 { margin:0 0 .75rem; font-size:1.1rem; color:#ffd700; }
+    .incentives-panel { border:1px solid rgba(126,154,255,0.25); border-radius:4px; padding:1rem; margin-top:1.5rem; background:rgba(15,19,43,0.75); }
+    .incentives-panel h2 { margin:0 0 .5rem; font-size:1.1rem; color:#8fb0ff; }
+    .incentives-list { display:flex; flex-direction:column; gap:0.85rem; margin-top:0.75rem; }
+    .incentive-row { border:1px solid rgba(255,255,255,0.15); border-radius:4px; padding:0.75rem; background:rgba(12,16,36,0.85); display:flex; flex-direction:column; gap:0.6rem; }
+    .incentive-row-main { display:flex; flex-wrap:wrap; gap:0.8rem; align-items:flex-end; }
+    .incentive-row-main .field { flex:1; min-width:160px; }
+    .incentive-row-main label { margin:0 0 0.25rem; font-size:0.9rem; color:#d0d5f6; }
+    .incentive-row-main .field.inline { display:flex; align-items:center; gap:0.5rem; flex:0 0 auto; }
+    .incentive-row-main .field.inline label { margin:0; }
+    .incentive-actions { display:flex; flex-wrap:wrap; gap:0.6rem; }
+    .incentive-actions button { margin-top:0; padding:0.45rem 0.85rem; }
+    .incentive-actions button.incentive-remove { background:#ff6b6b; color:#fff; }
+    .incentive-actions button.incentive-display-now { background:#81c784; color:#111; }
+    .incentive-actions button.incentive-display-until { background:#4fc3f7; color:#111; }
+    .incentive-status { font-size:0.85rem; color:#9fb3ff; }
+    .incentive-status span { margin-right:0.6rem; }
+    .incentives-actions { margin-top:0.85rem; display:flex; justify-content:flex-start; }
+    .incentives-actions button { margin-top:0; }
+    .empty-state { font-size:0.9rem; color:#9ca8d6; font-style:italic; }
+  </style>
+</head>
+<body>
+  <div class="admin">
+    <h1>Auction Settings</h1>
+    <label for="name">Auction Name</label>
+    <input id="name" type="text" placeholder="Auction name" />
+    <div class="row">
+      <div>
+        <label for="end">End Date/Time</label>
+        <input id="end" type="datetime-local" />
+      </div>
+    </div>
+    <label>Announcements</label>
+    <ul id="announcements-list" style="padding-left:1.2em;">
+    </ul>
+    <div style="display:flex;gap:.5em;align-items:center;">
+      <input id="announcement-input" type="text" placeholder="Add announcement..." maxlength="200" style="flex:1;" />
+      <button id="add-announcement" type="button">Add</button>
+    </div>
+    <div class="askme-panel">
+      <h2>Ask Me Mode</h2>
+      <div class="switch-row">
+        <input id="askme-toggle" type="checkbox" />
+        <label for="askme-toggle" style="margin:0;">Enable Ask Me Mode</label>
+      </div>
+      <label for="askme-title">Ask Me Title</label>
+      <input id="askme-title" type="text" maxlength="120" placeholder="Ask Me Spotlight" />
+      <label for="askme-message">Cause Message</label>
+  <textarea id="askme-message" placeholder="Share details about your Ask Me cause... (Markdown supported)"></textarea>
+      <label for="askme-total">Ask Me Total</label>
+      <input id="askme-total" type="number" min="0" step="1" placeholder="0" />
+      <div class="hint">Update this total whenever new donations arrive. The dashboard will celebrate the difference.</div>
+    </div>
+    <div class="incentives-panel">
+      <h2>Incentives</h2>
+      <div class="hint">Add fundraising incentives to highlight progress toward specific targets.</div>
+      <div id="incentives-list" class="incentives-list"></div>
+      <div class="incentives-actions">
+        <button id="add-incentive" type="button">Add Incentive</button>
+      </div>
+    </div>
+    <button id="save">Save</button>
+    <div class="status" id="status"></div>
+  </div>
+  <script>
+    const API = (location.origin.includes('localhost') || location.hostname === '127.0.0.1')
+      ? (localStorage.getItem('ADMIN_API') || 'http://localhost:8090')
+      : (localStorage.getItem('ADMIN_API') || '/');
+
+    const announcementsListEl = document.getElementById('announcements-list');
+    const incentivesListEl = document.getElementById('incentives-list');
+    let announcements = [];
+    let incentives = [];
+
+    function escapeAttr(value) {
+      return (value ?? '').toString().replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    function generateId() {
+      if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+      return `inc-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function normalizeIncentive(item = {}) {
+      return {
+        id: item.id || generateId(),
+        name: typeof item.name === 'string' ? item.name : '',
+        target: Number.isFinite(Number(item.target)) && Number(item.target) >= 0 ? Number(item.target) : 0,
+        active: Boolean(item.active),
+        displayNow: Boolean(item.displayNow),
+        displayUntilMet: Boolean(item.displayUntilMet)
+      };
+    }
+
+    function renderAnnouncements(list) {
+      announcementsListEl.innerHTML = '';
+      list.forEach((text, idx) => {
+        const li = document.createElement('li');
+        li.textContent = text;
+        li.style.marginBottom = '.3em';
+        const btn = document.createElement('button');
+        btn.textContent = '✕';
+        btn.style.marginLeft = '.5em';
+        btn.style.background = '#ff6b6b';
+        btn.style.color = '#fff';
+        btn.style.border = 'none';
+        btn.style.borderRadius = '2px';
+        btn.style.cursor = 'pointer';
+        btn.style.fontSize = '1em';
+        btn.onclick = () => {
+          announcements.splice(idx, 1);
+          renderAnnouncements(announcements);
+        };
+        li.appendChild(btn);
+        announcementsListEl.appendChild(li);
+      });
+    }
+
+    function updateIncentiveStatus(row, item) {
+      const statusEl = row.querySelector('.incentive-status');
+      if (!statusEl) return;
+      const parts = [`<span>Status: ${item.active ? 'Active' : 'Inactive'}</span>`];
+      if (item.displayUntilMet) parts.push('<span>Displaying until met</span>');
+      if (item.displayNow) parts.push('<span>Queued to display</span>');
+      statusEl.innerHTML = parts.join(' ');
+    }
+
+    function renderIncentives() {
+      incentivesListEl.innerHTML = '';
+      if (!incentives.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = 'No incentives yet. Add one to engage donors with a special goal.';
+        incentivesListEl.appendChild(empty);
+        return;
+      }
+      incentives.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'incentive-row';
+        row.dataset.id = item.id;
+        row.innerHTML = `
+          <div class="incentive-row-main">
+            <div class="field">
+              <label>Name</label>
+              <input type="text" data-field="name" value="${escapeAttr(item.name)}" maxlength="200" />
+            </div>
+            <div class="field">
+              <label>Target Amount</label>
+              <input type="number" min="0" step="1" data-field="target" value="${item.target}" />
+            </div>
+            <div class="field inline">
+              <label for="active-${item.id}">Active</label>
+              <input id="active-${item.id}" type="checkbox" data-field="active" ${item.active ? 'checked' : ''} />
+            </div>
+          </div>
+          <div class="incentive-actions">
+            <button type="button" class="incentive-display-now" data-action="display-now">Display Now</button>
+            <button type="button" class="incentive-display-until" data-action="display-until">Display Until Met</button>
+            <button type="button" class="incentive-remove" data-action="remove">Remove</button>
+          </div>
+          <div class="incentive-status"></div>
+        `;
+        updateIncentiveStatus(row, item);
+        incentivesListEl.appendChild(row);
+      });
+    }
+
+    async function load() {
+      try {
+        const res = await fetch(`${API}/api/auction`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`GET failed: ${res.status}`);
+        const data = await res.json();
+        document.getElementById('name').value = data.name || '';
+        if (data.endDateTime) {
+          const d = new Date(data.endDateTime);
+          const tzOff = d.getTimezoneOffset();
+          const local = new Date(d.getTime() - tzOff * 60000).toISOString().slice(0, 16);
+          document.getElementById('end').value = local;
+        } else {
+          document.getElementById('end').value = '';
+        }
+        announcements = Array.isArray(data.announcements) ? data.announcements.slice() : [];
+        renderAnnouncements(announcements);
+        document.getElementById('askme-toggle').checked = Boolean(data.askMeMode);
+        document.getElementById('askme-title').value = data.askMeTitle || '';
+        document.getElementById('askme-message').value = data.askMeMessage || '';
+        document.getElementById('askme-total').value = data.askMeTotal !== undefined && data.askMeTotal !== null ? data.askMeTotal : '';
+        incentives = Array.isArray(data.incentives) ? data.incentives.map(normalizeIncentive) : [];
+        renderIncentives();
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    function setStatus(msg, isError = false) {
+      const el = document.getElementById('status');
+      el.textContent = msg || '';
+      el.style.color = isError ? '#ff6b6b' : '#81c784';
+    }
+
+    document.getElementById('add-announcement').addEventListener('click', () => {
+      const input = document.getElementById('announcement-input');
+      const text = input.value.trim();
+      if (text && text.length <= 200) {
+        announcements.push(text);
+        renderAnnouncements(announcements);
+        input.value = '';
+      }
+    });
+
+    document.getElementById('announcement-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        document.getElementById('add-announcement').click();
+      }
+    });
+
+    incentivesListEl.addEventListener('input', (event) => {
+      const field = event.target.dataset.field;
+      if (!field) return;
+      const row = event.target.closest('.incentive-row');
+      if (!row) return;
+      const id = row.dataset.id;
+      const item = incentives.find(entry => entry.id === id);
+      if (!item) return;
+      if (field === 'name') {
+        item.name = event.target.value.slice(0, 200);
+      } else if (field === 'target') {
+        const value = Number(event.target.value);
+        item.target = Number.isFinite(value) && value >= 0 ? value : 0;
+      }
+    });
+
+    incentivesListEl.addEventListener('change', (event) => {
+      const field = event.target.dataset.field;
+      if (field !== 'active') return;
+      const row = event.target.closest('.incentive-row');
+      if (!row) return;
+      const id = row.dataset.id;
+      const item = incentives.find(entry => entry.id === id);
+      if (!item) return;
+      item.active = event.target.checked;
+      updateIncentiveStatus(row, item);
+    });
+
+    async function triggerIncentiveAction(id, updates, successMessage) {
+      try {
+        setStatus('Sending incentive update...');
+        const res = await fetch(`${API}/api/incentives/${id}/state`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates)
+        });
+        if (!res.ok) throw new Error(`Update failed: ${res.status}`);
+        const updated = await res.json();
+        const idx = incentives.findIndex(entry => entry.id === id);
+        if (idx !== -1) {
+          incentives[idx] = normalizeIncentive(updated);
+        }
+        renderIncentives();
+        setStatus(successMessage || 'Incentive updated.');
+      } catch (error) {
+        setStatus(error.message, true);
+      }
+    }
+
+    incentivesListEl.addEventListener('click', (event) => {
+      const action = event.target.dataset.action;
+      if (!action) return;
+      const row = event.target.closest('.incentive-row');
+      if (!row) return;
+      const id = row.dataset.id;
+      const item = incentives.find(entry => entry.id === id);
+      if (!item) return;
+      if (action === 'remove') {
+        incentives = incentives.filter(entry => entry.id !== id);
+        renderIncentives();
+        return;
+      }
+      if (action === 'display-now') {
+        triggerIncentiveAction(id, { displayNow: true }, `Incentive "${item.name || 'Untitled'}" queued to display.`);
+        return;
+      }
+      if (action === 'display-until') {
+        triggerIncentiveAction(id, { displayUntilMet: true }, `Incentive "${item.name || 'Untitled'}" will display until it is met.`);
+        return;
+      }
+    });
+
+    document.getElementById('add-incentive').addEventListener('click', () => {
+      incentives.push({
+        id: generateId(),
+        name: '',
+        target: 0,
+        active: true,
+        displayNow: false,
+        displayUntilMet: false
+      });
+      renderIncentives();
+    });
+
+    document.getElementById('save').addEventListener('click', async () => {
+      const name = document.getElementById('name').value.trim();
+      const endLocal = document.getElementById('end').value;
+      let endISO = null;
+      if (endLocal) {
+        const dt = new Date(endLocal);
+        endISO = dt.toISOString();
+      }
+      const askMeMode = document.getElementById('askme-toggle').checked;
+      const askMeTitle = document.getElementById('askme-title').value.trim();
+      const askMeMessage = document.getElementById('askme-message').value.trim();
+      const askMeTotalInput = document.getElementById('askme-total').value;
+      const askMeTotal = askMeTotalInput === '' ? 0 : Number(askMeTotalInput);
+      const payloadIncentives = incentives.map(normalizeIncentive);
+      try {
+        setStatus('Saving...');
+        const res = await fetch(`${API}/api/auction`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, endDateTime: endISO, announcements, askMeMode, askMeTitle, askMeMessage, askMeTotal, incentives: payloadIncentives })
+        });
+        if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+        await res.json();
+        setStatus('Saved!');
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>

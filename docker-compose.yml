@@ -1,0 +1,21 @@
+services:
+  web:
+    build: .
+    container_name: auction_web
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+  api:
+    build: ./api
+    container_name: auction_api
+    environment:
+      - PORT=8090
+      - DATA_DIR=/data
+    volumes:
+      - auction_data:/data
+    ports:
+      - "8090:8090"
+volumes:
+  auction_data:
+    driver: local

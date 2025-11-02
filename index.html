@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>32dashboards</title>
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <!-- Load fonts from Google Fonts (publicly hosted) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Quantico&family=Share+Tech+Mono&family=IBM+Plex+Mono&family=Roboto+Mono&family=VT323&display=swap">
+                            <link rel="stylesheet" href="style.css?v=20251028-13">
+</head>
+<body>
+    <div class="container">
+        <div class="top-header-bar">
+            <span class="header-title" id="header-title">32dashboards</span>
+            <span id="header-clock"></span>
+        </div>
+        <div class="main-flex-row">
+            <div class="featured-items-box">
+                <div class="rotating-items-section panel">
+                    <h2>Featured Items</h2>
+                    <div id="rotating-item"></div>
+                </div>
+            </div>
+            <div class="right-column">
+                <section class="panel announcements" id="announcements">
+                    <h2>Announcements</h2>
+                    <ul id="announcements-list">
+                    </ul>
+                </section>
+                <section class="panel countdown-wrapper">
+                    <div id="countdown-box" class="countdown-box"><span id="countdown-timer">--:--:--</span></div>
+                </section>
+                <section class="panel sponsors" id="sponsors">
+                    <h2>Benefitting YOUR CAUSE</h2>
+                    <div id="sponsors-logos" class="sponsors-logos">
+                        <!-- Sponsor logos will be loaded dynamically -->
+                    </div>
+                </section>
+            </div>
+        </div>
+        <div id="ask-me-overlay" class="ask-me-overlay" hidden aria-hidden="true">
+            <div class="ask-me-content">
+                <div id="ask-me-title" class="ask-me-title">Ask Me Spotlight</div>
+                <div id="ask-me-message" class="ask-me-message"></div>
+                <div class="ask-me-total-wrapper">
+                    <span class="ask-me-total-label">Ask Me Total</span>
+                    <span id="ask-me-total" class="ask-me-total-amount">$0</span>
+                </div>
+                <div id="ask-me-delta-container" class="ask-me-delta-container"></div>
+            </div>
+        </div>
+        <!-- Celebration overlay (hidden by default) -->
+        <div id="celebration-overlay" aria-hidden="true">
+            <canvas id="fireworks-canvas"></canvas>
+            <div id="confetti"></div>
+            <div class="celebration-message">
+                <h1>Thank you</h1>
+                <h2>for helping raise <span id="celebration-total">$0</span> for CAUSE!</h2>
+            </div>
+        </div>
+        <div class="bottom-bar">
+            <div class="bottom-scroller">
+                <div id="scroller-wrapper">
+                    <div id="scroller-content"></div>
+                    <div id="scroller-content-dup"></div>
+                </div>
+            </div>
+            <div id="incentive-display" class="incentive-display" hidden>
+                <div id="incentive-progress-container"></div>
+            </div>
+            <div id="incentive-celebration" class="incentive-celebration" hidden>
+                <div class="incentive-celebration-inner">
+                    <div class="celebration-stage celebration-stage-message">
+                        <span class="celebration-title">Incentive Met</span>
+                        <span class="celebration-subtitle">Thank you!</span>
+                    </div>
+                    <div class="celebration-stage celebration-stage-detail">
+                        <span class="celebration-name" data-celebration-name></span>
+                        <span class="celebration-amount" data-celebration-amount></span>
+                    </div>
+                </div>
+            </div>
+            <div class="total-at-bottom">
+                <span id="total-animated">$0</span>
+                <span class="total-subtext">total raised for CAUSE</span>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js" defer></script>
+    <script src="main.js?v=20251028-13" defer></script>
+    <script>
+    function updateClock() {
+        const el = document.getElementById('header-clock');
+        if (!el) return;
+        const now = new Date();
+        el.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+    </script>
+</body>
+</html>
