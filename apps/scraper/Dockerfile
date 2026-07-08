@@ -1,0 +1,12 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY scraper ./scraper
+
+EXPOSE 8081
+
+CMD ["python", "-m", "scraper.main"]

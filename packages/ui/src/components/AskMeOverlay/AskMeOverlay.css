@@ -1,0 +1,76 @@
+.ask-me-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-ask-me-overlay);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  background: linear-gradient(160deg, var(--color-bg-from), var(--color-bg-to));
+  padding: var(--spacing-xl);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.ask-me-overlay__title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.ask-me-overlay__message {
+  max-width: 700px;
+  font-size: 1.15rem;
+  line-height: 1.5;
+}
+
+.ask-me-overlay__total-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.ask-me-overlay__total-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.ask-me-overlay__total-amount {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  color: var(--color-accent);
+}
+
+.ask-me-overlay__delta {
+  position: absolute;
+  bottom: 30%;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-success);
+  animation: ask-me-delta-pop 3s var(--ease-overshoot);
+}
+
+@keyframes ask-me-delta-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.1);
+  }
+  30% {
+    transform: translateY(0) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(1);
+  }
+}

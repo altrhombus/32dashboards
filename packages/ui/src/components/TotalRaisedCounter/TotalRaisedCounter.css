@@ -1,0 +1,18 @@
+.total-raised-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.total-raised-counter__amount {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.total-raised-counter__subtext {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}

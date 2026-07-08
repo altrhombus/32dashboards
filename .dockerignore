@@ -1,4 +1,12 @@
 node_modules
-Dockerfile
-.dockerignore
+**/node_modules
+**/dist
+**/.turbo
+.git
+legacy
+apps/scraper/.venv
+apps/scraper/__pycache__
+**/__pycache__
+**/.pytest_cache
 *.log
+.DS_Store

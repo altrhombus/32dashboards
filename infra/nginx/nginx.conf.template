@@ -1,0 +1,39 @@
+server {
+    listen 80;
+    server_name _;
+
+    # Admin SPA, served under /admin -- built with Vite `base: "/admin/"`
+    # and a matching <BrowserRouter basename="/admin">.
+    location /admin/ {
+        alias /usr/share/nginx/html/admin/;
+        try_files $uri $uri/ /admin/index.html;
+    }
+
+    # Admin CRUD + auth -- proxied straight through, path unchanged.
+    location /api/ {
+        proxy_pass http://api:8090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Public SSE stream -- buffering/caching must be off or the stream
+    # never flushes to the client, and the read timeout must be long
+    # since this is an intentionally long-lived connection.
+    location /events {
+        proxy_pass http://api:8090;
+        proxy_http_version 1.1;
+        proxy_set_header Connection '';
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 24h;
+        chunked_transfer_encoding off;
+    }
+
+    # Public kiosk display SPA, served at the root.
+    location / {
+        root /usr/share/nginx/html;
+        try_files $uri $uri/ /index.html;
+    }
+}

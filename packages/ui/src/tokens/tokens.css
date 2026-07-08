@@ -1,0 +1,36 @@
+:root {
+  --color-accent: #ffd700;
+  --color-secondary: #4dd0e1;
+  --color-bg-from: #181c2a;
+  --color-bg-to: #23284a;
+  --color-error: #ff6b6b;
+  --color-success: #81c784;
+  --font-display: "Montserrat", sans-serif;
+  --font-mono: "Share Tech Mono", monospace;
+
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2.5rem;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  --ease-overshoot: cubic-bezier(0.36, 1.5, 0.64, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --z-header: 100;
+  --z-ask-me-overlay: 500;
+  --z-incentive-celebration: 600;
+  --z-grand-celebration: 2000;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-display);
+  color: #f4f6ff;
+}

@@ -1,0 +1,41 @@
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: infra/web/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    environment:
+      PORT: 8090
+      DATA_DIR: /data
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in infra/.env}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?set INTERNAL_TOKEN in infra/.env}
+      SCRAPER_CONTROL_TOKEN: ${SCRAPER_CONTROL_TOKEN:?set SCRAPER_CONTROL_TOKEN in infra/.env}
+      SCRAPER_BASE_URL: http://scraper:8081
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    volumes:
+      - api_data:/data
+
+  scraper:
+    build:
+      context: ../apps/scraper
+    environment:
+      API_BASE_URL: http://api:8090
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?set INTERNAL_TOKEN in infra/.env}
+      CONTROL_TOKEN: ${SCRAPER_CONTROL_TOKEN:?set SCRAPER_CONTROL_TOKEN in infra/.env}
+      HOST: 0.0.0.0
+      PORT: 8081
+    depends_on:
+      - api
+
+volumes:
+  api_data:
+    driver: local

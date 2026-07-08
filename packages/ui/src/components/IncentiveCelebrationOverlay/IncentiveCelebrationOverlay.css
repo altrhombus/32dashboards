@@ -1,0 +1,48 @@
+.incentive-celebration-overlay {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 90px;
+  z-index: var(--z-incentive-celebration);
+}
+
+.incentive-celebration-overlay__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  animation: incentive-celebration-pop 0.5s var(--ease-overshoot);
+}
+
+.incentive-celebration-overlay__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.incentive-celebration-overlay__subtitle {
+  opacity: 0.85;
+}
+
+.incentive-celebration-overlay__name {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.incentive-celebration-overlay__amount {
+  font-family: var(--font-mono);
+  color: var(--color-accent);
+  font-size: 1.25rem;
+}
+
+@keyframes incentive-celebration-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

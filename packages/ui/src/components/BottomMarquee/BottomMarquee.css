@@ -1,0 +1,25 @@
+.bottom-marquee {
+  overflow: hidden;
+  white-space: nowrap;
+  padding: var(--spacing-sm) 0;
+}
+
+.bottom-marquee__wrapper {
+  display: inline-flex;
+  will-change: transform;
+}
+
+.bottom-marquee__content {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.bottom-marquee__item {
+  margin-right: 3rem;
+  font-size: 1rem;
+}
+
+.bottom-marquee__price {
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+}
