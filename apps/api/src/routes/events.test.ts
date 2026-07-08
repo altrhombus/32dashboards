@@ -156,7 +156,6 @@ describe("events CRUD", () => {
       jwtSecret: TEST_JWT_SECRET,
       internalToken: TEST_INTERNAL_TOKEN,
       allowedOrigins: ["http://localhost:5173"],
-      isProduction: false,
       scraperConfig,
     });
     const { ensureAdminPassword } = await import("../lib/bootstrapAdmin.js");
@@ -172,7 +171,6 @@ describe("events CRUD", () => {
       jwtSecret: TEST_JWT_SECRET,
       internalToken: TEST_INTERNAL_TOKEN,
       allowedOrigins: ["http://localhost:5173"],
-      isProduction: false,
       scraperConfig,
     });
     const secondAgent = request.agent(secondApp);

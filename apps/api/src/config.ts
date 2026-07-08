@@ -9,7 +9,14 @@ const EnvSchema = z.object({
   INTERNAL_TOKEN: z
     .string()
     .min(32, "INTERNAL_TOKEN must be at least 32 characters -- generate one with `openssl rand -hex 32`"),
-  ADMIN_PASSWORD: z.string().min(1).optional(),
+  // docker-compose's `${ADMIN_PASSWORD:-}` substitution passes an empty
+  // string (not an unset var) when .env leaves it blank -- normalize that
+  // to undefined so it actually falls through to the random-password
+  // generation path in bootstrapAdmin.ts instead of failing validation.
+  ADMIN_PASSWORD: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
   SCRAPER_BASE_URL: z.string().default("http://scraper:8081"),
   SCRAPER_CONTROL_TOKEN: z
     .string()

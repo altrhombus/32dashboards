@@ -14,7 +14,6 @@ const app = createApp({
   jwtSecret: config.JWT_SECRET,
   internalToken: config.INTERNAL_TOKEN,
   allowedOrigins: config.ALLOWED_ORIGINS,
-  isProduction: config.NODE_ENV === "production",
   scraperConfig: { baseUrl: config.SCRAPER_BASE_URL, controlToken: config.SCRAPER_CONTROL_TOKEN },
 });
 

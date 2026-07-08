@@ -16,15 +16,20 @@ export interface AppDeps {
   jwtSecret: string;
   internalToken: string;
   allowedOrigins: string[];
-  isProduction: boolean;
   scraperConfig: ScraperClientConfig;
 }
 
 export function createApp(deps: AppDeps): Express {
-  const { db, jwtSecret, internalToken, allowedOrigins, isProduction, scraperConfig } = deps;
+  const { db, jwtSecret, internalToken, allowedOrigins, scraperConfig } = deps;
   const app = express();
 
   app.disable("x-powered-by");
+  // Trust exactly one hop: nginx (infra/nginx/nginx.conf.template sets
+  // X-Forwarded-Proto from its own $scheme, not a client-suppliable value).
+  // This is what lets req.secure reflect the real browser<->nginx scheme
+  // rather than the scheme of this internal-network-only api<->nginx hop,
+  // which is always plain HTTP regardless of what the public edge is doing.
+  app.set("trust proxy", 1);
   app.use(
     cors({
       origin: allowedOrigins,
@@ -36,7 +41,7 @@ export function createApp(deps: AppDeps): Express {
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
 
-  app.use("/api/auth", createAuthRouter({ db, jwtSecret, isProduction }));
+  app.use("/api/auth", createAuthRouter({ db, jwtSecret }));
 
   const auth = requireAuth(jwtSecret);
   app.use("/api/events", auth, createEventsRouter(db, scraperConfig));

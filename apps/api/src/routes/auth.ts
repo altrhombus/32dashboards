@@ -12,10 +12,9 @@ const LoginSchema = z.object({ password: z.string().min(1) });
 export interface AuthRouterDeps {
   db: DrizzleDb;
   jwtSecret: string;
-  isProduction: boolean;
 }
 
-export function createAuthRouter({ db, jwtSecret, isProduction }: AuthRouterDeps): Router {
+export function createAuthRouter({ db, jwtSecret }: AuthRouterDeps): Router {
   const router = Router();
 
   // Scoped per-router (not module-level) so each app instance gets its own
@@ -41,7 +40,15 @@ export function createAuthRouter({ db, jwtSecret, isProduction }: AuthRouterDeps
     const token = await signSessionToken(jwtSecret);
     res.cookie(SESSION_COOKIE, token, {
       httpOnly: true,
-      secure: isProduction,
+      // Per-request, not a static NODE_ENV check: a `Secure` cookie set
+      // over a plain-HTTP connection is silently dropped by the browser
+      // (never actually stored), which broke login entirely on the
+      // Docker Compose deployment -- nginx doesn't terminate TLS by
+      // default, so "production" here still means HTTP unless an
+      // operator adds TLS in front. This tracks the real scheme (via
+      // app.set("trust proxy", 1) + nginx's X-Forwarded-Proto) so it's
+      // correct in both cases without a config flag to remember to flip.
+      secure: req.secure,
       sameSite: "lax",
       maxAge: SESSION_COOKIE_MAX_AGE_MS,
     });

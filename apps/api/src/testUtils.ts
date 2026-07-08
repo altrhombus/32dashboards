@@ -21,7 +21,6 @@ export async function createTestContext(): Promise<TestContext> {
     jwtSecret: TEST_JWT_SECRET,
     internalToken: TEST_INTERNAL_TOKEN,
     allowedOrigins: ["http://localhost:5173"],
-    isProduction: false,
     scraperConfig: { baseUrl: "http://127.0.0.1:39999", controlToken: TEST_SCRAPER_CONTROL_TOKEN },
   });
   return { app, dbHandle };

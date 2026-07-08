@@ -52,4 +52,17 @@ describe("auth", () => {
     await agent.post("/api/auth/logout");
     expect((await agent.get("/api/events")).status).toBe(401);
   });
+
+  it("does not mark the cookie Secure over plain HTTP (browsers silently drop Secure cookies set over HTTP, which broke login on the HTTP-only Docker Compose deployment)", async () => {
+    const res = await request(ctx.app).post("/api/auth/login").send({ password: TEST_ADMIN_PASSWORD });
+    expect(res.headers["set-cookie"]?.[0]).not.toMatch(/Secure/i);
+  });
+
+  it("marks the cookie Secure when nginx signals HTTPS via X-Forwarded-Proto (trust proxy is set to 1 in app.ts)", async () => {
+    const res = await request(ctx.app)
+      .post("/api/auth/login")
+      .set("X-Forwarded-Proto", "https")
+      .send({ password: TEST_ADMIN_PASSWORD });
+    expect(res.headers["set-cookie"]?.[0]).toMatch(/Secure/i);
+  });
 });
