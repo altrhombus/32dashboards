@@ -1,0 +1,381 @@
+/* Live console. Tokens come from @32dashboards/nodecg-react/panel.css. */
+
+html,
+body {
+  background: var(--ink);
+  min-height: 100%;
+}
+
+.console {
+  display: grid;
+  gap: 20px;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 16px 20px 96px;
+}
+
+.console-loading,
+.empty {
+  padding: 24px;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Status strip: three facts an operator checks first. */
+.strip {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.2fr) 1fr 1.2fr;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.switcher {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.switcher select {
+  flex: 1;
+  min-height: var(--target);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.switcher button {
+  min-height: var(--target);
+}
+
+.status {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 8px;
+  align-content: center;
+  padding: 8px 12px 8px 14px;
+  border-radius: var(--radius);
+  background: var(--raise);
+  border-left: 4px solid var(--muted);
+}
+
+.status strong,
+.status span {
+  grid-column: 1;
+}
+
+.status span {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.status--go {
+  border-left-color: var(--go);
+}
+
+.status--go strong {
+  color: var(--go);
+}
+
+.status--caution {
+  border-left-color: var(--caution);
+}
+
+.status--caution strong {
+  color: var(--caution);
+}
+
+.status__action {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+/* Stage: what's on TV, and what it could switch to. */
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.preview {
+  margin: 0;
+}
+
+.preview__frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 0 0 3px var(--tally);
+}
+
+.preview__frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none;
+}
+
+.preview figcaption {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.scenes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.scene {
+  display: grid;
+  gap: 2px;
+  min-height: 88px;
+  padding: 12px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--raise);
+}
+
+.scene__name {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.scene__what {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* The tally: the one loud color, only on what's on air. */
+.scene--on-air {
+  border-color: var(--tally);
+  box-shadow: inset 0 0 0 2px var(--tally);
+  background: color-mix(in srgb, var(--tally) 12%, var(--raise));
+}
+
+.scene--on-air .scene__what {
+  color: #ffd9da;
+}
+
+.is-armed {
+  border-color: var(--caution) !important;
+  box-shadow: inset 0 0 0 2px var(--caution);
+  color: var(--caution);
+  font-weight: 700;
+}
+
+.intermission-options {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  min-height: 36px;
+  border-radius: 999px;
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--action);
+  background: color-mix(in srgb, var(--action) 22%, var(--raise-hi));
+}
+
+.chip--money {
+  min-height: var(--target);
+  min-width: 84px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+/* Desk: the money and the feed. */
+.desk {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.desk__main {
+  display: grid;
+  gap: 20px;
+}
+
+.money,
+.block {
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--raise);
+}
+
+.money {
+  display: grid;
+  gap: 16px;
+}
+
+.money__total {
+  display: grid;
+}
+
+.money__amount {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.money__add {
+  display: grid;
+  gap: 10px;
+}
+
+.money__label {
+  font-weight: 600;
+}
+
+.money summary {
+  cursor: pointer;
+  min-height: 28px;
+}
+
+.war + .war {
+  margin-top: 14px;
+}
+
+.war__name {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.war__option,
+.incentive {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+
+.incentive {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.war__option-name,
+.incentive__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.incentive__text {
+  display: grid;
+  min-width: 0;
+}
+
+.war__total {
+  font-weight: 700;
+  min-width: 5ch;
+  text-align: right;
+}
+
+.moments__list {
+  display: grid;
+  gap: 2px;
+  max-height: 520px;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.moment {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+
+.moment time {
+  color: var(--muted);
+}
+
+.moment--milestone,
+.moment--incentive-met {
+  color: var(--go);
+  font-weight: 600;
+}
+
+/* Feedback: says what the last tap did, with Undo when there's one. */
+.feedback {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  max-width: min(640px, calc(100vw - 32px));
+  padding: 10px 12px 10px 16px;
+  border-radius: var(--radius);
+  background: var(--raise-hi);
+  border: 1px solid var(--line);
+  transform: translate(-50%, 140%);
+  transition: transform 0.2s ease-out;
+}
+
+.feedback--shown {
+  transform: translate(-50%, 0);
+}
+
+.feedback--error {
+  border-color: var(--caution);
+  color: var(--caution);
+}
+
+@media (max-width: 1100px) {
+  .strip,
+  .stage,
+  .desk {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .console {
+    padding: 12px 12px 96px;
+  }
+
+  .scenes {
+    grid-template-columns: 1fr;
+  }
+
+  .war__option {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .war__option .chips {
+    grid-column: 1 / -1;
+  }
+}

@@ -211,12 +211,7 @@ function BidWars({ event, run }: { event: FundraiserEvent; run: Run }) {
 
 function InfoBarEditor({ event, run }: { event: FundraiserEvent; run: Run }) {
   const [draft, setDraft, dirty] = useDraft(event.infoBar);
-  const move = (index: number, by: number) => {
-    const segments = [...draft.segments];
-    const [item] = segments.splice(index, 1);
-    segments.splice(index + by, 0, item!);
-    setDraft({ ...draft, segments });
-  };
+  const move = (index: number, by: number) => setDraft({ ...draft, segments: moveItem(draft.segments, index, by) });
   const missing = INFO_BAR_SEGMENTS.filter((kind) => !draft.segments.includes(kind));
 
   return (
@@ -279,6 +274,214 @@ function CallToAction({ event, run }: { event: FundraiserEvent; run: Run }) {
   );
 }
 
+interface Asset {
+  base: string;
+  name: string;
+  url: string;
+}
+
+/** Files uploaded in the dashboard's Assets tab for one of this bundle's categories. */
+function useAssets(category: "event-logos" | "sponsor-logos"): Asset[] {
+  return useReplicant<Asset[]>(`assets:${category}`) ?? [];
+}
+
+function AssetSelect(props: { label: string; assets: Asset[]; value: string | null; onChange: (url: string | null) => void }) {
+  const missing = props.value && !props.assets.some((a) => a.url === props.value);
+  return (
+    <select aria-label={props.label} value={props.value ?? ""} onChange={(e) => props.onChange(e.target.value || null)}>
+      <option value="">No logo</option>
+      {missing && <option value={props.value!}>{props.value} (not found)</option>}
+      {props.assets.map((a) => (
+        <option key={a.url} value={a.url}>
+          {a.base}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+const COLOR_FIELDS = [
+  ["accentColor", "Accent (total, highlights)"],
+  ["secondaryColor", "Secondary (headings, bars)"],
+  ["backgroundFrom", "Background, top"],
+  ["backgroundTo", "Background, bottom"],
+] as const;
+
+function LookAndSponsors({ event, run }: { event: FundraiserEvent; run: Run }) {
+  const eventLogos = useAssets("event-logos");
+  const sponsorLogos = useAssets("sponsor-logos");
+  const [theme, setTheme, themeDirty] = useDraft(event.theme);
+  const [sponsors, setSponsors, sponsorsDirty] = useDraft(event.sponsors);
+  const issues = validateTheme(theme);
+
+  return (
+    <>
+      <p className="muted">Upload logos in the dashboard's Assets tab, then pick them here.</p>
+      <label className="field">
+        <span>Event logo (top left of the TV)</span>
+        <AssetSelect label="Event logo" assets={eventLogos} value={theme.logoUrl} onChange={(logoUrl) => setTheme({ ...theme, logoUrl })} />
+      </label>
+      {COLOR_FIELDS.map(([key, label]) => (
+        <label key={key} className="row">
+          <input type="color" value={theme[key]} onChange={(e) => setTheme({ ...theme, [key]: e.target.value })} />
+          {label}
+        </label>
+      ))}
+      {issues.map((issue, i) => (
+        <p key={i} className={issue.level === "error" ? "error" : "warning"}>
+          {issue.message}
+        </p>
+      ))}
+      {issues.length === 0 && <p className="muted">Colors meet contrast and broadcast-safe rules.</p>}
+      <button type="button" className="primary" disabled={!themeDirty} onClick={() => run(send("updateEvent", { eventId: event.id, patch: { theme } }))}>
+        Save look
+      </button>
+
+      <h4 style={{ margin: "8px 0 0" }}>Sponsors</h4>
+      {sponsors.map((sponsor, index) => (
+        <div className="list-row" key={sponsor.id}>
+          <input
+            aria-label="Sponsor name"
+            placeholder="Sponsor name"
+            value={sponsor.name}
+            onChange={(e) => setSponsors(sponsors.map((s, i) => (i === index ? { ...s, name: e.target.value } : s)))}
+          />
+          <AssetSelect
+            label="Sponsor logo"
+            assets={sponsorLogos}
+            value={sponsor.logoUrl}
+            onChange={(logoUrl) => setSponsors(sponsors.map((s, i) => (i === index ? { ...s, logoUrl } : s)))}
+          />
+          <button type="button" disabled={index === 0} onClick={() => setSponsors(moveItem(sponsors, index, -1))}>
+            ↑
+          </button>
+          <button type="button" onClick={() => setSponsors(sponsors.filter((_, i) => i !== index))}>
+            Remove
+          </button>
+        </div>
+      ))}
+      <div className="row">
+        <button type="button" onClick={() => setSponsors([...sponsors, { id: newId(), name: "", logoUrl: null, sortOrder: sponsors.length }])}>
+          Add sponsor
+        </button>
+        <button
+          type="button"
+          className="primary"
+          disabled={!sponsorsDirty}
+          onClick={() =>
+            run(send("updateEvent", { eventId: event.id, patch: { sponsors: sponsors.map((s, i) => ({ ...s, sortOrder: i })) } }))
+          }
+        >
+          Save sponsors
+        </button>
+      </div>
+    </>
+  );
+}
+
+function moveItem<T>(list: T[], index: number, by: number): T[] {
+  const next = [...list];
+  const [item] = next.splice(index, 1);
+  next.splice(index + by, 0, item!);
+  return next;
+}
+
+/** ISO timestamp <-> the value of an <input type="datetime-local"> (local time, minutes). */
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
+function fromLocalInput(value: string): string | null {
+  return value ? new Date(value).toISOString() : null;
+}
+
+function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
+  const saved = {
+    name: event.name,
+    causeName: event.causeName,
+    endDateTime: toLocalInput(event.endDateTime),
+    announcements: event.announcements.join("\n"),
+    askMeTitle: event.askMe.title,
+    askMeMessage: event.askMe.message,
+  };
+  const [draft, setDraft, dirty] = useDraft(saved);
+  const field = (key: keyof typeof saved) => ({
+    value: draft[key],
+    onChange: (e: { target: { value: string } }) => setDraft({ ...draft, [key]: e.target.value }),
+  });
+
+  const save = () =>
+    run(
+      send("updateEvent", {
+        eventId: event.id,
+        patch: {
+          name: draft.name.trim(),
+          causeName: draft.causeName.trim(),
+          endDateTime: fromLocalInput(draft.endDateTime),
+          announcements: draft.announcements.split("\n").map((a) => a.trim()).filter(Boolean),
+          askMe: { title: draft.askMeTitle, message: draft.askMeMessage },
+        },
+      }),
+    );
+
+  return (
+    <>
+      <label className="field">
+        <span>Event name (top of the TV)</span>
+        <input maxLength={200} {...field("name")} />
+      </label>
+      <label className="field">
+        <span>Raising money for</span>
+        <input maxLength={200} placeholder="e.g. Riverside Animal Shelter" {...field("causeName")} />
+      </label>
+      <label className="field">
+        <span>Bidding closes (the TV counts down to this)</span>
+        <input type="datetime-local" {...field("endDateTime")} />
+      </label>
+      <label className="field">
+        <span>Announcements, one per line</span>
+        <textarea rows={4} {...field("announcements")} />
+      </label>
+      <label className="field">
+        <span>Ask Me title</span>
+        <input maxLength={120} {...field("askMeTitle")} />
+      </label>
+      <label className="field">
+        <span>Ask Me message (Markdown: **bold**, - lists)</span>
+        <textarea rows={5} maxLength={1200} {...field("askMeMessage")} />
+      </label>
+      <div className="row">
+        <button type="button" className="primary" disabled={!dirty || !draft.name.trim()} onClick={save}>
+          Save details
+        </button>
+        {dirty && <button type="button" onClick={() => setDraft(saved)}>Discard</button>}
+      </div>
+    </>
+  );
+}
+
+function HiddenItems({ event, run }: { event: FundraiserEvent; run: Run }) {
+  const [draft, setDraft, dirty] = useDraft(event.filters.join("\n"));
+  return (
+    <>
+      <label className="field">
+        <span>Hide items whose title contains (one per line, any case)</span>
+        <textarea rows={4} placeholder="e.g. raffle" value={draft} onChange={(e) => setDraft(e.target.value)} />
+      </label>
+      <button
+        type="button"
+        className="primary"
+        disabled={!dirty}
+        onClick={() => run(send("setFilters", { eventId: event.id, filters: draft.split("\n") }))}
+      >
+        Save hidden items
+      </button>
+    </>
+  );
+}
+
 function ShowContent() {
   const events = useReplicant<EventsReplicant>("events");
   const activeId = useReplicant<ActiveEventIdReplicant>("activeEventId") ?? null;
@@ -295,7 +498,6 @@ function ShowContent() {
     promise.catch((err) => setError(errorText(err)));
   };
   const save = (patch: Parameters<typeof send<"updateEvent">>[1]["patch"]) => run(send("updateEvent", { eventId: event.id, patch }));
-  const themeIssues = validateTheme(event.theme);
 
   return (
     <div className="panel">
@@ -313,6 +515,15 @@ function ShowContent() {
 
       {/* key: drafts reset when switching events */}
       <div key={event.id} className="panel" style={{ padding: 0 }}>
+        <Section title="Event details">
+          <EventDetails event={event} run={run} />
+        </Section>
+        <Section title={`Look and sponsors (${event.sponsors.length} sponsor${event.sponsors.length === 1 ? "" : "s"})`}>
+          <LookAndSponsors event={event} run={run} />
+        </Section>
+        <Section title={`Hidden items (${event.filters.length})`}>
+          <HiddenItems event={event} run={run} />
+        </Section>
         <Section title="Call to action">
           <CallToAction event={event} run={run} />
         </Section>
@@ -362,14 +573,6 @@ function ShowContent() {
             addLabel="Add prize"
             onSave={(prizes) => save({ prizes })}
           />
-        </Section>
-        <Section title={`Theme check (${themeIssues.length ? `${themeIssues.length} issue${themeIssues.length === 1 ? "" : "s"}` : "OK"})`}>
-          {themeIssues.length === 0 && <p className="muted">Colors meet contrast and broadcast-safe rules.</p>}
-          {themeIssues.map((issue, i) => (
-            <p key={i} className={issue.level === "error" ? "error" : "warning"}>
-              {issue.field}: {issue.message}
-            </p>
-          ))}
         </Section>
       </div>
 

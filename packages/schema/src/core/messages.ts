@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { FundraiserEventSchema } from "./event.js";
-import { ThemeSchema } from "../theme.js";
+import { EventThemeSchema } from "./event.js";
 import { AskMeConfigSchema } from "../askme.js";
 import { InfoBarConfigSchema, SceneIdSchema } from "./show.js";
 import { SceneReplicantSchema } from "./replicants.js";
@@ -39,7 +39,7 @@ export const UpdateEventMessageSchema = z
       source: true,
     })
       .extend({
-        theme: ThemeSchema.partial(),
+        theme: EventThemeSchema.partial(),
         askMe: AskMeConfigSchema.partial(),
         infoBar: InfoBarConfigSchema.partial(),
       })
@@ -93,6 +93,12 @@ export const SwitchSceneMessageSchema = z
   .strict();
 export type SwitchSceneMessage = z.infer<typeof SwitchSceneMessageSchema>;
 
+/** Sent every few seconds by an output (e.g. the venue-TV kiosk) so operators know it's live. */
+export const OutputHeartbeatMessageSchema = z
+  .object({ instanceId: z.string().min(1).max(100), output: z.string().min(1).max(60) })
+  .strict();
+export type OutputHeartbeatMessage = z.infer<typeof OutputHeartbeatMessageSchema>;
+
 /** Message name -> payload schema. */
 export const coreMessageSchemas = {
   createEvent: CreateEventMessageSchema,
@@ -106,6 +112,7 @@ export const coreMessageSchemas = {
   refreshSource: RefreshSourceMessageSchema,
   nudgeBidWar: NudgeBidWarMessageSchema,
   switchScene: SwitchSceneMessageSchema,
+  outputHeartbeat: OutputHeartbeatMessageSchema,
 } as const;
 export type CoreMessageName = keyof typeof coreMessageSchemas;
 export type CoreMessagePayload<N extends CoreMessageName> = z.input<(typeof coreMessageSchemas)[N]>;

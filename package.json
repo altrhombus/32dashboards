@@ -16,7 +16,9 @@
     "nodecg:start": "nodecg start",
     "start": "pnpm bundles:build && nodecg start",
     "check-env": "bash scripts/check-env.sh",
-    "kiosk-url": "bash scripts/kiosk-url.sh"
+    "kiosk-url": "bash scripts/kiosk-url.sh",
+    "backup": "bash scripts/backup.sh",
+    "restore": "bash scripts/restore.sh"
   },
   "dependencies": {
     "nodecg": "2.8.0"

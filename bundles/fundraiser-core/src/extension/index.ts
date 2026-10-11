@@ -13,6 +13,7 @@ import {
   type FundraiserEvent,
   type LiveStateReplicant,
   type MomentsReplicant,
+  type OutputsReplicant,
   type RegisteredSource,
   type RegisteredSourcesReplicant,
   type SceneReplicant,
@@ -57,6 +58,7 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   const sources = nodecg.Replicant<RegisteredSourcesReplicant>("sources", { defaultValue: [], persistent: false });
   const sourceLog = nodecg.Replicant<SourceLogReplicant>("sourceLog", { defaultValue: [], persistent: false });
   const moments = nodecg.Replicant<MomentsReplicant>("moments", { defaultValue: [], persistent: false });
+  const outputs = nodecg.Replicant<OutputsReplicant>("outputs", { defaultValue: [], persistent: false });
   const scene = nodecg.Replicant<SceneReplicant>("scene", {
     defaultValue: { id: "main", countdownTo: null, message: null, changedAt: deps.now() },
   });
@@ -167,9 +169,25 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   command("setAdjustment", (state, { eventId, amount }) => ({
     state: core.setAdjustment(state, eventId, amount, deps),
   }));
-  command("nudgeAdjustment", (state, { eventId, delta }) => ({
-    state: core.nudgeAdjustment(state, eventId, delta, deps),
-  }));
+  listenForCommand(nodecg, "nudgeAdjustment", coreMessageSchemas.nudgeAdjustment, ({ eventId, delta }) => {
+    const before = read();
+    const after = core.nudgeAdjustment(before, eventId, delta, deps);
+    write(before, after);
+    // Money added at the venue (cash, checks) is a donation too; a
+    // correction downward, or setAdjustment, isn't celebrated.
+    if (delta > 0 && after.activeEventId === eventId) {
+      recordMoments([
+        {
+          kind: "total-increase",
+          id: deps.newId(),
+          eventId,
+          at: deps.now(),
+          delta,
+          total: core.computeLiveState(after).total,
+        },
+      ]);
+    }
+  });
   command("setFilters", (state, { eventId, filters }) => ({
     state: core.setFilters(state, eventId, filters, deps),
   }));
@@ -178,6 +196,25 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
 
   listenForCommand(nodecg, "switchScene", coreMessageSchemas.switchScene, ({ id, countdownTo, message }) => {
     scene.value = { id, countdownTo: countdownTo ?? null, message: message ?? null, changedAt: deps.now() };
+  });
+
+  // Outputs check in every few seconds; ones that stop are dropped.
+  const OUTPUT_TIMEOUT_MS = 60_000;
+  const pruneOutputs = () => {
+    const cutoff = Date.now() - OUTPUT_TIMEOUT_MS;
+    const current = plain(outputs.value ?? []);
+    const live = current.filter((o) => Date.parse(o.lastSeenAt) >= cutoff);
+    if (live.length !== current.length) outputs.value = live;
+  };
+  setInterval(pruneOutputs, 15_000).unref();
+  listenForCommand(nodecg, "outputHeartbeat", coreMessageSchemas.outputHeartbeat, ({ instanceId, output }) => {
+    const now = deps.now();
+    const current = plain(outputs.value ?? []);
+    const existing = current.find((o) => o.instanceId === instanceId);
+    outputs.value = existing
+      ? current.map((o) => (o === existing ? { ...o, output, lastSeenAt: now } : o))
+      : [...current, { instanceId, output, firstSeenAt: now, lastSeenAt: now }];
+    pruneOutputs();
   });
 
   listenForCommand(nodecg, "refreshSource", coreMessageSchemas.refreshSource, ({ eventId }) => {

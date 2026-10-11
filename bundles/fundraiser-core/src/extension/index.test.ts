@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { FundraiserEvent, LiveStateReplicant, RegisteredSourcesReplicant } from "@32dashboards/schema/core";
 import { createFakeNodecg } from "@32dashboards/nodecg-testing";
 import fundraiserCore from "./index.js";
@@ -166,7 +166,8 @@ describe("fundraiser-core extension", () => {
       patch: { milestones: [{ id: "11111111-1111-4111-8111-111111111111", amount: 100, label: "Century" }] },
     });
     await fake.send("nudgeAdjustment", { eventId, delta: 150 });
-    expect(fake.world.sent.map((m) => (m.data as { kind: string; label?: string }).label)).toEqual(["Century"]);
+    const kinds = fake.world.sent.map((m) => (m.data as { kind: string }).kind).sort();
+    expect(kinds).toEqual(["milestone", "total-increase"]);
   });
 
   it("switches scenes", async () => {
@@ -187,5 +188,31 @@ describe("fundraiser-core extension", () => {
       bidWars: [],
       infoBar: { segmentSeconds: 12 },
     });
+  });
+
+  it("celebrates cash added at the venue, but not corrections", async () => {
+    const { fake } = setup();
+    const eventId = await createActiveEvent(fake);
+    await fake.send("nudgeAdjustment", { eventId, delta: 40 });
+    await fake.send("nudgeAdjustment", { eventId, delta: -10 });
+    await fake.send("setAdjustment", { eventId, amount: 500 });
+    expect(fake.world.sent.map((m) => m.data)).toEqual([
+      expect.objectContaining({ kind: "total-increase", delta: 40, total: 40 }),
+    ]);
+  });
+
+  it("tracks outputs that check in, and drops ones that stop", async () => {
+    vi.useFakeTimers();
+    try {
+      const { fake } = setup();
+      await fake.send("outputHeartbeat", { instanceId: "tv-1", output: "kiosk" });
+      vi.advanceTimersByTime(30_000);
+      await fake.send("outputHeartbeat", { instanceId: "tv-2", output: "kiosk" });
+      expect(fake.replicant<{ instanceId: string }[]>("outputs").value.map((o) => o.instanceId)).toEqual(["tv-1", "tv-2"]);
+      vi.advanceTimersByTime(45_000);
+      expect(fake.replicant<{ instanceId: string }[]>("outputs").value.map((o) => o.instanceId)).toEqual(["tv-2"]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -484,25 +484,80 @@ still limits who can try.
     and shows the theme check.
   - Phase 5 redesigns both for live operation.
 
+## Phase 5 notes (2026-10-10)
+
+- **The Live console** is a full-bleed dashboard panel for running the
+  show, built for a dim room and time pressure.
+  - The broadcast "tally" convention marks what's on the TV in red; no
+    other element uses that color.
+  - A status strip answers three questions first: is the TV connected,
+    is the source healthy, and which event is on.
+  - A live preview of the kiosk sits beside the scene buttons.
+  - Venue cash, bid war, incentive pin, and Ask Me actions are one tap
+    each, and each says what it changed and offers Undo.
+  - Switching events and starting the Celebration need a second tap.
+  - It runs on phones and tablets as well as laptops.
+  - The interim Scene and Live total panels are gone; Events and Show
+    content remain for setup.
+- **TV presence comes from a heartbeat, not graphic instances.** The
+  kiosk sends `outputHeartbeat` every 10 seconds, and the core keeps
+  recent check-ins in the `outputs` Replicant. Previews (`?preview`)
+  don't check in, so a preview on an operator's screen never reads as
+  the TV.
+- **Money added at the venue is celebrated.** A positive `nudgeAdjustment`
+  on the active event sends a `total-increase` moment. `setAdjustment` and
+  negative nudges are corrections and don't.
+- **Logos are uploaded through NodeCG asset categories** (`event-logos`,
+  `sponsor-logos`) and chosen in Show content. The event theme's `logoUrl`
+  accepts asset paths (`EventThemeSchema`). Uploaded files live in
+  `assets/` and are included in backups.
+- **Show content now covers everything an event needs:**
+  - event details: name, cause, end time, announcements, and Ask Me;
+  - the look: logo and colors, checked live against the display rules;
+  - sponsors and hidden-item filters.
+- **Venue operations:**
+  - `pnpm backup` makes an online-consistent `sqlite3 .backup` of the
+    database plus source secrets, assets, and cfg/, as an owner-only
+    archive. It keeps the newest 30.
+  - `pnpm restore` refuses while NodeCG serves that directory, and moves
+    the current data aside instead of deleting it.
+  - `infra/windows/open-kiosk.ps1` opens the keyed kiosk in Edge
+    full-screen kiosk mode with a dedicated profile.
+  - `check-env` also checks for sqlite3, jq, and a recent backup.
+  - Runbooks: venue setup, event day (with troubleshooting), backup and
+    restore, rotating secrets, fallbacks.
+  - The README now describes the NodeCG stack.
+- **Spike risks still open:**
+  - (4) reaching the dashboard from a *second* device: the firewall
+    rules are in place and the LAN address answers from inside WSL;
+  - (5) NodeCG staying up after every WSL window closes: the venue setup
+    runbook includes the check and the `.wslconfig` fix;
+  - (6) the kiosk opened by hand in Edge kiosk mode: headless Edge
+    rendered every scene in Phase 4, but not kiosk mode on the real TV.
+
+  All three need someone at the laptop.
+- `setup-firewall.ps1`'s Hyper-V rule scope (`VMCreatorId: Any`) is still
+  to revisit.
+
 ## Action Items
 
-1. [ ] **Phase 1 (spike):** NodeCG 2.8 + pnpm workspace + one Vite React
+1. [x] **Phase 1 (spike):** NodeCG 2.8 + pnpm workspace + one Vite React
        graphic + one TS extension, running in WSL2 Ubuntu (aarch64) on
        Windows ARM64. Retire the risks above. Add an environment-check
        script that verifies arch, Node, pnpm, systemd, mirrored networking,
        and firewall rules.
-2. [ ] **Phase 2 (core):** `fundraiser-core` Replicants generated from zod.
+2. [x] **Phase 2 (core):** `fundraiser-core` Replicants generated from zod.
        Many events with one active, plus duplicate-event. Adjustment and
        filters in core. Operator Messages.
-3. [ ] **Phase 3 (sources):** `source-sdk` contract. Port 32auctions to
+3. [x] **Phase 3 (sources):** `source-sdk` contract. Port 32auctions to
        TS, reusing the existing HTML fixtures and integrity checks.
        `source-manual`. `source-external`. Change detection for donation
        moments.
-4. [ ] **Phase 4 (layouts):** `layout-engine` and `layout-kiosk` scenes
+4. [x] **Phase 4 (layouts):** `layout-engine` and `layout-kiosk` scenes
        (main, intermission, Ask Me, celebration). Info-bar segments. Bid
        wars, milestones, prizes in `incentive-machine` and UI. Display rules
        and worst-case-string tests in `packages/ui`.
-5. [ ] **Phase 5 (dashboard + venue ops):** operator panels designed for
+5. [x] **Phase 5 (dashboard + venue ops):** operator panels designed for
        live use. Asset uploads for logos. Venue setup: a systemd unit and
        firewall rules as scripts, plus a runbook (including opening the
        kiosk URL full-screen). Backup/restore (NodeCG `db/` and

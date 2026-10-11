@@ -107,9 +107,9 @@ function Intermission({ message, countdownTo }: { message: string | null; countd
 }
 
 export const kioskRegistry: Registry<KioskData> = {
-  header: defineComponent<KioskData, { title: string }>({
+  header: defineComponent<KioskData, { title: string; logoUrl: string | null }>({
     variants: ["default"],
-    select: ({ live }) => ({ title: live.event?.name ?? "" }),
+    select: ({ live }) => ({ title: live.event?.name ?? "", logoUrl: live.event?.theme.logoUrl ?? null }),
     component: KioskHeader,
   }),
 

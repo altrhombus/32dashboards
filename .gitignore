@@ -21,3 +21,6 @@ bundles/*/extension/
 bundles/*/graphics/
 bundles/*/dashboard/
 bundles/*/schemas/
+
+# Data set aside by scripts/restore.sh
+.pre-restore-*/

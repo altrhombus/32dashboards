@@ -8,6 +8,16 @@ import { BidWarSchema, InfoBarConfigSchema, MilestoneSchema, PrizeSchema } from 
 export const timestamp = () => z.string().datetime({ offset: true });
 
 /**
+ * The legacy theme, except `logoUrl` also accepts a dashboard-uploaded
+ * asset's path ("/assets/fundraiser-core/event-logos/logo.png"), which
+ * isn't an absolute URL.
+ */
+export const EventThemeSchema = ThemeSchema.extend({
+  logoUrl: z.string().max(1000).nullable().default(null),
+});
+export type EventTheme = z.infer<typeof EventThemeSchema>;
+
+/**
  * Which adapter feeds an event. Adapter-specific settings (including any
  * credentials) are owned by the adapter bundle, never stored here: every
  * graphic can read core Replicants, so nothing secret may live in them.
@@ -27,7 +37,7 @@ export const FundraiserEventSchema = z.object({
   name: z.string().min(1).max(200),
   causeName: z.string().max(200).default(""),
   endDateTime: timestamp().nullable().default(null),
-  theme: ThemeSchema,
+  theme: EventThemeSchema,
   announcements: z.array(z.string().max(200)).max(50).default([]),
   askMe: AskMeConfigSchema,
   incentives: z.array(IncentiveSchema).default([]),

@@ -18,3 +18,16 @@
   font-size: 1.25rem;
   color: #f4f6ff;
 }
+
+.kiosk-header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-width: 0;
+}
+
+.kiosk-header__logo {
+  height: 2.4em;
+  max-width: 12em;
+  object-fit: contain;
+}

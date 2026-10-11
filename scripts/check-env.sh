@@ -38,6 +38,9 @@ else
   fail "node not found (install with fnm: fnm install $want_node)"
 fi
 command -v pnpm >/dev/null 2>&1 && pass "pnpm $(pnpm --version)" || fail "pnpm not found (corepack enable)"
+for tool in sqlite3 jq; do
+  command -v "$tool" >/dev/null 2>&1 && pass "$tool" || fail "$tool missing (sudo apt install $tool; used by kiosk-url, backup, and restore)"
+done
 for tool in gcc g++ make python3; do
   command -v "$tool" >/dev/null 2>&1 && pass "$tool" || warn "$tool missing (needed only if a native module must compile)"
 done
@@ -67,6 +70,16 @@ if curl -fsS -o /dev/null --max-time 3 "http://127.0.0.1:$PORT/login" 2>/dev/nul
   fi
 else
   warn "NodeCG not running on localhost:$PORT (start it to check reachability)"
+fi
+
+echo "Backups"
+latest="$(ls -1t "$HOME"/32dashboards-backups/32dashboards-*.tar.gz 2>/dev/null | head -1)"
+if [ -z "$latest" ]; then
+  warn "no backups in ~/32dashboards-backups yet (pnpm backup)"
+elif [ -n "$(find "$latest" -mmin +1440 2>/dev/null)" ]; then
+  warn "newest backup is over a day old: $(basename "$latest") (pnpm backup)"
+else
+  pass "recent backup: $(basename "$latest")"
 fi
 
 echo "Windows firewall (best effort, via WSL interop)"

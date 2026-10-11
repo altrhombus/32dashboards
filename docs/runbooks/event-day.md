@@ -1,0 +1,100 @@
+# Runbook: Event day
+
+The presentation laptop runs everything: NodeCG inside WSL, and the kiosk
+full-screen on the TV. Operators control the show from the dashboard's
+**Live** tab, on the laptop or on any phone, tablet, or laptop on the same
+network.
+
+## Steps
+
+1. **Start NodeCG.** On the presentation laptop, open a WSL terminal
+   (Start menu, then "Ubuntu"). systemd starts NodeCG on its own. Check
+   that everything is ready:
+
+   ```sh
+   cd ~/32dashboards && pnpm check-env
+   ```
+
+   Every line should say `ok`. A `warn` about backups is fine before the
+   first event. You can close the terminal; NodeCG keeps running.
+
+2. **Open the dashboard on the operator's device.** Browse to
+   `http://<laptop-ip>:9090` (`pnpm check-env` prints the address under
+   "reachable at") and log in as `admin`. Open the **Live** tab.
+
+3. **Open the kiosk on the TV.** On the presentation laptop, with the TV
+   connected as its display, run in PowerShell:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File \\wsl.localhost\Ubuntu\home\<you>\32dashboards\infra\windows\open-kiosk.ps1
+   ```
+
+   Edge opens the kiosk full-screen. Within ten seconds the Live tab's
+   status strip should say **TV connected**.
+
+4. **Put the event on the TV.** In the Live tab, pick the event at the top
+   left, tap **Put on TV**, then tap again to confirm. Check the strip:
+   the source should say **receiving data** (manual-entry events say so
+   after the first entry). The preview shows exactly what the TV shows.
+
+5. **Run the show.** Everything during the event happens in the Live tab:
+   - **Scenes.** The scene with the red outline is on the TV. Tap another
+     to switch. For Intermission, type a message and pick a countdown
+     first. Celebration (the end-of-night thank-you) needs a second tap.
+   - **Money taken at the venue.** Tap +$20, +$50, +$100, or +$500, or
+     type another amount. The TV shows a thank-you. Use **Undo** in the
+     message at the bottom if you tapped the wrong amount. To fix the
+     venue total without a thank-you, use **Correct the venue total**.
+   - **Bid wars.** Tap +5, +25, or +100 next to an option.
+   - **Incentives.** **Pin to info bar** keeps one on the TV until you
+     unpin it.
+   - **Ask Me.** While the Ask Me scene is on, quick buttons add to the
+     Ask Me total on the TV.
+   - **What the TV celebrated** lists every donation, bid, and milestone
+     the TV showed.
+
+   Editing content (bid war options, prizes, sponsors, logos) is in the
+   **Show content** panel on the main dashboard tab. Changes show on the
+   TV as soon as you save.
+
+6. **After the event.** Switch to Celebration. When you're done, back up:
+
+   ```sh
+   cd ~/32dashboards && pnpm backup
+   ```
+
+   Close the kiosk with Alt+F4 on the TV.
+
+## Troubleshooting
+
+**TV not connected.** The kiosk isn't open, or it lost its connection.
+Run step 3 again; opening it twice is harmless.
+
+**The source needs a look.** The status strip shows the reason. Common
+ones:
+- *Not configured for this event*: fill in the source's settings in its
+  panel (for 32auctions, the **32auctions source** panel).
+- *HTTP 401/403*: the auction needs a fresh session cookie; see
+  [rotating secrets](rotating-secrets.md).
+- *Total raised not found*: check the auction's public path, or the site
+  layout changed. Keep the show going with **Add cash or checks**.
+
+Tap **Fetch now** after fixing it.
+
+**The dashboard won't load on a phone.** Check that the phone is on the
+same network as the laptop, and that Windows sees that network as
+Private, or that the firewall rules exist (`pnpm check-env`, last
+section). See [venue setup](venue-setup.md), step 6.
+
+**NodeCG isn't answering at all.** In a WSL terminal:
+
+```sh
+systemctl status 32dashboards-nodecg      # is it running?
+journalctl -u 32dashboards-nodecg -n 50   # why did it stop?
+sudo systemctl restart 32dashboards-nodecg
+```
+
+Everything (events, totals, the scene) survives a restart.
+
+**Something looks wrong on the TV.** The TV reloads cleanly: click on it
+and press F5. Nothing is lost.

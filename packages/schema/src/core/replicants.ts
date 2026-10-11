@@ -143,3 +143,18 @@ export const SceneReplicantSchema = z.object({
   changedAt: timestamp(),
 });
 export type SceneReplicant = z.infer<typeof SceneReplicantSchema>;
+
+/**
+ * Replicant `outputs` (not persisted): graphics that have checked in
+ * recently, so operators can see the TV is actually showing the kiosk.
+ * Previews in the dashboard don't check in.
+ */
+export const OutputsReplicantSchema = z.array(
+  z.object({
+    instanceId: z.string().min(1).max(100),
+    output: z.string().min(1).max(60),
+    lastSeenAt: timestamp(),
+    firstSeenAt: timestamp(),
+  }),
+);
+export type OutputsReplicant = z.infer<typeof OutputsReplicantSchema>;

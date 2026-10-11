@@ -14,16 +14,10 @@
     "compatibleRange": "^2.0.0",
     "dashboardPanels": [
       {
-        "name": "scene",
-        "title": "Scene",
-        "width": 3,
-        "file": "scene.html"
-      },
-      {
-        "name": "live-total",
-        "title": "Live total",
-        "width": 3,
-        "file": "live-total.html"
+        "name": "live",
+        "title": "Live",
+        "fullbleed": true,
+        "file": "live.html"
       },
       {
         "name": "events",
@@ -36,6 +30,32 @@
         "title": "Show content",
         "width": 5,
         "file": "show-content.html"
+      }
+    ],
+    "assetCategories": [
+      {
+        "name": "event-logos",
+        "title": "Event logos",
+        "allowedTypes": [
+          "png",
+          "jpg",
+          "jpeg",
+          "webp",
+          "svg",
+          "gif"
+        ]
+      },
+      {
+        "name": "sponsor-logos",
+        "title": "Sponsor logos",
+        "allowedTypes": [
+          "png",
+          "jpg",
+          "jpeg",
+          "webp",
+          "svg",
+          "gif"
+        ]
       }
     ]
   },
