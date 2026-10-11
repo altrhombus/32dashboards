@@ -1,0 +1,10 @@
+{
+  "extends": "@32dashboards/config/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["node", "nodecg/types/augment-window"],
+    "noEmit": true
+  },
+  "include": ["src"]
+}

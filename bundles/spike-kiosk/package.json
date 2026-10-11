@@ -1,0 +1,38 @@
+{
+  "name": "spike-kiosk",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ADR-0001 spike: venue-TV graphic reading spike-core state. Throwaway; becomes layout-kiosk.",
+  "scripts": {
+    "build": "node ../../scripts/build-bundle.mjs",
+    "dev": "node ../../scripts/build-bundle.mjs --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "nodecg": {
+    "compatibleRange": "^2.0.0",
+    "bundleDependencies": {
+      "spike-core": "*"
+    },
+    "graphics": [
+      {
+        "file": "kiosk.html",
+        "width": 1920,
+        "height": 1080
+      }
+    ]
+  },
+  "dependencies": {
+    "@32dashboards/nodecg-react": "workspace:*",
+    "@32dashboards/ui": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@32dashboards/config": "workspace:*",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "nodecg": "2.8.0",
+    "spike-core": "workspace:*",
+    "typescript": "^5.7.0"
+  }
+}

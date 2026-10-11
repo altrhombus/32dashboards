@@ -9,3 +9,15 @@ apps/scraper/.venv/
 apps/scraper/__pycache__/
 **/__pycache__/
 .DS_Store
+
+# NodeCG runtime state (repo root is the NodeCG runtime root)
+cfg/nodecg.json
+db/
+assets/
+logs/
+
+# NodeCG bundle build outputs (sources live in bundles/*/src)
+bundles/*/extension/
+bundles/*/graphics/
+bundles/*/dashboard/
+bundles/*/schemas/

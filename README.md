@@ -167,6 +167,12 @@ activate one:
    — no reload needed — and the scraper immediately starts polling the
    configured 32auctions listing.
 
+## Architecture decisions
+
+- [ADR-0001: Rearchitect on NodeCG](docs/adr/0001-rearchitect-on-nodecg.md)
+  (proposed): pluggable data sources, core-owned state, schema-driven
+  layouts.
+
 ## Operations
 
 - [Onboarding a new event](docs/runbooks/onboarding-a-new-event.md)
