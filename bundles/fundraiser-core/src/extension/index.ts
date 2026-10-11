@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type NodeCG from "nodecg/types";
 import type { z } from "zod";
 import {
+  EventsReplicantSchema,
   MOMENTS_LIMIT,
   SOURCE_LOG_LIMIT,
   SourceResultSchema,
@@ -14,6 +15,7 @@ import {
   type MomentsReplicant,
   type RegisteredSource,
   type RegisteredSourcesReplicant,
+  type SceneReplicant,
   type SourceLogReplicant,
   type SourceResultsReplicant,
 } from "@32dashboards/schema/core";
@@ -55,6 +57,25 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   const sources = nodecg.Replicant<RegisteredSourcesReplicant>("sources", { defaultValue: [], persistent: false });
   const sourceLog = nodecg.Replicant<SourceLogReplicant>("sourceLog", { defaultValue: [], persistent: false });
   const moments = nodecg.Replicant<MomentsReplicant>("moments", { defaultValue: [], persistent: false });
+  const scene = nodecg.Replicant<SceneReplicant>("scene", {
+    defaultValue: { id: "main", countdownTo: null, message: null, changedAt: deps.now() },
+  });
+
+  // Events saved by an older version lack newer fields; fill their defaults
+  // once at startup so everything downstream can rely on the full shape.
+  const upgraded = EventsReplicantSchema.safeParse(plain(events.value ?? []));
+  if (!upgraded.success) {
+    nodecg.log.error(`Stored events don't match the schema; leaving them as-is: ${formatZodError(upgraded.error)}`);
+  } else if (JSON.stringify(upgraded.data) !== JSON.stringify(events.value)) {
+    events.value = upgraded.data;
+    nodecg.log.info("Upgraded stored events to the current schema");
+  }
+
+  const recordMoments = (found: MomentsReplicant) => {
+    if (found.length === 0) return;
+    moments.value = [...plain(moments.value ?? []), ...found].slice(-MOMENTS_LIMIT);
+    for (const moment of found) nodecg.sendMessage("donationMoment", moment);
+  };
 
   const read = (): core.CoreState => ({
     events: plain(events.value ?? []),
@@ -78,13 +99,19 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   // liveState is derived from the persisted Replicants on every change,
   // including edits made outside the Messages below (e.g. a panel assigning
   // a Replicant directly), so displays can't drift from stored state.
-  let lastLive = JSON.stringify(liveState.value);
+  // It's also where milestones and incentive targets are detected, since
+  // that's the one place every change to the displayed total passes through.
+  let lastLive = core.computeLiveState(read());
+  let lastLiveJson = JSON.stringify(liveState.value);
   const refreshLiveState = () => {
     const next = core.computeLiveState(read());
     const serialized = JSON.stringify(next);
-    if (serialized === lastLive) return;
-    lastLive = serialized;
+    if (serialized === lastLiveJson) return;
+    const crossed = core.detectThresholdMoments(lastLive, next, deps);
+    lastLive = next;
+    lastLiveJson = serialized;
     liveState.value = next;
+    recordMoments(crossed);
   };
 
   const activeListeners = new Set<(eventId: string | null) => void>();
@@ -147,6 +174,12 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
     state: core.setFilters(state, eventId, filters, deps),
   }));
 
+  command("nudgeBidWar", (state, input) => ({ state: core.nudgeBidWar(state, input, deps) }));
+
+  listenForCommand(nodecg, "switchScene", coreMessageSchemas.switchScene, ({ id, countdownTo, message }) => {
+    scene.value = { id, countdownTo: countdownTo ?? null, message: message ?? null, changedAt: deps.now() };
+  });
+
   listenForCommand(nodecg, "refreshSource", coreMessageSchemas.refreshSource, ({ eventId }) => {
     const event = events.value?.find((e) => e.id === eventId);
     if (!event) throw new CommandError(`No event with id ${eventId}`);
@@ -163,12 +196,6 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
 
   const appendLog = (entry: SourceLogReplicant[number]) => {
     sourceLog.value = [...plain(sourceLog.value ?? []), entry].slice(-SOURCE_LOG_LIMIT);
-  };
-
-  const recordMoments = (found: MomentsReplicant) => {
-    if (found.length === 0) return;
-    moments.value = [...plain(moments.value ?? []), ...found].slice(-MOMENTS_LIMIT);
-    for (const moment of found) nodecg.sendMessage("donationMoment", moment);
   };
 
   return {

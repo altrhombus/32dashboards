@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
-import { formatCurrency, type AskMeConfig } from "@32dashboards/schema";
+import type { AskMeConfig } from "@32dashboards/schema";
+import { formatAmount } from "../../display/format.js";
 import { ConfettiBurst } from "../ConfettiBurst/ConfettiBurst.js";
 import "./AskMeOverlay.css";
 
 export interface AskMeOverlayProps {
   askMe: AskMeConfig;
+  /** Shows the overlay regardless of `askMe.enabled`, e.g. when a scene selects it. */
+  visible?: boolean;
 }
 
 const ALLOWED_TAGS = ["p", "strong", "em", "ul", "ol", "li", "br", "a", "h1", "h2", "h3", "blockquote", "code"];
@@ -22,7 +25,7 @@ function renderMarkdown(message: string): string {
   return DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR: ["href"] });
 }
 
-export function AskMeOverlay({ askMe }: AskMeOverlayProps) {
+export function AskMeOverlay({ askMe, visible = askMe.enabled }: AskMeOverlayProps) {
   const [delta, setDelta] = useState<number | null>(null);
   const [burst, setBurst] = useState(false);
   const previousTotalRef = useRef(askMe.total);
@@ -41,7 +44,7 @@ export function AskMeOverlay({ askMe }: AskMeOverlayProps) {
     return () => clearTimeout(timeout);
   }, [askMe.total]);
 
-  if (!askMe.enabled) return null;
+  if (!visible) return null;
 
   return (
     <div className="ask-me-overlay">
@@ -53,9 +56,9 @@ export function AskMeOverlay({ askMe }: AskMeOverlayProps) {
       />
       <div className="ask-me-overlay__total-wrapper">
         <span className="ask-me-overlay__total-label">Ask Me Total</span>
-        <span className="ask-me-overlay__total-amount">{formatCurrency(askMe.total)}</span>
+        <span className="ask-me-overlay__total-amount num">{formatAmount(askMe.total)}</span>
       </div>
-      {delta !== null && <div className="ask-me-overlay__delta">+{formatCurrency(delta)}</div>}
+      {delta !== null && <div className="ask-me-overlay__delta">+{formatAmount(delta)}</div>}
     </div>
   );
 }

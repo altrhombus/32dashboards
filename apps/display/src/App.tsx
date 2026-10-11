@@ -13,7 +13,8 @@ import {
   ThemeProvider,
   TotalRaisedCounter,
 } from "@32dashboards/ui";
-import type { Incentive, ScrapedItem } from "@32dashboards/schema";
+import { parseCurrencyValue, type Incentive, type ScrapedItem } from "@32dashboards/schema";
+import type { SourceItem } from "@32dashboards/schema/core";
 import { useLiveAuctionState } from "./hooks/useLiveAuctionState.js";
 import { useIncentiveMachine } from "./hooks/useIncentiveMachine.js";
 import "./App.css";
@@ -39,6 +40,20 @@ function selectFeaturedItems(items: ScrapedItem[]): ScrapedItem[] {
     return Number.isFinite(bids) && bids >= 0 && bids <= 2;
   });
   return qualifying.length > 0 ? qualifying : items;
+}
+
+/** packages/ui renders the normalized item shape; this legacy app still receives scraper strings. */
+function toSourceItem(item: ScrapedItem, index: number): SourceItem {
+  const bids = item.bids !== null ? Number.parseInt(item.bids, 10) : Number.NaN;
+  return {
+    id: String(index),
+    title: item.title ?? "",
+    imageUrl: item.picture_url,
+    currentBid: item.price !== null ? parseCurrencyValue(item.price) : null,
+    value: item.value !== null ? parseCurrencyValue(item.value) : null,
+    bidCount: Number.isFinite(bids) ? bids : null,
+    remaining: item.remaining,
+  };
 }
 
 export function App() {
@@ -72,7 +87,7 @@ export function App() {
         <main className="app-main">
           <section className="app-featured">
             <h2>Featured Items</h2>
-            <FeaturedItemsGrid items={selectFeaturedItems(items)} />
+            <FeaturedItemsGrid items={selectFeaturedItems(items).map(toSourceItem)} />
           </section>
           <aside className="app-sidebar">
             <section className="app-panel">
@@ -94,7 +109,7 @@ export function App() {
             ) : currentIncentive ? (
               <IncentiveTracker incentive={currentIncentive} totalRaised={totalRaised} />
             ) : (
-              <BottomMarquee items={items} onCycleComplete={onMarqueeCycleComplete} />
+              <BottomMarquee items={items.map(toSourceItem)} onCycleComplete={onMarqueeCycleComplete} />
             )}
           </div>
           <TotalRaisedCounter total={totalRaised} causeName={config.causeName} />

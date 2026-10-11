@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
-import type { ScrapedItem } from "@32dashboards/schema";
+import type { SourceItem } from "@32dashboards/schema/core";
+import { formatAmount } from "../../display/format.js";
 import { durations } from "../../tokens/tokens.js";
 import "./BottomMarquee.css";
 
 export interface BottomMarqueeProps {
-  items: ScrapedItem[];
+  items: SourceItem[];
   speedPxPerFrame?: number;
   /** Fires each time the marquee completes one full lap -- drives incentive-machine's cycle mode. */
   onCycleComplete?: () => void;
@@ -62,7 +63,13 @@ export function BottomMarquee({
   const renderItems = (suffix: string) =>
     items.map((item, i) => (
       <span className="bottom-marquee__item" key={`${suffix}-${i}`}>
-        <strong>{item.title}</strong> — <span className="bottom-marquee__price">{item.price}</span>
+        <strong>{item.title || "Untitled item"}</strong>
+        {item.currentBid !== null && (
+          <>
+            {" "}
+            — <span className="bottom-marquee__price num">{formatAmount(item.currentBid)}</span>
+          </>
+        )}
       </span>
     ));
 

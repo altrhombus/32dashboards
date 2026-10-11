@@ -422,6 +422,68 @@ still limits who can try.
   an unknown event, 409 for wrong-source or stale results.
 - `spike-source` is removed. `spike-kiosk` stays until Phase 4.
 
+## Phase 4 notes (2026-10-10)
+
+- **Scenes are show state, owned by the core.** The persisted `scene`
+  Replicant holds one of `main`, `intermission`, `askMe` or
+  `celebration`, plus an optional intermission countdown and message. The
+  `switchScene` Message changes it. Each output maps scenes to its own
+  layouts, so a future stream bundle reuses the same scenes and Messages.
+  `askMe.enabled` is no longer what puts Ask Me on screen; the scene is.
+- **Show content per event:** milestones, bid wars (option totals kept by
+  operators, adjusted with `nudgeBidWar`), prizes, a call to action, and
+  info bar config (which segment kinds, in what order, for how long).
+  Duplicating an event resets bid war totals. Events stored by earlier
+  versions are upgraded with defaults at startup.
+- **Threshold moments:** `milestone` and `incentive-met` moments are
+  detected in the core whenever the *displayed* total crosses a threshold
+  on the same event. So adjustments count, and a restart, a kiosk reload,
+  or an event switch never re-celebrates.
+- **`packages/layout-engine`:**
+  - A layout is data: a fixed-size stage (1920x1080 by default) with a
+    CSS grid whose named areas map to registered components and their
+    size variants, plus full-stage overlays.
+  - Components declare their data dependency as a `select` function.
+  - `validateLayout` checks a layout against a registry.
+  - Each slot sits behind an error boundary, so one failing component
+    can't blank the screen.
+  - The stage scales to fit any screen.
+- **`incentive-machine` `infoBarMachine`:** an XState sequencer that
+  rotates segments by key, holds a pinned segment, and plays queued
+  celebrations one at a time without cutting any short. A data update
+  keeps the rotation's place and timer. The legacy `incentiveMachine`
+  stays for `apps/display` until that app is retired.
+- **`bundles/layout-kiosk`** (replaces `spike-kiosk`):
+  - One layout per scene, plus `standby` for when no event is on screen.
+    The total is the hero element.
+  - The info bar has one segment per incentive, bid war, prize,
+    announcement, and sponsor, plus the item marquee and the call to
+    action.
+  - Milestones and met incentives interrupt the info bar. New bids and
+    donations pop up as toasts.
+  - Segment types live in the kiosk's registry in code. Another bundle
+    contributing segment types at runtime is left for when a second output
+    needs it.
+- **Display rules in `packages/ui`:**
+  - `formatTotal` shows whole dollars, rounded down. `formatAmount`
+    rounds.
+  - Every number uses tabular figures (`.num`, and on `body`).
+  - Operator- and source-supplied text is clamped, with the full text in
+    `title`.
+  - Worst-case fixtures (a 25-character name, a 200-character title, an
+    eight-digit total) are rendered in tests for every component that
+    shows such text, and in a smoke test of every kiosk scene.
+  - `validateTheme` checks WCAG contrast: 4.5:1 for body text, 3:1 for
+    the accent and secondary colors used as large text. It also warns
+    about colors outside the broadcast-legal 16–235 range.
+- **Panels (interim):**
+  - `Scene`: big scene buttons, and an intermission message and
+    countdown.
+  - `Show content`: edits the call to action, info bar rotation,
+    milestones, incentives, bid wars (with quick +/- buttons), and prizes,
+    and shows the theme check.
+  - Phase 5 redesigns both for live operation.
+
 ## Action Items
 
 1. [ ] **Phase 1 (spike):** NodeCG 2.8 + pnpm workspace + one Vite React

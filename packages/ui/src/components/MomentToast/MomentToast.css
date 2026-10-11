@@ -1,0 +1,33 @@
+.moment-toast {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  max-width: 32rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  background: rgba(10, 12, 24, 0.9);
+  border: 2px solid var(--color-accent);
+  animation: moment-toast-in 0.5s var(--ease-overshoot);
+}
+
+.moment-toast__amount {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.moment-toast__title {
+  font-weight: 700;
+}
+
+@keyframes moment-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

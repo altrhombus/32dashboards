@@ -2,6 +2,8 @@ import { z } from "zod";
 import { FundraiserEventSchema } from "./event.js";
 import { ThemeSchema } from "../theme.js";
 import { AskMeConfigSchema } from "../askme.js";
+import { InfoBarConfigSchema, SceneIdSchema } from "./show.js";
+import { SceneReplicantSchema } from "./replicants.js";
 
 /*
  * Operator Messages fundraiser-core listens for. Each payload is validated
@@ -30,9 +32,17 @@ export const UpdateEventMessageSchema = z
       announcements: true,
       incentives: true,
       sponsors: true,
+      milestones: true,
+      bidWars: true,
+      prizes: true,
+      callToAction: true,
       source: true,
     })
-      .extend({ theme: ThemeSchema.partial(), askMe: AskMeConfigSchema.partial() })
+      .extend({
+        theme: ThemeSchema.partial(),
+        askMe: AskMeConfigSchema.partial(),
+        infoBar: InfoBarConfigSchema.partial(),
+      })
       .partial()
       .strict(),
   })
@@ -67,6 +77,22 @@ export type SetFiltersMessage = z.infer<typeof SetFiltersMessageSchema>;
 export const RefreshSourceMessageSchema = z.object({ eventId }).strict();
 export type RefreshSourceMessage = z.infer<typeof RefreshSourceMessageSchema>;
 
+/** Adds to (or, negative, takes from) one bid war option's total. */
+export const NudgeBidWarMessageSchema = z
+  .object({ eventId, bidWarId: z.string().uuid(), optionId: z.string().uuid(), delta: z.number().finite() })
+  .strict();
+export type NudgeBidWarMessage = z.infer<typeof NudgeBidWarMessageSchema>;
+
+/** Switches every output to a scene. Intermission takes an optional countdown and message. */
+export const SwitchSceneMessageSchema = z
+  .object({
+    id: SceneIdSchema,
+    countdownTo: SceneReplicantSchema.shape.countdownTo.optional(),
+    message: SceneReplicantSchema.shape.message.optional(),
+  })
+  .strict();
+export type SwitchSceneMessage = z.infer<typeof SwitchSceneMessageSchema>;
+
 /** Message name -> payload schema. */
 export const coreMessageSchemas = {
   createEvent: CreateEventMessageSchema,
@@ -78,6 +104,8 @@ export const coreMessageSchemas = {
   nudgeAdjustment: NudgeAdjustmentMessageSchema,
   setFilters: SetFiltersMessageSchema,
   refreshSource: RefreshSourceMessageSchema,
+  nudgeBidWar: NudgeBidWarMessageSchema,
+  switchScene: SwitchSceneMessageSchema,
 } as const;
 export type CoreMessageName = keyof typeof coreMessageSchemas;
 export type CoreMessagePayload<N extends CoreMessageName> = z.input<(typeof coreMessageSchemas)[N]>;

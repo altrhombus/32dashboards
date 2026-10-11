@@ -34,3 +34,26 @@ body {
   font-family: var(--font-display);
   color: #f4f6ff;
 }
+
+/* Display rules: every number uses tabular figures so counters don't jitter. */
+body,
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Truncation for operator- and source-supplied text; put the full text in `title`. */
+.clamp-1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}

@@ -157,4 +157,35 @@ describe("fundraiser-core extension", () => {
     await Promise.resolve();
     expect(seen).toEqual([[eventId, copyId]]);
   });
+
+  it("celebrates a milestone crossed by an adjustment", async () => {
+    const { fake } = setup();
+    const eventId = await createActiveEvent(fake);
+    await fake.send("updateEvent", {
+      eventId,
+      patch: { milestones: [{ id: "11111111-1111-4111-8111-111111111111", amount: 100, label: "Century" }] },
+    });
+    await fake.send("nudgeAdjustment", { eventId, delta: 150 });
+    expect(fake.world.sent.map((m) => (m.data as { kind: string; label?: string }).label)).toEqual(["Century"]);
+  });
+
+  it("switches scenes", async () => {
+    const { fake } = setup();
+    expect(fake.replicant<{ id: string }>("scene").value.id).toBe("main");
+    await fake.send("switchScene", { id: "intermission", countdownTo: "2026-10-10T20:00:00.000Z", message: "Dinner!" });
+    expect(fake.replicant("scene").value).toMatchObject({ id: "intermission", message: "Dinner!" });
+    await expect(fake.send("switchScene", { id: "nope" })).rejects.toThrow(/id/);
+  });
+
+  it("fills defaults for events stored by an older version", () => {
+    const fake = createFakeNodecg();
+    const old = { id: "11111111-1111-4111-8111-111111111111", name: "Old", theme: {}, askMe: {}, source: {} };
+    fake.api.Replicant("events", { defaultValue: [{ ...old, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" }] });
+    fundraiserCore(fake.api);
+    expect(fake.replicant<FundraiserEvent[]>("events").value[0]).toMatchObject({
+      milestones: [],
+      bidWars: [],
+      infoBar: { segmentSeconds: 12 },
+    });
+  });
 });

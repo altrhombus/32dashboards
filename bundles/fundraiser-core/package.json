@@ -14,6 +14,12 @@
     "compatibleRange": "^2.0.0",
     "dashboardPanels": [
       {
+        "name": "scene",
+        "title": "Scene",
+        "width": 3,
+        "file": "scene.html"
+      },
+      {
         "name": "live-total",
         "title": "Live total",
         "width": 3,
@@ -24,6 +30,12 @@
         "title": "Events",
         "width": 4,
         "file": "events.html"
+      },
+      {
+        "name": "show-content",
+        "title": "Show content",
+        "width": 5,
+        "file": "show-content.html"
       }
     ]
   },
@@ -36,6 +48,7 @@
     "@32dashboards/config": "workspace:*",
     "@32dashboards/nodecg-react": "workspace:*",
     "@32dashboards/nodecg-testing": "workspace:*",
+    "@32dashboards/ui": "workspace:*",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

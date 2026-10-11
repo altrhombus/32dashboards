@@ -1,0 +1,50 @@
+.bid-war-card {
+  display: grid;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.bid-war-card__name {
+  font-weight: 700;
+  color: var(--color-secondary);
+}
+
+.bid-war-card__options {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.bid-war-card__option {
+  display: grid;
+  grid-template-columns: minmax(0, 14rem) 1fr auto;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.bid-war-card__bar {
+  height: 0.6rem;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.bid-war-card__bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-secondary);
+  transition: width 0.6s var(--ease-standard);
+}
+
+.bid-war-card__option--leader .bid-war-card__bar-fill {
+  background: var(--color-accent);
+}
+
+.bid-war-card__option--leader .bid-war-card__option-name {
+  font-weight: 700;
+}
+
+.bid-war-card__option-total {
+  font-family: var(--font-mono);
+  min-width: 6ch;
+  text-align: right;
+}

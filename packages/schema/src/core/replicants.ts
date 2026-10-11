@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { FundraiserEventSchema, timestamp } from "./event.js";
 import { SourceItemSchema, SourceResultSchema } from "./source.js";
+import { SceneIdSchema } from "./show.js";
 
 /*
  * fundraiser-core's Replicants. bundles/fundraiser-core/src/schemas re-exports
@@ -80,9 +81,11 @@ export const SourceLogReplicantSchema = z.array(SourceLogEntrySchema).max(SOURCE
 export type SourceLogReplicant = z.infer<typeof SourceLogReplicantSchema>;
 
 /**
- * Something worth celebrating on screen, detected by comparing a source
- * result with the previous one for the same event. Sent as the
- * `donationMoment` Message and kept in the `moments` Replicant.
+ * Something worth celebrating on screen. `total-increase` and `new-bid`
+ * come from comparing a source result with the previous one for the same
+ * event; `milestone` and `incentive-met` from the displayed total crossing
+ * a threshold. Sent as the `donationMoment` Message and kept in the
+ * `moments` Replicant.
  */
 export const DonationMomentSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -92,6 +95,24 @@ export const DonationMomentSchema = z.discriminatedUnion("kind", [
     at: timestamp(),
     delta: z.number().positive(),
     total: z.number(),
+  }),
+  z.object({
+    kind: z.literal("milestone"),
+    id: z.string().uuid(),
+    eventId: z.string().uuid(),
+    at: timestamp(),
+    milestoneId: z.string().uuid(),
+    amount: z.number(),
+    label: z.string(),
+  }),
+  z.object({
+    kind: z.literal("incentive-met"),
+    id: z.string().uuid(),
+    eventId: z.string().uuid(),
+    at: timestamp(),
+    incentiveId: z.string().uuid(),
+    name: z.string(),
+    target: z.number(),
   }),
   z.object({
     kind: z.literal("new-bid"),
@@ -111,3 +132,14 @@ export const MOMENTS_LIMIT = 50;
 /** Replicant `moments` (not persisted): recent donation moments for the active event, newest last. */
 export const MomentsReplicantSchema = z.array(DonationMomentSchema).max(MOMENTS_LIMIT);
 export type MomentsReplicant = z.infer<typeof MomentsReplicantSchema>;
+
+/** Replicant `scene` (persisted): what the show is doing right now. */
+export const SceneReplicantSchema = z.object({
+  id: SceneIdSchema,
+  /** Intermission: when the show resumes, for the countdown. */
+  countdownTo: timestamp().nullable(),
+  /** Intermission: a short message, e.g. "Back after dinner!". */
+  message: z.string().max(160).nullable(),
+  changedAt: timestamp(),
+});
+export type SceneReplicant = z.infer<typeof SceneReplicantSchema>;

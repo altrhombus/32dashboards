@@ -9,4 +9,5 @@ export {
   LiveStateReplicantSchema as liveState,
   SourceLogReplicantSchema as sourceLog,
   MomentsReplicantSchema as moments,
+  SceneReplicantSchema as scene,
 } from "@32dashboards/schema/core";

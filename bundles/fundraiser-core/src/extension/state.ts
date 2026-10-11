@@ -73,20 +73,21 @@ export function createEvent(
 
 export function updateEvent(state: CoreState, { eventId, patch }: UpdateEventMessage, deps: Deps): CoreState {
   return editEvent(state, eventId, deps, (event) => {
-    const { theme, askMe, ...rest } = patch;
+    const { theme, askMe, infoBar, ...rest } = patch;
     return {
       ...rest,
       ...(theme && { theme: { ...event.theme, ...theme } }),
       ...(askMe && { askMe: { ...event.askMe, ...askMe } }),
+      ...(infoBar && { infoBar: { ...event.infoBar, ...infoBar } }),
     };
   });
 }
 
 /**
- * Copies an event's setup (look, sponsors, incentives, announcements,
- * filters, source) for reuse. Anything that describes how the copied event
- * *went* is reset: the adjustment, incentive progress flags, the Ask Me total,
- * and source results.
+ * Copies an event's setup (look, sponsors, incentives, milestones, bid
+ * wars, prizes, announcements, filters, source) for reuse. Anything that
+ * describes how the copied event *went* is reset: the adjustment, incentive
+ * progress flags, bid war totals, the Ask Me total, and source results.
  */
 export function duplicateEvent(
   state: CoreState,
@@ -106,6 +107,13 @@ export function duplicateEvent(
       displayNow: false,
     })),
     sponsors: source.sponsors.map((sponsor) => ({ ...sponsor, id: deps.newId() })),
+    milestones: source.milestones.map((milestone) => ({ ...milestone, id: deps.newId() })),
+    prizes: source.prizes.map((prize) => ({ ...prize, id: deps.newId() })),
+    bidWars: source.bidWars.map((war) => ({
+      ...war,
+      id: deps.newId(),
+      options: war.options.map((option) => ({ ...option, id: deps.newId(), total: 0 })),
+    })),
     askMe: { ...source.askMe, enabled: false, total: 0 },
     adjustment: 0,
     createdAt: now,
@@ -138,6 +146,25 @@ export function setAdjustment(state: CoreState, eventId: string, amount: number,
 
 export function nudgeAdjustment(state: CoreState, eventId: string, delta: number, deps: Deps): CoreState {
   return editEvent(state, eventId, deps, (event) => ({ adjustment: roundCents(event.adjustment + delta) }));
+}
+
+export function nudgeBidWar(
+  state: CoreState,
+  input: { eventId: string; bidWarId: string; optionId: string; delta: number },
+  deps: Deps,
+): CoreState {
+  return editEvent(state, input.eventId, deps, (event) => {
+    const war = event.bidWars.find((w) => w.id === input.bidWarId);
+    const option = war?.options.find((o) => o.id === input.optionId);
+    if (!war || !option) throw new CommandError("That bid war option no longer exists.");
+    const total = roundCents(option.total + input.delta);
+    if (total < 0) throw new CommandError(`${option.name} can't go below $0.`);
+    return {
+      bidWars: event.bidWars.map((w) =>
+        w.id === war.id ? { ...w, options: w.options.map((o) => (o.id === option.id ? { ...o, total } : o)) } : w,
+      ),
+    };
+  });
 }
 
 export function setFilters(state: CoreState, eventId: string, filters: string[], deps: Deps): CoreState {
@@ -221,6 +248,47 @@ export function detectMoments(
     if (++bids >= MAX_BID_MOMENTS_PER_RESULT) break;
   }
   return moments;
+}
+
+/**
+ * Milestones and incentive targets the displayed total just crossed, going
+ * up, on the same event. Comparing displayed totals (not source results)
+ * means adjustments count, and switching events or restarting never
+ * re-celebrates a threshold that was already passed.
+ */
+export function detectThresholdMoments(
+  previous: LiveStateReplicant,
+  next: LiveStateReplicant,
+  deps: Deps,
+): DonationMoment[] {
+  const event = next.event;
+  if (!event || previous.event?.id !== event.id || next.total <= previous.total) return [];
+  const crossed = (amount: number) => previous.total < amount && amount <= next.total;
+  const base = { eventId: event.id, at: deps.now() };
+  return [
+    ...event.milestones
+      .filter((m) => crossed(m.amount))
+      .sort((a, b) => a.amount - b.amount)
+      .map((m): DonationMoment => ({
+        kind: "milestone",
+        id: deps.newId(),
+        ...base,
+        milestoneId: m.id,
+        amount: m.amount,
+        label: m.label,
+      })),
+    ...event.incentives
+      .filter((i) => i.active && crossed(i.target))
+      .sort((a, b) => a.target - b.target)
+      .map((i): DonationMoment => ({
+        kind: "incentive-met",
+        id: deps.newId(),
+        ...base,
+        incentiveId: i.id,
+        name: i.name,
+        target: i.target,
+      })),
+  ];
 }
 
 /** Hides items whose title contains any filter, case-insensitively. */

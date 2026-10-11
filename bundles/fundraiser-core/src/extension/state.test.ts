@@ -248,3 +248,73 @@ describe("detectMoments", () => {
     expect(core.detectMoments(previous, next, event, deps)).toHaveLength(core.MAX_BID_MOMENTS_PER_RESULT);
   });
 });
+
+describe("nudgeBidWar", () => {
+  it("adds to one option and refuses to go negative", () => {
+    const { state: base, eventId, deps } = withEvent();
+    const war = { id: deps.newId(), name: "Puppy name", description: "", active: true, options: [{ id: deps.newId(), name: "Biscuit", total: 0 }] };
+    const optionId = war.options[0]!.id;
+    let state = core.updateEvent(base, { eventId, patch: { bidWars: [war] } }, deps);
+    state = core.nudgeBidWar(state, { eventId, bidWarId: war.id, optionId, delta: 25 }, deps);
+    expect(state.events[0]?.bidWars[0]?.options[0]?.total).toBe(25);
+    expect(() => core.nudgeBidWar(state, { eventId, bidWarId: war.id, optionId, delta: -30 }, deps)).toThrow(/below/);
+    expect(() => core.nudgeBidWar(state, { eventId, bidWarId: war.id, optionId: "x", delta: 1 }, deps)).toThrow(
+      /no longer exists/,
+    );
+  });
+
+  it("duplicating an event resets bid war totals", () => {
+    const { state: base, eventId, deps } = withEvent();
+    const war = { id: deps.newId(), name: "Puppy name", description: "", active: true, options: [{ id: deps.newId(), name: "Biscuit", total: 40 }] };
+    const state = core.updateEvent(base, { eventId, patch: { bidWars: [war] } }, deps);
+    const { state: next, eventId: copyId } = core.duplicateEvent(state, { eventId }, deps);
+    const copy = next.events.find((e) => e.id === copyId);
+    expect(copy?.bidWars[0]).toMatchObject({ name: "Puppy name", options: [{ name: "Biscuit", total: 0 }] });
+    expect(copy?.bidWars[0]?.id).not.toBe(war.id);
+  });
+});
+
+describe("detectThresholdMoments", () => {
+  const deps = makeDeps();
+  const { state: base, eventId } = withEvent();
+  const state = core.activateEvent(
+    core.updateEvent(
+      base,
+      {
+        eventId,
+        patch: {
+          milestones: [
+            { id: deps.newId(), amount: 1000, label: "First grand" },
+            { id: deps.newId(), amount: 500, label: "" },
+          ],
+          incentives: [
+            { id: deps.newId(), name: "Match", target: 750, active: true, displayNow: false, displayUntilMet: false },
+            { id: deps.newId(), name: "Hidden", target: 600, active: false, displayNow: false, displayUntilMet: false },
+          ],
+        },
+      },
+      deps,
+    ),
+    eventId,
+  );
+  const live = (total: number, s = state) => {
+    const l = core.computeLiveState(s);
+    return { ...l, total };
+  };
+
+  it("reports thresholds crossed going up, lowest first", () => {
+    const moments = core.detectThresholdMoments(live(400), live(1000), deps);
+    expect(moments.map((m) => m.kind + ":" + ("amount" in m ? m.amount : "target" in m ? m.target : ""))).toEqual([
+      "milestone:500",
+      "milestone:1000",
+      "incentive-met:750",
+    ]);
+  });
+
+  it("ignores decreases, already-passed thresholds, and event switches", () => {
+    expect(core.detectThresholdMoments(live(1000), live(400), deps)).toEqual([]);
+    expect(core.detectThresholdMoments(live(1000), live(1200), deps)).toEqual([]);
+    const other = { ...live(0), event: { ...live(0).event!, id: "00000000-0000-4000-8000-999999999999" } };
+    expect(core.detectThresholdMoments(other, live(2000), deps)).toEqual([]);
+  });
+});

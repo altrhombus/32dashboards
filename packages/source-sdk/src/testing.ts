@@ -1,4 +1,4 @@
-import type { FundraiserEvent } from "@32dashboards/schema/core";
+import { FundraiserEventSchema, type FundraiserEvent } from "@32dashboards/schema/core";
 import type { FundraiserCoreApi, ReportOutcome, SourceHandle, SourceReport, StatusUpdate } from "./contract.js";
 
 /*
@@ -74,31 +74,16 @@ export function createFakeCore(events: FundraiserEvent[] = []): FakeCore {
   return fake;
 }
 
-/** A minimal valid event for tests. */
+/** A minimal valid event for tests; every field not given takes its schema default. */
 export function testEvent(id: string, adapterId: string | null, overrides: Partial<FundraiserEvent> = {}): FundraiserEvent {
-  return {
+  return FundraiserEventSchema.parse({
     id,
     name: `Event ${id.slice(0, 4)}`,
-    causeName: "",
-    endDateTime: null,
-    theme: {
-      accentColor: "#ffd700",
-      secondaryColor: "#4dd0e1",
-      backgroundFrom: "#181c2a",
-      backgroundTo: "#23284a",
-      logoUrl: null,
-      fontDisplay: "Montserrat",
-      fontMono: "Share Tech Mono",
-    },
-    announcements: [],
-    askMe: { enabled: false, title: "Ask Me Spotlight", message: "", total: 0 },
-    incentives: [],
-    sponsors: [],
+    theme: {},
+    askMe: {},
     source: { adapterId },
-    adjustment: 0,
-    filters: [],
     createdAt: "2026-10-10T12:00:00.000Z",
     updatedAt: "2026-10-10T12:00:00.000Z",
     ...overrides,
-  };
+  });
 }

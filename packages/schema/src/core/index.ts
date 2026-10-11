@@ -1,5 +1,6 @@
 export * from "./event.js";
 export * from "./source.js";
+export * from "./show.js";
 export * from "./replicants.js";
 export * from "./messages.js";
 export { ThemeSchema, type Theme } from "../theme.js";

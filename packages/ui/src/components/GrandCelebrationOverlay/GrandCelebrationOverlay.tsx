@@ -1,4 +1,4 @@
-import { formatCurrency } from "@32dashboards/schema";
+import { formatTotal } from "../../display/format.js";
 import { ConfettiBurst } from "../ConfettiBurst/ConfettiBurst.js";
 import "./GrandCelebrationOverlay.css";
 
@@ -17,7 +17,8 @@ export function GrandCelebrationOverlay({ active, totalRaised, causeName }: Gran
       <div className="grand-celebration-overlay__message">
         <h1>Thank you</h1>
         <h2>
-          for helping raise {formatCurrency(totalRaised)} for {causeName}!
+          for helping raise <span className="num">{formatTotal(totalRaised)}</span>
+          {causeName ? ` for ${causeName}` : ""}!
         </h2>
       </div>
     </div>

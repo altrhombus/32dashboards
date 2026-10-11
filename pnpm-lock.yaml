@@ -220,6 +220,9 @@ importers:
       '@32dashboards/nodecg-testing':
         specifier: workspace:*
         version: link:../../packages/nodecg-testing
+      '@32dashboards/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@types/node':
         specifier: ^24.0.0
         version: 24.19.2
@@ -238,6 +241,64 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.7(react@19.2.7)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@24.19.2)(jsdom@25.0.1)
+
+  bundles/layout-kiosk:
+    dependencies:
+      '@32dashboards/incentive-machine':
+        specifier: workspace:*
+        version: link:../../packages/incentive-machine
+      '@32dashboards/layout-engine':
+        specifier: workspace:*
+        version: link:../../packages/layout-engine
+      '@32dashboards/nodecg-react':
+        specifier: workspace:*
+        version: link:../../packages/nodecg-react
+      '@32dashboards/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      '@32dashboards/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@xstate/react':
+        specifier: ^5.0.0
+        version: 5.0.5(@types/react@19.2.17)(react@19.2.7)(xstate@5.32.4)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+      xstate:
+        specifier: ^5.19.0
+        version: 5.32.4
+    devDependencies:
+      '@32dashboards/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@testing-library/jest-dom':
+        specifier: ^6.6.0
+        version: 6.9.1
+      '@testing-library/react':
+        specifier: ^16.0.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      nodecg:
+        specifier: 2.8.0
+        version: 2.8.0(patch_hash=9fc968393a5c6e2c067c4234d73542e8c6bbf8fcbcae3faf8c925591f1cc9a4e)(e1f9c5b72415128ccf7e948643116591)
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
@@ -386,43 +447,6 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@24.19.2)(jsdom@25.0.1)
 
-  bundles/spike-kiosk:
-    dependencies:
-      '@32dashboards/nodecg-react':
-        specifier: workspace:*
-        version: link:../../packages/nodecg-react
-      '@32dashboards/schema':
-        specifier: workspace:*
-        version: link:../../packages/schema
-      '@32dashboards/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
-      react:
-        specifier: ^19.0.0
-        version: 19.2.7
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.7(react@19.2.7)
-    devDependencies:
-      '@32dashboards/config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      '@types/react':
-        specifier: ^19.0.0
-        version: 19.2.17
-      '@types/react-dom':
-        specifier: ^19.0.0
-        version: 19.2.3(@types/react@19.2.17)
-      fundraiser-core:
-        specifier: workspace:*
-        version: link:../fundraiser-core
-      nodecg:
-        specifier: 2.8.0
-        version: 2.8.0(patch_hash=9fc968393a5c6e2c067c4234d73542e8c6bbf8fcbcae3faf8c925591f1cc9a4e)(e1f9c5b72415128ccf7e948643116591)
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-
   packages/config:
     devDependencies:
       '@eslint/js':
@@ -456,6 +480,43 @@ importers:
       vitest:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.20.0)(jsdom@25.0.1)
+
+  packages/layout-engine:
+    dependencies:
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
+    devDependencies:
+      '@32dashboards/config':
+        specifier: workspace:*
+        version: link:../config
+      '@testing-library/jest-dom':
+        specifier: ^6.6.0
+        version: 6.9.1
+      '@testing-library/react':
+        specifier: ^16.0.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@24.19.2)(jsdom@25.0.1)
 
   packages/nodecg-react:
     dependencies:

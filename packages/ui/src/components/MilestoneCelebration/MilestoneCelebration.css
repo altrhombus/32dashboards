@@ -1,0 +1,29 @@
+.milestone-celebration {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  min-width: 0;
+  animation: moment-toast-in 0.6s var(--ease-overshoot);
+}
+
+.milestone-celebration__heading {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--color-secondary);
+  white-space: nowrap;
+}
+
+.milestone-celebration__amount {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.6em;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.milestone-celebration__detail {
+  font-weight: 700;
+}

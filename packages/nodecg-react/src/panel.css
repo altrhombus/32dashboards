@@ -70,3 +70,40 @@ label.field {
   display: grid;
   gap: 2px;
 }
+.scene-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.scene-button {
+  padding: 16px 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.scene-button--active {
+  outline: 3px solid #66bb6a;
+}
+details.section {
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+details.section > summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.list-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+.list-row input[type="text"],
+.list-row input:not([type]) {
+  min-width: 0;
+}
+.warning {
+  color: #ffb74d;
+}

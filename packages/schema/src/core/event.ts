@@ -3,6 +3,7 @@ import { ThemeSchema } from "../theme.js";
 import { IncentiveSchema } from "../incentive.js";
 import { SponsorSchema } from "../sponsor.js";
 import { AskMeConfigSchema } from "../askme.js";
+import { BidWarSchema, InfoBarConfigSchema, MilestoneSchema, PrizeSchema } from "./show.js";
 
 export const timestamp = () => z.string().datetime({ offset: true });
 
@@ -31,6 +32,12 @@ export const FundraiserEventSchema = z.object({
   askMe: AskMeConfigSchema,
   incentives: z.array(IncentiveSchema).default([]),
   sponsors: z.array(SponsorSchema).default([]),
+  milestones: z.array(MilestoneSchema).max(50).default([]),
+  bidWars: z.array(BidWarSchema).max(20).default([]),
+  prizes: z.array(PrizeSchema).max(50).default([]),
+  /** One line telling viewers how to give, e.g. "Bid at 32auctions.com/spring-gala". */
+  callToAction: z.string().max(160).default(""),
+  infoBar: InfoBarConfigSchema.default({}),
   source: EventSourceSchema,
   /** Added to the source's total, e.g. for cash or checks taken at the venue. */
   adjustment: z.number().finite().default(0),
