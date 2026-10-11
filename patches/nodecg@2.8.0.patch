@@ -1,0 +1,18 @@
+diff --git a/dist/server/bootstrap.js b/dist/server/bootstrap.js
+index f481208c1ad4cf93051de083ae034a442db33134..fda4f6e04289ada4a5348eccca8a18b954c71f18 100644
+--- a/dist/server/bootstrap.js
++++ b/dist/server/bootstrap.js
+@@ -776,6 +776,13 @@ function createMiddleware(db, callbacks) {
+ 					}
+ 				}
+ 				log$6.info("(Local) %s \"%s\" access", allowed ? "Granting" : "Denying", username);
++				// 32dashboards patch: a failed attempt must not upsert the user. Upstream
++				// saves it with roles = [], which strips a real admin's superuser role
++				// (and breaks that user's keyed graphic URLs) until the next good login.
++				if (!allowed) {
++					done(void 0, false);
++					return;
++				}
+ 				done(void 0, await db.upsertUser({
+ 					name: username,
+ 					provider_type: "local",

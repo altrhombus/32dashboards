@@ -1,0 +1,207 @@
+/*
+ * Operator styling shared by every dashboard panel. Panels are used in a dim
+ * room under time pressure: quiet surfaces, large targets, and color that
+ * only ever means something.
+ *
+ *   --tally    on the TV right now (the broadcast "on air" light)
+ *   --go       healthy / done
+ *   --caution  needs a look (stale, disconnected, failing)
+ *   --action   things you can press
+ */
+:root {
+  --ink: #121829;
+  --raise: #1b2338;
+  --raise-hi: #232c46;
+  --line: #2c3654;
+  --text: #e9edf8;
+  --muted: #9aa5c4;
+  --tally: #e5484d;
+  --go: #3fb68b;
+  --caution: #f2a93b;
+  --action: #7c95ff;
+  --action-ink: #0d1430;
+  --radius: 10px;
+  --target: 44px;
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+body {
+  margin: 0;
+}
+
+.panel {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.total {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.error {
+  color: var(--tally);
+}
+
+.warning {
+  color: var(--caution);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tally) 18%, transparent);
+  color: #ffd9da;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tally);
+}
+
+.event {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.status-ok {
+  color: var(--go);
+}
+
+.status-working,
+.status-idle {
+  color: var(--muted);
+}
+
+.status-error {
+  color: var(--caution);
+}
+
+.log {
+  max-height: 160px;
+  overflow: auto;
+  margin: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--ink);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+}
+
+label.field {
+  display: grid;
+  gap: 4px;
+}
+
+details.section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+
+details.section > summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 28px;
+}
+
+.list-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  min-height: 36px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--ink);
+  min-width: 0;
+}
+
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+button {
+  min-height: 36px;
+  padding: 4px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--raise-hi);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--action);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.primary {
+  border-color: var(--action);
+  background: var(--action);
+  color: var(--action-ink);
+  font-weight: 600;
+}
+
+:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

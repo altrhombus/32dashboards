@@ -1,0 +1,45 @@
+{
+  "name": "source-32auctions",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Source adapter that scrapes a 32auctions auction's items and total raised, per event.",
+  "scripts": {
+    "build": "node ../../scripts/build-bundle.mjs",
+    "dev": "node ../../scripts/build-bundle.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "nodecg": {
+    "compatibleRange": "^2.0.0",
+    "bundleDependencies": {
+      "fundraiser-core": "*"
+    },
+    "dashboardPanels": [
+      {
+        "name": "32auctions",
+        "title": "32auctions source",
+        "width": 4,
+        "file": "32auctions.html"
+      }
+    ]
+  },
+  "dependencies": {
+    "@32dashboards/schema": "workspace:*",
+    "@32dashboards/source-sdk": "workspace:*",
+    "cheerio": "^1.1.2",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@32dashboards/config": "workspace:*",
+    "@32dashboards/nodecg-react": "workspace:*",
+    "@32dashboards/nodecg-testing": "workspace:*",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "nodecg": "2.8.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "layout-kiosk",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Venue-TV graphics: renders the active scene from layout data, with the info bar and donation moments.",
+  "scripts": {
+    "build": "node ../../scripts/build-bundle.mjs",
+    "dev": "node ../../scripts/build-bundle.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "nodecg": {
+    "compatibleRange": "^2.0.0",
+    "bundleDependencies": {
+      "fundraiser-core": "*"
+    },
+    "graphics": [
+      {
+        "file": "kiosk.html",
+        "width": 1920,
+        "height": 1080
+      }
+    ]
+  },
+  "dependencies": {
+    "@32dashboards/incentive-machine": "workspace:*",
+    "@32dashboards/layout-engine": "workspace:*",
+    "@32dashboards/nodecg-react": "workspace:*",
+    "@32dashboards/schema": "workspace:*",
+    "@32dashboards/ui": "workspace:*",
+    "@xstate/react": "^5.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "xstate": "^5.19.0"
+  },
+  "devDependencies": {
+    "@32dashboards/config": "workspace:*",
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "jsdom": "^25.0.0",
+    "nodecg": "2.8.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

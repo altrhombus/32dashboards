@@ -1,0 +1,44 @@
+{
+  "name": "source-manual",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Source adapter for events without a platform: operators enter the total and items by hand.",
+  "scripts": {
+    "build": "node ../../scripts/build-bundle.mjs",
+    "dev": "node ../../scripts/build-bundle.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "nodecg": {
+    "compatibleRange": "^2.0.0",
+    "bundleDependencies": {
+      "fundraiser-core": "*"
+    },
+    "dashboardPanels": [
+      {
+        "name": "manual",
+        "title": "Manual source",
+        "width": 4,
+        "file": "manual.html"
+      }
+    ]
+  },
+  "dependencies": {
+    "@32dashboards/schema": "workspace:*",
+    "@32dashboards/source-sdk": "workspace:*",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@32dashboards/config": "workspace:*",
+    "@32dashboards/nodecg-react": "workspace:*",
+    "@32dashboards/nodecg-testing": "workspace:*",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "nodecg": "2.8.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

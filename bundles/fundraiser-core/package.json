@@ -1,0 +1,81 @@
+{
+  "name": "fundraiser-core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Owns all fundraiser state as Replicants: events (many, one active), source results, adjustment, filters, donation moments. Implements the source-sdk adapter contract and hosts operator panels.",
+  "types": "./src/extension/api.ts",
+  "scripts": {
+    "build": "node ../../scripts/build-bundle.mjs",
+    "dev": "node ../../scripts/build-bundle.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "nodecg": {
+    "compatibleRange": "^2.0.0",
+    "dashboardPanels": [
+      {
+        "name": "live",
+        "title": "Live",
+        "fullbleed": true,
+        "file": "live.html"
+      },
+      {
+        "name": "events",
+        "title": "Events",
+        "width": 4,
+        "file": "events.html"
+      },
+      {
+        "name": "show-content",
+        "title": "Show content",
+        "width": 5,
+        "file": "show-content.html"
+      }
+    ],
+    "assetCategories": [
+      {
+        "name": "event-logos",
+        "title": "Event logos",
+        "allowedTypes": [
+          "png",
+          "jpg",
+          "jpeg",
+          "webp",
+          "svg",
+          "gif"
+        ]
+      },
+      {
+        "name": "sponsor-logos",
+        "title": "Sponsor logos",
+        "allowedTypes": [
+          "png",
+          "jpg",
+          "jpeg",
+          "webp",
+          "svg",
+          "gif"
+        ]
+      }
+    ]
+  },
+  "dependencies": {
+    "@32dashboards/schema": "workspace:*",
+    "@32dashboards/source-sdk": "workspace:*",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@32dashboards/config": "workspace:*",
+    "@32dashboards/nodecg-react": "workspace:*",
+    "@32dashboards/nodecg-testing": "workspace:*",
+    "@32dashboards/ui": "workspace:*",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "nodecg": "2.8.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

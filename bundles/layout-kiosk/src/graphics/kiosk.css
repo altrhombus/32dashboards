@@ -1,0 +1,189 @@
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+/* Layouts are designed at 1920x1080 and scaled, so sizes here are fixed px/rem. */
+.layout-viewport {
+  font-size: 22px;
+}
+
+.theme-root {
+  display: flex;
+  align-items: center;
+}
+
+.layout-slot {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.kiosk-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.kiosk-card__title {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.kiosk-card .countdown-clock {
+  max-width: none;
+}
+
+.kiosk-card .countdown-clock__value {
+  font-size: 3rem;
+}
+
+.kiosk-info-bar {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0 var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.35);
+  border-top: 3px solid var(--color-accent);
+  font-size: 1.4rem;
+  overflow: hidden;
+  animation: kiosk-segment-in 0.4s var(--ease-standard);
+}
+
+.kiosk-info-bar > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.kiosk-info-bar--bidWar {
+  font-size: 1rem;
+}
+
+.kiosk-info-bar--celebrating {
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 1.8rem;
+}
+
+.kiosk-info-bar__text {
+  text-align: center;
+}
+
+.kiosk-toasts {
+  position: absolute;
+  right: 40px;
+  bottom: 170px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-sm);
+  font-size: 1.3rem;
+}
+
+.kiosk-intermission {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  height: 100%;
+  text-align: center;
+}
+
+.kiosk-intermission__message {
+  font-size: 4rem;
+  font-weight: 700;
+  max-width: 1600px;
+}
+
+.kiosk-intermission__countdown .countdown-clock {
+  max-width: none;
+  padding: var(--spacing-md) var(--spacing-xl);
+}
+
+.kiosk-intermission__countdown .countdown-clock__value {
+  font-size: 6rem;
+}
+
+.kiosk-standby {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 3rem;
+  opacity: 0.6;
+}
+
+@keyframes kiosk-segment-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Full-screen scenes reuse components sized for a browser window; scale them for a TV. */
+.layout-slot--askMe .ask-me-overlay__title {
+  font-size: 5rem;
+}
+
+.layout-slot--askMe .ask-me-overlay__message {
+  max-width: 1400px;
+  font-size: 2.6rem;
+  line-height: 1.35;
+}
+
+.layout-slot--askMe .ask-me-overlay__message ul,
+.layout-slot--askMe .ask-me-overlay__message ol {
+  display: inline-block;
+  margin: 0;
+  text-align: left;
+}
+
+.layout-slot--askMe .ask-me-overlay__total-label {
+  font-size: 1.6rem;
+}
+
+.layout-slot--askMe .ask-me-overlay__total-amount {
+  font-size: 7rem;
+}
+
+.layout-slot--askMe .ask-me-overlay__delta {
+  font-size: 3.5rem;
+}
+
+.layout-slot--celebration .grand-celebration-overlay__message h1 {
+  font-size: 10rem;
+  margin: 0;
+}
+
+.layout-slot--celebration .grand-celebration-overlay__message h2 {
+  font-size: 3.2rem;
+  max-width: 1600px;
+}
+
+.layout-slot--celebration .grand-celebration-overlay__message h2 .num {
+  display: block;
+  margin: 0.3em 0;
+  font-family: var(--font-mono);
+  font-size: 2.6em;
+  color: var(--color-accent);
+}

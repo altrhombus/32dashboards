@@ -1,0 +1,8 @@
+{
+  "extends": "@32dashboards/config/tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["src"]
+}

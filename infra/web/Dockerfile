@@ -3,7 +3,7 @@
 # single nginx container -- one public origin for the whole system, which
 # is what actually fixes legacy's "assumes same-origin in prod but never
 # configures it" bug.
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 RUN corepack enable
 WORKDIR /repo
 COPY . .

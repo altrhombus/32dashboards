@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { ThemeProvider, useTheme } from "./ThemeProvider.js";
+import { ThemeProvider, fontStack, useTheme } from "./ThemeProvider.js";
 import type { Theme } from "@32dashboards/schema";
 
 const theme: Theme = {
@@ -43,5 +43,16 @@ describe("ThemeProvider", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() => render(<Probe />)).toThrow(/useTheme must be called within/);
     spy.mockRestore();
+  });
+});
+
+describe("fontStack", () => {
+  it("quotes the theme font and adds same-kind fallbacks", () => {
+    expect(fontStack("Share Tech Mono", "monospace")).toBe('"Share Tech Mono", monospace');
+  });
+
+  it("strips characters that could break out of the value", () => {
+    expect(fontStack('Evil"; color: red', "serif")).toBe('"Evil color: red", serif');
+    expect(fontStack("  ", "serif")).toBe("serif");
   });
 });

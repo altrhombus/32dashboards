@@ -9,7 +9,8 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./core": "./src/core/index.ts"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts",
