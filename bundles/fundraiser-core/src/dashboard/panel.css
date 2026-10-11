@@ -1,0 +1,50 @@
+/* Interim operator styling; Phase 5 redesigns panels for live use. */
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.panel {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.total {
+  font-size: 2rem;
+  font-weight: 700;
+}
+.muted {
+  opacity: 0.7;
+  font-size: 0.875rem;
+}
+.error {
+  color: #ff6b6b;
+}
+.badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #2e7d32;
+  color: #fff;
+  font-size: 0.75rem;
+}
+.event {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 6px;
+}
+textarea,
+input {
+  font: inherit;
+}
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+}

@@ -1,26 +1,34 @@
 {
-  "name": "spike-core",
+  "name": "fundraiser-core",
   "version": "0.0.0",
   "private": true,
-  "description": "ADR-0001 spike: owns state and the source registry. Throwaway; becomes fundraiser-core.",
+  "description": "Owns all fundraiser state as Replicants: events (many, one active), source results, adjustment, filters. Hosts the source-adapter registry and operator panels.",
   "types": "./src/extension/api.ts",
   "scripts": {
     "build": "node ../../scripts/build-bundle.mjs",
     "dev": "node ../../scripts/build-bundle.mjs --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "nodecg": {
     "compatibleRange": "^2.0.0",
     "dashboardPanels": [
       {
-        "name": "spike-control",
-        "title": "Spike control",
+        "name": "live-total",
+        "title": "Live total",
         "width": 3,
-        "file": "spike-control.html"
+        "file": "live-total.html"
+      },
+      {
+        "name": "events",
+        "title": "Events",
+        "width": 4,
+        "file": "events.html"
       }
     ]
   },
   "dependencies": {
+    "@32dashboards/schema": "workspace:*",
     "zod": "^3.24.0"
   },
   "devDependencies": {
@@ -32,6 +40,7 @@
     "nodecg": "2.8.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
   }
 }

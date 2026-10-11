@@ -2,7 +2,7 @@
   "name": "spike-source",
   "version": "0.0.0",
   "private": true,
-  "description": "ADR-0001 spike: a fake data source that registers with spike-core. Throwaway; proves the adapter path.",
+  "description": "ADR-0001 spike: a fake data source that registers with fundraiser-core. Throwaway; proves the adapter path.",
   "scripts": {
     "build": "node ../../scripts/build-bundle.mjs",
     "dev": "node ../../scripts/build-bundle.mjs --watch",
@@ -11,14 +11,14 @@
   "nodecg": {
     "compatibleRange": "^2.0.0",
     "bundleDependencies": {
-      "spike-core": "*"
+      "fundraiser-core": "*"
     }
   },
   "devDependencies": {
     "@32dashboards/config": "workspace:*",
     "@types/node": "^24.0.0",
+    "fundraiser-core": "workspace:*",
     "nodecg": "2.8.0",
-    "spike-core": "workspace:*",
     "typescript": "^5.7.0"
   }
 }

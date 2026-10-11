@@ -155,7 +155,7 @@ packages/
     stay up after the WSL terminal closes. If WSL idle-stops the distro,
     fix that in `.wslconfig` before an event.
   - **Display:** the operator opens the keyed graphic URL
-    (`http://localhost:<port>/…?key=…`, printed by `pnpm -s kiosk-url`) in
+    (`http://127.0.0.1:<port>/…?key=…`, printed by `pnpm -s kiosk-url`) in
     a Windows-side Edge or Chrome, full-screen (F11 or `--kiosk`). It
     doesn't run inside WSLg, to avoid an extra rendering layer.
   - **Optional hardening:** disable `automount` and `interop` in the
@@ -335,6 +335,45 @@ still limits who can try.
   Vaadin usage-statistics package, whose install script is blocked in
   `allowBuilds`.
 
+## Phase 2 notes (2026-10-10)
+
+`bundles/fundraiser-core` replaces `spike-core`. `spike-source` and
+`spike-kiosk` now run against it, until Phases 3 and 4 replace them.
+
+- **Schemas:** the domain schemas live in `@32dashboards/schema/core`, a
+  subpath export kept separate from the legacy schemas `apps/*` still use.
+  The bundle re-exports them under their Replicant names, and the build
+  generates the JSON Schemas NodeCG validates against.
+- **Replicants:**
+  - `events` (persisted): every event. Each event holds its own
+    adjustment, filters, and `source.adapterId`.
+  - `activeEventId` (persisted): the event on screen, if any.
+  - `sourceResults` (persisted): the latest raw result per event.
+  - `sources` (not persisted): adapters registered this run.
+  - `liveState` (derived, not persisted): what graphics render. It holds
+    the active event, its adjusted total, and the filtered items. The core
+    recomputes it on every change to the persisted Replicants, including
+    direct edits.
+- **Messages:** `createEvent`, `updateEvent`, `duplicateEvent`,
+  `deleteEvent`, `activateEvent`, `setAdjustment`, `nudgeAdjustment`, and
+  `setFilters`. Each payload is zod-validated, and the ack returns the
+  result or a readable error. Commands that change an event name it
+  explicitly, so a click can't land on an event switched in meanwhile.
+- **Source results** are stored on the event they name. They're dropped if
+  the event doesn't exist, if the event isn't configured for that source,
+  or if they're older than the stored result. An event with no source
+  takes no results, which is the hook for `source-manual`.
+- **Secrets stay out of core Replicants.** Any graphic can read them, so
+  adapter settings and credentials belong to the adapter bundle (Phase 3).
+- **Duplicate** copies an event's setup (look, sponsors, incentives,
+  announcements, filters, source) with fresh ids. It resets the
+  adjustment, the Ask Me total, and incentive progress.
+- **Panels:** `Events` and `Live total` are interim operator panels, to be
+  replaced by Phase 5's redesign.
+- **Not done yet:** the environment-check script from Phase 1 still needs
+  to cover the firewall and mirrored networking. Change detection for
+  donation moments is Phase 3.
+
 ## Action Items
 
 1. [ ] **Phase 1 (spike):** NodeCG 2.8 + pnpm workspace + one Vite React
@@ -360,5 +399,7 @@ still limits who can try.
        `wsl --export`). Native and Docker fallbacks documented.
 6. [ ] **Retire** `apps/api`, `apps/scraper`, `apps/admin`, `apps/display`
        once parity is reached. Git history preserves them.
-7. [ ] **Fix now, independent of the rebuild:** the manual adjustment not
-       reaching displays (or explicitly defer it to Phase 2).
+7. [x] **Adjustment not reaching displays:** deferred to the rebuild and
+       fixed in `fundraiser-core` (Phase 2). The core adds the adjustment
+       into the derived `liveState` that graphics read. The legacy stack
+       is not patched.
