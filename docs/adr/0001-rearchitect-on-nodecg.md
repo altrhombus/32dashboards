@@ -374,6 +374,54 @@ still limits who can try.
   to cover the firewall and mirrored networking. Change detection for
   donation moments is Phase 3.
 
+## Phase 3 notes (2026-10-10)
+
+- **`packages/source-sdk`** is the adapter contract. It holds:
+  - The core API types `FundraiserCoreApi` and `SourceHandle`. The core
+    implements them, and adapters write core state only through a handle.
+  - `createPollingSource`: polls the active event while that event names
+    the source. It runs one cycle at a time, and switching events or
+    editing settings aborts the cycle in flight. Each result carries the
+    event id captured when its cycle started.
+  - `createEventSettings`: per-event settings in a `configs` Replicant.
+    They're copied when an event is duplicated and dropped when it's
+    deleted.
+  - A `SecretStore` and fetch/retry and money-parsing helpers.
+  - A fake core for adapter tests.
+- **Secrets** (session cookies, push-token hashes) live in owner-only files
+  under `db/source-secrets/`, never in Replicants. Panels see only which
+  keys are set. They're backed up with the rest of `db/`.
+- **Core additions:**
+  - Each registered source has a status, shown in a `sources` Replicant.
+  - A shared `sourceLog` Replicant collects adapter log lines.
+  - A `refreshSource` Message triggers an immediate fetch.
+  - **Donation moments:** comparing each stored result with the previous
+    one for the active event yields `total-increase` and `new-bid`
+    moments, sent as the `donationMoment` Message and kept in `moments`.
+    The first result for an event is a baseline, not a donation. Hidden
+    items are never celebrated, and new-bid moments are capped per result.
+- **`source-32auctions`:** a TypeScript port of the scraper, using cheerio
+  with the legacy selectors. Its tests reuse the legacy HTML fixtures and
+  assertions. Changes from the legacy scraper:
+  - Item ids come from the item links.
+  - Image URLs are absolute.
+  - A missing or unreadable total fails the cycle instead of reporting $0.
+  - Retry and timeouts follow the legacy tenacity policy.
+
+  `cfg/source-32auctions.json` `baseUrl` points it at a local copy for
+  testing.
+- **`source-manual`:** totals and items entered by hand. Each edit is
+  reported as a normal result, so adjustment, filters, and moments behave
+  the same as for scraped data. Entries aren't copied on duplicate,
+  because they record how an event went.
+- **`source-external`:** `POST /source-external/results` with a bearer
+  token, in the same normalized shape. The token is shown once, and only
+  its SHA-256 hash is stored. The route sits outside NodeCG's login, so
+  the token is its only gate. Bodies are capped at 100 kB by NodeCG's JSON
+  parser. Responses: 401 for a bad token, 400 for invalid input, 404 for
+  an unknown event, 409 for wrong-source or stale results.
+- `spike-source` is removed. `spike-kiosk` stays until Phase 4.
+
 ## Action Items
 
 1. [ ] **Phase 1 (spike):** NodeCG 2.8 + pnpm workspace + one Vite React

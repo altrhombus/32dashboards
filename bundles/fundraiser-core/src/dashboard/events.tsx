@@ -8,7 +8,7 @@ import type {
   RegisteredSourcesReplicant,
 } from "@32dashboards/schema/core";
 import { errorText, send } from "./send.js";
-import "./panel.css";
+import "@32dashboards/nodecg-react/panel.css";
 
 function Events() {
   const events = useReplicant<EventsReplicant>("events");
@@ -55,7 +55,7 @@ function Events() {
           key={event.id}
           event={event}
           active={event.id === activeId}
-          sourceIds={sources.map((s) => s.id)}
+          sources={sources.map(({ id, label }) => ({ id, label }))}
           run={run}
         />
       ))}
@@ -68,13 +68,16 @@ function Events() {
 function EventRow(props: {
   event: FundraiserEvent;
   active: boolean;
-  sourceIds: string[];
+  sources: { id: string; label: string }[];
   run: (promise: Promise<unknown>) => void;
 }) {
   const { event, active, run } = props;
   const adapterId = event.source.adapterId;
   // Keep a configured adapter selectable even if it hasn't registered this run.
-  const options = adapterId && !props.sourceIds.includes(adapterId) ? [...props.sourceIds, adapterId] : props.sourceIds;
+  const options =
+    adapterId && !props.sources.some((s) => s.id === adapterId)
+      ? [...props.sources, { id: adapterId, label: `${adapterId} (not running)` }]
+      : props.sources;
 
   return (
     <div className="event">
@@ -91,9 +94,9 @@ function EventRow(props: {
           }
         >
           <option value="">None</option>
-          {options.map((id) => (
+          {options.map(({ id, label }) => (
             <option key={id} value={id}>
-              {id}
+              {label}
             </option>
           ))}
         </select>

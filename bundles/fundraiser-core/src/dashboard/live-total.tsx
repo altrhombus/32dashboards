@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { useReplicant } from "@32dashboards/nodecg-react";
+import { SourceStatusLine, useReplicant } from "@32dashboards/nodecg-react";
 import { formatCurrency, type LiveStateReplicant } from "@32dashboards/schema/core";
 import { errorText, send } from "./send.js";
-import "./panel.css";
+import "@32dashboards/nodecg-react/panel.css";
 
 const NUDGES = [-100, -10, 10, 100];
 
@@ -39,6 +39,17 @@ function LiveTotal() {
           {live.observedAt && ` · updated ${new Date(live.observedAt).toLocaleTimeString()}`}
         </div>
       </div>
+
+      {event.source.adapterId ? (
+        <div className="row">
+          <SourceStatusLine sourceId={event.source.adapterId} />
+          <button type="button" onClick={() => run(send("refreshSource", { eventId: event.id }))}>
+            Refresh now
+          </button>
+        </div>
+      ) : (
+        <p className="muted">This event has no source; pick one in the Events panel.</p>
+      )}
 
       <div className="row">
         {NUDGES.map((delta) => (

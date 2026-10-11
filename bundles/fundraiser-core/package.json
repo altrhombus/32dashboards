@@ -2,7 +2,7 @@
   "name": "fundraiser-core",
   "version": "0.0.0",
   "private": true,
-  "description": "Owns all fundraiser state as Replicants: events (many, one active), source results, adjustment, filters. Hosts the source-adapter registry and operator panels.",
+  "description": "Owns all fundraiser state as Replicants: events (many, one active), source results, adjustment, filters, donation moments. Implements the source-sdk adapter contract and hosts operator panels.",
   "types": "./src/extension/api.ts",
   "scripts": {
     "build": "node ../../scripts/build-bundle.mjs",
@@ -29,11 +29,13 @@
   },
   "dependencies": {
     "@32dashboards/schema": "workspace:*",
+    "@32dashboards/source-sdk": "workspace:*",
     "zod": "^3.24.0"
   },
   "devDependencies": {
     "@32dashboards/config": "workspace:*",
     "@32dashboards/nodecg-react": "workspace:*",
+    "@32dashboards/nodecg-testing": "workspace:*",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

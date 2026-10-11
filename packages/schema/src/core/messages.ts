@@ -63,6 +63,10 @@ export const SetFiltersMessageSchema = z
   .strict();
 export type SetFiltersMessage = z.infer<typeof SetFiltersMessageSchema>;
 
+/** Asks the event's adapter to fetch now instead of waiting for its next cycle. */
+export const RefreshSourceMessageSchema = z.object({ eventId }).strict();
+export type RefreshSourceMessage = z.infer<typeof RefreshSourceMessageSchema>;
+
 /** Message name -> payload schema. */
 export const coreMessageSchemas = {
   createEvent: CreateEventMessageSchema,
@@ -73,6 +77,7 @@ export const coreMessageSchemas = {
   setAdjustment: SetAdjustmentMessageSchema,
   nudgeAdjustment: NudgeAdjustmentMessageSchema,
   setFilters: SetFiltersMessageSchema,
+  refreshSource: RefreshSourceMessageSchema,
 } as const;
 export type CoreMessageName = keyof typeof coreMessageSchemas;
 export type CoreMessagePayload<N extends CoreMessageName> = z.input<(typeof coreMessageSchemas)[N]>;

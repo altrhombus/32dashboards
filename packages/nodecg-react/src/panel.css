@@ -48,3 +48,25 @@ textarea {
   width: 100%;
   box-sizing: border-box;
 }
+.status-ok {
+  color: #66bb6a;
+}
+.status-working,
+.status-idle {
+  opacity: 0.8;
+}
+.status-error {
+  color: #ff6b6b;
+}
+.log {
+  max-height: 160px;
+  overflow: auto;
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+}
+label.field {
+  display: grid;
+  gap: 2px;
+}

@@ -199,3 +199,52 @@ describe("computeLiveState", () => {
     expect(live.event?.id).toBe(eventId);
   });
 });
+
+describe("detectMoments", () => {
+  const deps = makeDeps();
+  const { state: base, eventId } = withEvent();
+  const event = core.setFilters(base, eventId, ["raffle"], deps).events[0]!;
+  const bid = (id: string, title: string, currentBid: number | null, bidCount: number | null): SourceItem => ({
+    ...item(title),
+    id,
+    currentBid,
+    bidCount,
+  });
+
+  it("yields nothing for the first result", () => {
+    expect(core.detectMoments(undefined, result(eventId, 100), event, deps)).toEqual([]);
+  });
+
+  it("reports total increases (with the adjusted total) but not decreases", () => {
+    const withAdjustment = { ...event, adjustment: 50 };
+    const [moment] = core.detectMoments(result(eventId, 100), result(eventId, 125.5), withAdjustment, deps);
+    expect(moment).toMatchObject({ kind: "total-increase", delta: 25.5, total: 175.5 });
+    expect(core.detectMoments(result(eventId, 100), result(eventId, 90), event, deps)).toEqual([]);
+  });
+
+  it("reports more bids or a higher bid on visible items only", () => {
+    const previous = {
+      ...result(eventId, 100),
+      items: [bid("a", "Guitar", 50, 1), bid("b", "Raffle", 5, 1), bid("c", "Wine", 20, 2), bid("d", "Hat", null, null)],
+    };
+    const next = {
+      ...result(eventId, 100),
+      items: [
+        bid("a", "Guitar", 60, 2),
+        bid("b", "Raffle", 10, 2),
+        bid("c", "Wine", 20, 2),
+        bid("d", "Hat", 5, 1),
+        bid("e", "New item", 99, 9),
+      ],
+    };
+    const moments = core.detectMoments(previous, next, event, deps);
+    expect(moments).toEqual([expect.objectContaining({ kind: "new-bid", itemId: "a", amount: 60, bidCount: 2 })]);
+  });
+
+  it("caps new-bid moments per result", () => {
+    const items = Array.from({ length: 20 }, (_, i) => bid(String(i), `Item ${i}`, 10, 1));
+    const previous = { ...result(eventId, 100), items };
+    const next = { ...result(eventId, 100), items: items.map((i) => ({ ...i, bidCount: 2 })) };
+    expect(core.detectMoments(previous, next, event, deps)).toHaveLength(core.MAX_BID_MOMENTS_PER_RESULT);
+  });
+});

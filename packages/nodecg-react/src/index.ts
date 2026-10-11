@@ -1,1 +1,3 @@
 export * from "./useReplicant.js";
+export * from "./errors.js";
+export * from "./source.js";

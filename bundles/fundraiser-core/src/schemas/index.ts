@@ -7,4 +7,6 @@ export {
   SourceResultsReplicantSchema as sourceResults,
   RegisteredSourcesReplicantSchema as sources,
   LiveStateReplicantSchema as liveState,
+  SourceLogReplicantSchema as sourceLog,
+  MomentsReplicantSchema as moments,
 } from "@32dashboards/schema/core";

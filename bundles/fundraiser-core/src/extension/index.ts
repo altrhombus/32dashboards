@@ -1,16 +1,23 @@
 import { randomUUID } from "node:crypto";
 import type NodeCG from "nodecg/types";
-import { ZodError, type z } from "zod";
+import type { z } from "zod";
 import {
+  MOMENTS_LIMIT,
+  SOURCE_LOG_LIMIT,
   SourceResultSchema,
   coreMessageSchemas,
   type ActiveEventIdReplicant,
   type CoreMessageName,
   type EventsReplicant,
+  type FundraiserEvent,
   type LiveStateReplicant,
+  type MomentsReplicant,
+  type RegisteredSource,
   type RegisteredSourcesReplicant,
+  type SourceLogReplicant,
   type SourceResultsReplicant,
 } from "@32dashboards/schema/core";
+import { CommandError, formatZodError, listenForCommand } from "@32dashboards/source-sdk";
 import type { FundraiserCoreApi } from "./api.js";
 import * as core from "./state.js";
 
@@ -21,11 +28,33 @@ const deps: core.Deps = { now: () => new Date().toISOString(), newId: randomUUID
 /** Copies a value out of NodeCG's change-tracking proxy. */
 const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
+/** Runs every listener, logging (not propagating) failures so one bad adapter can't break the core. */
+function notify<A extends unknown[]>(
+  nodecg: NodeCG.ServerAPI,
+  listeners: Set<(...args: A) => void>,
+  ...args: A
+): void {
+  for (const listener of listeners) {
+    try {
+      listener(...args);
+    } catch (err) {
+      nodecg.log.error("Listener threw:", err);
+    }
+  }
+}
+
+function subscribe<L>(listeners: Set<L>, listener: L): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCoreApi {
   const events = nodecg.Replicant<EventsReplicant>("events", { defaultValue: [] });
   const activeEventId = nodecg.Replicant<ActiveEventIdReplicant>("activeEventId", { defaultValue: null });
   const sourceResults = nodecg.Replicant<SourceResultsReplicant>("sourceResults", { defaultValue: {} });
   const sources = nodecg.Replicant<RegisteredSourcesReplicant>("sources", { defaultValue: [], persistent: false });
+  const sourceLog = nodecg.Replicant<SourceLogReplicant>("sourceLog", { defaultValue: [], persistent: false });
+  const moments = nodecg.Replicant<MomentsReplicant>("moments", { defaultValue: [], persistent: false });
 
   const read = (): core.CoreState => ({
     events: plain(events.value ?? []),
@@ -59,29 +88,27 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   };
 
   const activeListeners = new Set<(eventId: string | null) => void>();
+  const eventsListeners = new Set<(events: FundraiserEvent[]) => void>();
+  const duplicateListeners = new Set<(from: string, to: string) => void>();
+  const refreshListeners = new Map<string, Set<(eventId: string) => void>>();
+
   let lastActive = activeEventId.value ?? null;
-  const notifyActive = () => {
+  activeEventId.on("change", () => {
+    refreshLiveState();
     const current = activeEventId.value ?? null;
     if (current === lastActive) return;
     lastActive = current;
-    for (const listener of activeListeners) {
-      try {
-        listener(current);
-      } catch (err) {
-        nodecg.log.error("Active-event listener threw:", err);
-      }
-    }
-  };
-
-  events.on("change", refreshLiveState);
-  sourceResults.on("change", refreshLiveState);
-  activeEventId.on("change", () => {
-    refreshLiveState();
-    notifyActive();
+    moments.value = [];
+    notify(nodecg, activeListeners, current);
   });
+  events.on("change", () => {
+    refreshLiveState();
+    notify(nodecg, eventsListeners, plain(events.value ?? []));
+  });
+  sourceResults.on("change", refreshLiveState);
   refreshLiveState();
 
-  /** Validates a Message payload, runs the command, and acks its result or error. */
+  /** Registers a Message whose command is a pure state transition. */
   function command<N extends CoreMessageName>(
     name: N,
     run: (state: core.CoreState, payload: z.output<(typeof coreMessageSchemas)[N]>) => {
@@ -89,21 +116,11 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
       reply?: unknown;
     },
   ) {
-    nodecg.listenFor(name, (raw: unknown, ack) => {
-      let reply: unknown;
-      try {
-        const payload = coreMessageSchemas[name].parse(raw) as z.output<(typeof coreMessageSchemas)[N]>;
-        const before = read();
-        const result = run(before, payload);
-        write(before, result.state);
-        reply = result.reply;
-      } catch (err) {
-        const error = toCommandError(err);
-        nodecg.log.warn(`${name} rejected: ${error.message}`);
-        if (ack && !ack.handled) ack(error);
-        return;
-      }
-      if (ack && !ack.handled) ack(null, reply);
+    listenForCommand(nodecg, name, coreMessageSchemas[name], (payload) => {
+      const before = read();
+      const result = run(before, payload as z.output<(typeof coreMessageSchemas)[N]>);
+      write(before, result.state);
+      return result.reply;
     });
   }
 
@@ -114,6 +131,8 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   command("updateEvent", (state, input) => ({ state: core.updateEvent(state, input, deps) }));
   command("duplicateEvent", (state, input) => {
     const { state: next, eventId } = core.duplicateEvent(state, input, deps);
+    // Adapters copy their per-event settings once the copy exists.
+    queueMicrotask(() => notify(nodecg, duplicateListeners, input.eventId, eventId));
     return { state: next, reply: eventId };
   });
   command("deleteEvent", (state, { eventId }) => ({ state: core.deleteEvent(state, eventId) }));
@@ -128,28 +147,84 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
     state: core.setFilters(state, eventId, filters, deps),
   }));
 
-  const registered = new Set<string>();
+  listenForCommand(nodecg, "refreshSource", coreMessageSchemas.refreshSource, ({ eventId }) => {
+    const event = events.value?.find((e) => e.id === eventId);
+    if (!event) throw new CommandError(`No event with id ${eventId}`);
+    const adapterId = event.source.adapterId;
+    const listeners = adapterId ? refreshListeners.get(adapterId) : undefined;
+    if (!adapterId) throw new CommandError("This event has no source.");
+    if (!listeners?.size) throw new CommandError(`Source "${adapterId}" isn't running.`);
+    notify(nodecg, listeners, eventId);
+  });
+
+  const updateSource = (sourceId: string, patch: Partial<RegisteredSource>) => {
+    sources.value = plain(sources.value ?? []).map((s) => (s.id === sourceId ? { ...s, ...patch } : s));
+  };
+
+  const appendLog = (entry: SourceLogReplicant[number]) => {
+    sourceLog.value = [...plain(sourceLog.value ?? []), entry].slice(-SOURCE_LOG_LIMIT);
+  };
+
+  const recordMoments = (found: MomentsReplicant) => {
+    if (found.length === 0) return;
+    moments.value = [...plain(moments.value ?? []), ...found].slice(-MOMENTS_LIMIT);
+    for (const moment of found) nodecg.sendMessage("donationMoment", moment);
+  };
 
   return {
-    registerSource(sourceId) {
-      if (registered.has(sourceId)) throw new Error(`Source "${sourceId}" is already registered`);
-      registered.add(sourceId);
-      sources.value = [...plain(sources.value ?? []), { id: sourceId, registeredAt: deps.now() }];
+    registerSource(sourceId, { label }) {
+      if (refreshListeners.has(sourceId)) throw new Error(`Source "${sourceId}" is already registered`);
+      const listeners = new Set<(eventId: string) => void>();
+      refreshListeners.set(sourceId, listeners);
+      const registeredAt = deps.now();
+      sources.value = [
+        ...plain(sources.value ?? []),
+        {
+          id: sourceId,
+          label,
+          registeredAt,
+          status: { state: "idle", message: null, eventId: null, updatedAt: registeredAt },
+          lastResultAt: null,
+        },
+      ];
       nodecg.log.info(`Source registered: ${sourceId}`);
 
+      const log: ReturnType<FundraiserCoreApi["registerSource"]>["log"] = (level, message, eventId = null) => {
+        appendLog({ at: deps.now(), sourceId, level, message: message.slice(0, 1000), eventId });
+        nodecg.log[level](`[${sourceId}] ${message}`);
+      };
+
       return {
+        sourceId,
         report(input) {
           const parsed = SourceResultSchema.safeParse({ ...input, sourceId });
           if (!parsed.success) {
-            nodecg.log.warn(`Invalid result from ${sourceId}: ${formatZodError(parsed.error)}`);
+            log("warn", `Invalid result: ${formatZodError(parsed.error)}`, null);
             return "invalid";
           }
           const before = read();
           const { state, outcome } = core.recordSourceResult(before, parsed.data);
-          if (outcome === "stored") write(before, state);
-          else nodecg.log.warn(`Ignored result from ${sourceId} for event ${parsed.data.eventId}: ${outcome}`);
+          if (outcome !== "stored") {
+            log("warn", `Result ignored: ${outcome}`, parsed.data.eventId);
+            return outcome;
+          }
+          const event = state.events.find((e) => e.id === parsed.data.eventId);
+          const found =
+            event && state.activeEventId === event.id
+              ? core.detectMoments(before.sourceResults[event.id], parsed.data, event, deps)
+              : [];
+          write(before, state);
+          updateSource(sourceId, { lastResultAt: deps.now() });
+          recordMoments(found);
           return outcome;
         },
+        setStatus({ state, message = null, eventId = null }) {
+          updateSource(sourceId, {
+            status: { state, message: message?.slice(0, 500) ?? null, eventId, updatedAt: deps.now() },
+          });
+        },
+        log,
+        onRefreshRequested: (listener) => subscribe(listeners, listener),
       };
     },
     getActiveEventId: () => activeEventId.value ?? null,
@@ -157,19 +232,9 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
       const event = events.value?.find((e) => e.id === eventId);
       return event ? plain(event) : undefined;
     },
-    onActiveEventChange(listener) {
-      activeListeners.add(listener);
-      return () => activeListeners.delete(listener);
-    },
+    listEvents: () => plain(events.value ?? []),
+    onActiveEventChange: (listener) => subscribe(activeListeners, listener),
+    onEventsChange: (listener) => subscribe(eventsListeners, listener),
+    onEventDuplicated: (listener) => subscribe(duplicateListeners, listener),
   };
-}
-
-function formatZodError(error: ZodError): string {
-  return error.issues.map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`).join("; ");
-}
-
-function toCommandError(err: unknown): Error {
-  if (err instanceof ZodError) return new core.CommandError(formatZodError(err));
-  if (err instanceof Error) return err;
-  return new Error(String(err));
 }

@@ -1,6 +1,8 @@
+import { CommandError, type ReportOutcome } from "@32dashboards/source-sdk";
 import {
   FundraiserEventSchema,
   type CreateEventMessage,
+  type DonationMoment,
   type FundraiserEvent,
   type LiveStateReplicant,
   type SourceItem,
@@ -26,10 +28,7 @@ export interface Deps {
   newId(): string;
 }
 
-/** A command the operator can fix (unknown event, deleting the active one, …). */
-export class CommandError extends Error {
-  override name = "CommandError";
-}
+export { CommandError };
 
 function findEvent(state: CoreState, eventId: string): FundraiserEvent {
   const event = state.events.find((e) => e.id === eventId);
@@ -146,7 +145,7 @@ export function setFilters(state: CoreState, eventId: string, filters: string[],
   return editEvent(state, eventId, deps, () => ({ filters: cleaned }));
 }
 
-export type RecordOutcome = "stored" | "unknown-event" | "wrong-source" | "stale";
+export type RecordOutcome = Exclude<ReportOutcome, "invalid">;
 
 /**
  * Stores a source result on the event it names, not on whichever event is
@@ -169,6 +168,59 @@ export function recordSourceResult(
     state: { ...state, sourceResults: { ...state.sourceResults, [result.eventId]: result } },
     outcome: "stored",
   };
+}
+
+/** Caps new-bid moments per result, so a burst after an outage doesn't flood the screen. */
+export const MAX_BID_MOMENTS_PER_RESULT = 10;
+
+/**
+ * Compares a newly stored result with the previous one for the same event
+ * and returns what's worth celebrating: a rise in the source total, and
+ * items with more bids or a higher bid. The first result for an event yields
+ * nothing (it's a baseline, not a donation), and items hidden by the event's
+ * filters are never celebrated.
+ */
+export function detectMoments(
+  previous: SourceResult | undefined,
+  next: SourceResult,
+  event: FundraiserEvent,
+  deps: Deps,
+): DonationMoment[] {
+  if (!previous) return [];
+  const base = { eventId: next.eventId, at: next.observedAt };
+  const moments: DonationMoment[] = [];
+
+  const delta = roundCents(next.total - previous.total);
+  if (delta > 0) {
+    moments.push({
+      kind: "total-increase",
+      id: deps.newId(),
+      ...base,
+      delta,
+      total: roundCents(next.total + event.adjustment),
+    });
+  }
+
+  const before = new Map(previous.items.map((item) => [item.id, item]));
+  let bids = 0;
+  for (const item of applyFilters(next.items, event.filters).items) {
+    const old = before.get(item.id);
+    if (!old) continue;
+    const moreBids = item.bidCount !== null && old.bidCount !== null && item.bidCount > old.bidCount;
+    const higherBid = item.currentBid !== null && old.currentBid !== null && item.currentBid > old.currentBid;
+    if (!moreBids && !higherBid) continue;
+    moments.push({
+      kind: "new-bid",
+      id: deps.newId(),
+      ...base,
+      itemId: item.id,
+      itemTitle: item.title,
+      amount: item.currentBid,
+      bidCount: item.bidCount,
+    });
+    if (++bids >= MAX_BID_MOMENTS_PER_RESULT) break;
+  }
+  return moments;
 }
 
 /** Hides items whose title contains any filter, case-insensitively. */
