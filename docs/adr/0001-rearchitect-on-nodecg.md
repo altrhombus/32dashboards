@@ -1,6 +1,6 @@
 # ADR-0001: Rearchitect on NodeCG with pluggable sources and schema-driven layouts
 
-**Status:** Proposed
+**Status:** Accepted (2026-10-10)
 **Date:** 2026-10-10
 **Deciders:** altrhombus (project owner)
 
