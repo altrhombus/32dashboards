@@ -262,6 +262,9 @@ importers:
       '@32dashboards/schema':
         specifier: workspace:*
         version: link:../../packages/schema
+      '@32dashboards/source-sdk':
+        specifier: workspace:*
+        version: link:../../packages/source-sdk
       '@32dashboards/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -277,10 +280,16 @@ importers:
       xstate:
         specifier: ^5.19.0
         version: 5.32.4
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
     devDependencies:
       '@32dashboards/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@32dashboards/nodecg-testing':
+        specifier: workspace:*
+        version: link:../../packages/nodecg-testing
       '@testing-library/jest-dom':
         specifier: ^6.6.0
         version: 6.9.1

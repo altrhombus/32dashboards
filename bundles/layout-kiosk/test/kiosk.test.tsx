@@ -9,7 +9,9 @@ import {
 } from "@32dashboards/schema/core";
 import { HUGE_TOTAL, LONG_DESCRIPTION, LONG_NAME, LONG_TITLE, worstCaseItems } from "@32dashboards/ui";
 import type { KioskData } from "../src/data.js";
-import { kioskLayoutInputs, kioskLayouts } from "../src/layouts.js";
+import { kioskCatalog } from "../src/catalog.js";
+import { builtInLayouts } from "../src/layouts.js";
+import { checkLayout } from "../src/library.js";
 import { kioskRegistry } from "../src/registry.js";
 import { buildSegments, selectFeaturedItems } from "../src/segments.js";
 
@@ -61,12 +63,23 @@ const scene = (sceneId: SceneReplicant["id"]): SceneReplicant => ({
 });
 
 describe("kiosk layouts", () => {
-  it.each(Object.keys(kioskLayoutInputs))("%s layout is valid for the kiosk registry", (name) => {
-    expect(validateLayout(kioskLayoutInputs[name as keyof typeof kioskLayoutInputs], kioskRegistry)).toEqual([]);
-  });
+  it.each(Object.values(builtInLayouts).map((b) => [b.view, b] as const))(
+    "built-in %s layout is valid for the registry and the catalog, with no warnings",
+    (view, builtIn) => {
+      expect(validateLayout(builtIn.layout, kioskRegistry)).toEqual([]);
+      expect(checkLayout(builtIn.blocks, view)).toEqual({ errors: [], warnings: [] });
+    },
+  );
 
   it("has a layout for every scene", () => {
-    for (const sceneId of SCENE_IDS) expect(kioskLayouts[sceneId]).toBeDefined();
+    for (const sceneId of SCENE_IDS) expect(builtInLayouts[sceneId]).toBeDefined();
+  });
+
+  it("catalogs exactly the registry's components and sizes", () => {
+    expect(Object.keys(kioskCatalog).sort()).toEqual(Object.keys(kioskRegistry).sort());
+    for (const [name, entry] of Object.entries(kioskRegistry)) {
+      expect(Object.keys(kioskCatalog[name]!.variants), name).toEqual([...entry.variants]);
+    }
   });
 
   it.each(SCENE_IDS)("renders the %s scene with worst-case data without a failed slot", (sceneId) => {
@@ -78,7 +91,7 @@ describe("kiosk layouts", () => {
       infoBar: { type: "segment", segment: plan.segments[0]! },
       toasts: [{ kind: "new-bid", id: id(20), eventId: id(1), at: NOW, itemId: "x", itemTitle: LONG_TITLE, amount: 99, bidCount: 9 }],
     };
-    const { container } = render(<LayoutRenderer layout={kioskLayouts[sceneId]} registry={kioskRegistry} data={data} fit="none" />);
+    const { container } = render(<LayoutRenderer layout={builtInLayouts[sceneId].layout} registry={kioskRegistry} data={data} fit="none" />);
     expect(container.querySelector("[data-slot-error]")).toBeNull();
     expect(errors).not.toHaveBeenCalled();
     if (sceneId === "main" || sceneId === "intermission") {
@@ -94,7 +107,7 @@ describe("kiosk layouts", () => {
       infoBar: { type: "celebration", moment: { kind: "milestone", id: id(30), eventId: id(1), at: NOW, milestoneId: id(5), amount: 1000, label: "First grand" } },
       toasts: [],
     };
-    render(<LayoutRenderer layout={kioskLayouts.main} registry={kioskRegistry} data={data} fit="none" />);
+    render(<LayoutRenderer layout={builtInLayouts.main.layout} registry={kioskRegistry} data={data} fit="none" />);
     expect(screen.getByText("Milestone reached!")).toBeInTheDocument();
     expect(screen.getByText("First grand")).toBeInTheDocument();
   });

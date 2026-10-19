@@ -171,13 +171,6 @@ h2 {
   color: #ffd9da;
 }
 
-.is-armed {
-  border-color: var(--caution) !important;
-  box-shadow: inset 0 0 0 2px var(--caution);
-  color: var(--caution);
-  font-weight: 700;
-}
-
 .intermission-options {
   grid-column: 1 / -1;
   display: grid;

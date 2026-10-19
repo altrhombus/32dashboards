@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { errorText, useReplicant } from "@32dashboards/nodecg-react";
+import { ConfirmButton, errorText, useReplicant } from "@32dashboards/nodecg-react";
 import type {
   ActiveEventIdReplicant,
   BidWar,
@@ -13,7 +13,9 @@ import type {
   RegisteredSourcesReplicant,
   SceneId,
   SceneReplicant,
+  ScreensReplicant,
 } from "@32dashboards/schema/core";
+import { screenPresence } from "@32dashboards/schema/core";
 import { formatAmount, formatTotal } from "@32dashboards/ui";
 import "@32dashboards/nodecg-react/panel.css";
 import "./live.css";
@@ -25,8 +27,6 @@ import { send } from "./send.js";
  * it changed; actions that end the show take a second tap.
  */
 
-const TV_STALE_MS = 30_000;
-const ARM_MS = 4_000;
 
 /** Re-renders every `ms` so relative times stay fresh. */
 function useNow(ms = 5_000): number {
@@ -49,39 +49,6 @@ function ago(iso: string | null, now: number): string {
 
 const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-/** A button that needs a second tap within a few seconds, for actions that end or replace what's on TV. */
-function ConfirmButton(props: {
-  label: ReactNode;
-  confirmLabel: string;
-  onConfirm: () => void;
-  className?: string;
-  disabled?: boolean;
-}) {
-  const [armed, setArmed] = useState(false);
-  useEffect(() => {
-    if (!armed) return;
-    const timer = setTimeout(() => setArmed(false), ARM_MS);
-    return () => clearTimeout(timer);
-  }, [armed]);
-  return (
-    <button
-      type="button"
-      className={`${props.className ?? ""}${armed ? " is-armed" : ""}`}
-      disabled={props.disabled}
-      onClick={() => {
-        if (armed) {
-          setArmed(false);
-          props.onConfirm();
-        } else {
-          setArmed(true);
-        }
-      }}
-    >
-      {armed ? props.confirmLabel : props.label}
-    </button>
-  );
-}
-
 interface Feedback {
   text: string;
   error?: boolean;
@@ -92,23 +59,34 @@ type Act = (promise: Promise<unknown>, done: string, undo?: () => void) => void;
 
 // --- Status strip ---------------------------------------------------------
 
-function TvStatus({ outputs, now }: { outputs: OutputsReplicant; now: number }) {
-  const tvs = outputs.filter((o) => o.output === "kiosk" && now - Date.parse(o.lastSeenAt) < TV_STALE_MS);
-  if (tvs.length === 0) {
+function TvStatus({ screens, outputs, now }: { screens: ScreensReplicant; outputs: OutputsReplicant; now: number }) {
+  const { named, unnamed } = screenPresence(screens, outputs, now);
+  const missing = named.filter((n) => !n.connected);
+  const connected = named.length - missing.length + unnamed.length;
+  const extra = unnamed.length > 0 && named.length > 0 ? `, plus ${unnamed.length} unnamed` : "";
+
+  if (connected === 0 || missing.length > 0) {
+    const what =
+      named.length === 0
+        ? "TV not connected"
+        : missing.length === 1
+          ? `${missing[0]!.screen.name} not connected`
+          : `${missing.length} screens not connected`;
     return (
       <div className="status status--caution" role="status">
-        <strong>TV not connected</strong>
-        <span>Open the kiosk on the TV laptop (Event-day runbook, step 3).</span>
+        <strong>{what}</strong>
+        <span>
+          {named.length > 1 ? `${named.length - missing.length} of ${named.length} screens connected${extra}. ` : ""}
+          Open the kiosk on the TV laptop (Event-day runbook, step 3).
+        </span>
       </div>
     );
   }
-  const since = tvs.map((t) => t.firstSeenAt).sort()[0]!;
+  const since = [...named.map((n) => n.since!), ...unnamed.map((u) => u.since)].sort()[0]!;
   return (
     <div className="status status--go" role="status">
-      <strong>TV connected</strong>
-      <span>
-        {tvs.length > 1 ? `${tvs.length} screens, ` : ""}since {clock(since)}
-      </span>
+      <strong>{connected > 1 ? `${connected} screens connected` : "TV connected"}</strong>
+      <span>since {clock(since)}</span>
     </div>
   );
 }
@@ -451,6 +429,7 @@ function Console() {
   const scene = useReplicant<SceneReplicant>("scene");
   const sources = useReplicant<RegisteredSourcesReplicant>("sources") ?? [];
   const outputs = useReplicant<OutputsReplicant>("outputs") ?? [];
+  const screens = useReplicant<ScreensReplicant>("screens") ?? [];
   const moments = useReplicant<MomentsReplicant>("moments") ?? [];
   const now = useNow();
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -474,7 +453,7 @@ function Console() {
     <div className="console">
       <header className="strip">
         <EventSwitcher events={events} activeId={activeId} act={act} />
-        <TvStatus outputs={outputs} now={now} />
+        <TvStatus screens={screens} outputs={outputs} now={now} />
         {event && <SourceStatus event={event} sources={sources} now={now} act={act} />}
       </header>
 

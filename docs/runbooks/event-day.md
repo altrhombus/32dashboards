@@ -32,6 +32,17 @@ network.
    Edge opens the kiosk full-screen. Within ten seconds the Live tab's
    status strip should say **TV connected**.
 
+   With named screens (see [venue setup](venue-setup.md), step 8), open
+   each one by its id, and say which display it goes on:
+
+   ```powershell
+   ...\open-kiosk.ps1 -Screen main-left
+   ...\open-kiosk.ps1 -Screen main-right -Position 1920,0
+   ```
+
+   The strip then says **2 screens connected**, or names the screen
+   that's missing.
+
 4. **Put the event on the TV.** In the Live tab, pick the event at the top
    left, tap **Put on TV**, then tap again to confirm. Check the strip:
    the source should say **receiving data** (manual-entry events say so
@@ -67,8 +78,16 @@ network.
 
 ## Troubleshooting
 
-**TV not connected.** The kiosk isn't open, or it lost its connection.
-Run step 3 again; opening it twice is harmless.
+**TV not connected** (or a screen's name, **not connected**). That
+screen's kiosk isn't open, or it lost its connection. Run step 3 again
+for it; opening it twice is harmless. If the **Screens and layouts**
+panel lists a TV as "open without a screen name", it was opened without
+`-Screen`, so it shows the built-in layouts.
+
+**A screen shows the built-in layout instead of the one chosen for it.**
+The chosen layout was deleted or can't be shown. The screen falls back
+rather than going blank; choose a layout for it again in **Screens and
+layouts**.
 
 **The source needs a look.** The status strip shows the reason. Common
 ones:

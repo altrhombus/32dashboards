@@ -58,6 +58,33 @@ describe("fundraiser-core extension", () => {
     expect(events.find((e) => e.id === eventId)?.askMe.total).toBe(200);
   });
 
+  it("saves, replaces, and deletes named screens", async () => {
+    const { fake } = setup();
+    await fake.send("saveScreen", { id: "main-left", name: "Main room left", layouts: { main: "builtin:main" } });
+    await fake.send("saveScreen", { id: "lobby", name: "Lobby" });
+    await fake.send("saveScreen", { id: "main-left", name: "Left TV", layouts: {} });
+    expect(fake.replicant("screens").value).toEqual([
+      { id: "main-left", name: "Left TV", layouts: {} },
+      { id: "lobby", name: "Lobby", layouts: {} },
+    ]);
+    await expect(fake.send("saveScreen", { id: "Main Left", name: "x" })).rejects.toThrow(/Screen ids/);
+    await expect(fake.send("saveScreen", { id: "x", name: "x", layouts: { nope: "a" } })).rejects.toThrow();
+    await fake.send("deleteScreen", { id: "lobby" });
+    await expect(fake.send("deleteScreen", { id: "lobby" })).rejects.toThrow(/No screen/);
+    expect(fake.replicant<unknown[]>("screens").value).toHaveLength(1);
+  });
+
+  it("records which screen an output checked in as", async () => {
+    const { fake } = setup();
+    await fake.send("outputHeartbeat", { instanceId: "a", output: "kiosk", screenId: "lobby" });
+    await fake.send("outputHeartbeat", { instanceId: "b", output: "kiosk" });
+    const outputs = fake.replicant<{ instanceId: string; screenId: string | null }[]>("outputs").value;
+    expect(outputs.map((o) => [o.instanceId, o.screenId])).toEqual([
+      ["a", "lobby"],
+      ["b", null],
+    ]);
+  });
+
   it("keeps a late result on the event it was fetched for", async () => {
     const { fake, api, live } = setup();
     const first = await createActiveEvent(fake);

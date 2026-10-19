@@ -72,3 +72,8 @@ export type InfoBarConfig = z.infer<typeof InfoBarConfigSchema>;
 export const SCENE_IDS = ["main", "intermission", "askMe", "celebration"] as const;
 export const SceneIdSchema = z.enum(SCENE_IDS);
 export type SceneId = z.infer<typeof SceneIdSchema>;
+
+/** What a screen can show: each scene, plus `standby` when no event is on screen. */
+export const SCREEN_VIEWS = [...SCENE_IDS, "standby"] as const;
+export const ScreenViewSchema = z.enum(SCREEN_VIEWS);
+export type ScreenView = z.infer<typeof ScreenViewSchema>;

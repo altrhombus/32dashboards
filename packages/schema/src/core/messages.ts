@@ -3,7 +3,7 @@ import { FundraiserEventSchema } from "./event.js";
 import { EventThemeSchema } from "./event.js";
 import { AskMeConfigSchema } from "../askme.js";
 import { InfoBarConfigSchema, SceneIdSchema } from "./show.js";
-import { SceneReplicantSchema } from "./replicants.js";
+import { SceneReplicantSchema, ScreenIdSchema, ScreenSchema } from "./replicants.js";
 
 /*
  * Operator Messages fundraiser-core listens for. Each payload is validated
@@ -102,9 +102,20 @@ export type SwitchSceneMessage = z.infer<typeof SwitchSceneMessageSchema>;
 
 /** Sent every few seconds by an output (e.g. the venue-TV kiosk) so operators know it's live. */
 export const OutputHeartbeatMessageSchema = z
-  .object({ instanceId: z.string().min(1).max(100), output: z.string().min(1).max(60) })
+  .object({
+    instanceId: z.string().min(1).max(100),
+    output: z.string().min(1).max(60),
+    screenId: ScreenIdSchema.nullable().optional(),
+  })
   .strict();
 export type OutputHeartbeatMessage = z.infer<typeof OutputHeartbeatMessageSchema>;
+
+/** Adds a screen, or replaces the one with the same id. */
+export const SaveScreenMessageSchema = ScreenSchema.strict();
+export type SaveScreenMessage = z.infer<typeof SaveScreenMessageSchema>;
+
+export const DeleteScreenMessageSchema = z.object({ id: ScreenIdSchema }).strict();
+export type DeleteScreenMessage = z.infer<typeof DeleteScreenMessageSchema>;
 
 /** Message name -> payload schema. */
 export const coreMessageSchemas = {
@@ -121,6 +132,8 @@ export const coreMessageSchemas = {
   nudgeBidWar: NudgeBidWarMessageSchema,
   switchScene: SwitchSceneMessageSchema,
   outputHeartbeat: OutputHeartbeatMessageSchema,
+  saveScreen: SaveScreenMessageSchema,
+  deleteScreen: DeleteScreenMessageSchema,
 } as const;
 export type CoreMessageName = keyof typeof coreMessageSchemas;
 export type CoreMessagePayload<N extends CoreMessageName> = z.input<(typeof coreMessageSchemas)[N]>;

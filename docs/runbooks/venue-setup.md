@@ -60,13 +60,20 @@ removing the distro removes the whole stack. The background is in
    needs. Then run `infra/windows/open-kiosk.ps1` as in the
    [event-day runbook](event-day.md), step 3.
 
-8. **Check it.** `pnpm check-env` should pass. Then close every WSL
+8. **Name the screens.** In the dashboard's **Screens and layouts**
+   panel, add each TV (e.g. "Main room left", id `main-left`). For each
+   scene you can keep the built-in layout or choose another one. Copy a
+   built-in layout to give a screen its own. Then open each TV's kiosk
+   with `open-kiosk.ps1 -Screen <id>`. With one TV, you can skip this
+   step.
+
+9. **Check it.** `pnpm check-env` should pass. Then close every WSL
    window, wait five minutes, and reload the dashboard from another
    device. If it no longer answers, WSL stopped the distro when idle: add
    `vmIdleTimeout=-1` under `[wsl2]` in `.wslconfig`, run
    `wsl --shutdown`, and check again.
 
-9. **Take a first backup:** `pnpm backup`. See
+10. **Take a first backup:** `pnpm backup`. See
    [backup and restore](backup-and-restore.md).
 
 ## Optional hardening

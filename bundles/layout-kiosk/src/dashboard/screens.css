@@ -1,0 +1,95 @@
+/* Screens and layouts panel. Tokens come from @32dashboards/nodecg-react/panel.css. */
+
+h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.group {
+  display: grid;
+  gap: 10px;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.screen {
+  gap: 10px;
+}
+
+.screen input[aria-label="Screen name"] {
+  font-weight: 600;
+}
+
+.views {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.views select {
+  width: 100%;
+}
+
+.status-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.status-dot--go {
+  background: var(--go);
+}
+
+.status-dot--caution {
+  background: var(--caution);
+}
+
+.unnamed {
+  padding: 8px 10px;
+  border: 1px dashed var(--caution);
+  border-radius: var(--radius);
+}
+
+.add-screen {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.add-screen p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.layouts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-name {
+  font-weight: 600;
+  min-width: 8rem;
+}
+
+input.layout-name {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+code {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .add-screen {
+    grid-template-columns: 1fr;
+  }
+}
