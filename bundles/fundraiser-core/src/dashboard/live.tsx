@@ -324,14 +324,12 @@ function Money({ live, event, sourceLabel, act }: { live: LiveStateReplicant; ev
 }
 
 function AskMeTotal({ event, act }: { event: FundraiserEvent; act: Act }) {
-  const add = (delta: number) => {
-    const before = event.askMe.total;
+  const add = (delta: number) =>
     act(
-      send("updateEvent", { eventId: event.id, patch: { askMe: { total: Math.max(0, before + delta) } } }),
-      `Ask Me total is ${formatAmount(before + delta)}.`,
-      () => void send("updateEvent", { eventId: event.id, patch: { askMe: { total: before } } }),
+      send("nudgeAskMe", { eventId: event.id, delta }),
+      `Added ${formatAmount(delta)} to Ask Me.`,
+      () => void send("nudgeAskMe", { eventId: event.id, delta: -delta }),
     );
-  };
   return (
     <section className="block" aria-label="Ask Me total">
       <h2>Ask Me total: {formatAmount(event.askMe.total)}</h2>

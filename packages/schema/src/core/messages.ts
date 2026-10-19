@@ -68,6 +68,13 @@ export type SetAdjustmentMessage = z.infer<typeof SetAdjustmentMessageSchema>;
 export const NudgeAdjustmentMessageSchema = z.object({ eventId, delta: z.number().finite() }).strict();
 export type NudgeAdjustmentMessage = z.infer<typeof NudgeAdjustmentMessageSchema>;
 
+/**
+ * Adds `delta` to the Ask Me total. The server does the adding, so quick
+ * taps from a phone that hasn't seen the last one yet all count.
+ */
+export const NudgeAskMeMessageSchema = z.object({ eventId, delta: z.number().finite() }).strict();
+export type NudgeAskMeMessage = z.infer<typeof NudgeAskMeMessageSchema>;
+
 export const SetFiltersMessageSchema = z
   .object({ eventId, filters: FundraiserEventSchema.shape.filters })
   .strict();
@@ -108,6 +115,7 @@ export const coreMessageSchemas = {
   activateEvent: ActivateEventMessageSchema,
   setAdjustment: SetAdjustmentMessageSchema,
   nudgeAdjustment: NudgeAdjustmentMessageSchema,
+  nudgeAskMe: NudgeAskMeMessageSchema,
   setFilters: SetFiltersMessageSchema,
   refreshSource: RefreshSourceMessageSchema,
   nudgeBidWar: NudgeBidWarMessageSchema,

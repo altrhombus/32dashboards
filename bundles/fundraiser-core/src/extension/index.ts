@@ -188,6 +188,7 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
       ]);
     }
   });
+  command("nudgeAskMe", (state, { eventId, delta }) => ({ state: core.nudgeAskMe(state, eventId, delta, deps) }));
   command("setFilters", (state, { eventId, filters }) => ({
     state: core.setFilters(state, eventId, filters, deps),
   }));

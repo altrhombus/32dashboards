@@ -134,6 +134,17 @@ describe("adjustment", () => {
   });
 });
 
+describe("nudgeAskMe", () => {
+  it("adds to the Ask Me total, rounding to cents and never going below zero", () => {
+    const { state, eventId, deps } = withEvent();
+    let next = core.nudgeAskMe(state, eventId, 100, deps);
+    next = core.nudgeAskMe(next, eventId, 0.105, deps);
+    expect(next.events[0]?.askMe.total).toBe(100.11);
+    next = core.nudgeAskMe(next, eventId, -500, deps);
+    expect(next.events[0]?.askMe.total).toBe(0);
+  });
+});
+
 describe("setFilters", () => {
   it("trims, drops blanks, and de-duplicates", () => {
     const { state, eventId, deps } = withEvent();

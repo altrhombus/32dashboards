@@ -44,6 +44,20 @@ describe("fundraiser-core extension", () => {
     expect(live()).toMatchObject({ rawTotal: 1000, adjustment: 150, total: 1150, sourceId: "fake" });
   });
 
+  it("counts every Ask Me tap, even ones sent before the last was seen", async () => {
+    const { fake } = setup();
+    const eventId = await createActiveEvent(fake);
+
+    // Two taps from a phone that hasn't heard back from the first yet.
+    await Promise.all([
+      fake.send("nudgeAskMe", { eventId, delta: 100 }),
+      fake.send("nudgeAskMe", { eventId, delta: 100 }),
+    ]);
+
+    const events = fake.replicant<{ id: string; askMe: { total: number } }[]>("events").value;
+    expect(events.find((e) => e.id === eventId)?.askMe.total).toBe(200);
+  });
+
   it("keeps a late result on the event it was fetched for", async () => {
     const { fake, api, live } = setup();
     const first = await createActiveEvent(fake);

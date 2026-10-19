@@ -148,6 +148,13 @@ export function nudgeAdjustment(state: CoreState, eventId: string, delta: number
   return editEvent(state, eventId, deps, (event) => ({ adjustment: roundCents(event.adjustment + delta) }));
 }
 
+/** Adds to the Ask Me total, never below zero. */
+export function nudgeAskMe(state: CoreState, eventId: string, delta: number, deps: Deps): CoreState {
+  return editEvent(state, eventId, deps, (event) => ({
+    askMe: { ...event.askMe, total: Math.max(0, roundCents(event.askMe.total + delta)) },
+  }));
+}
+
 export function nudgeBidWar(
   state: CoreState,
   input: { eventId: string; bidWarId: string; optionId: string; delta: number },
