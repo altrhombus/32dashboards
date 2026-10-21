@@ -30,6 +30,9 @@ importers:
       eslint-plugin-react-hooks:
         specifier: ^5.1.0
         version: 5.2.0(eslint@9.39.4)
+      prettier:
+        specifier: 3.9.9
+        version: 3.9.9
       turbo:
         specifier: ^2.3.0
         version: 2.10.4
