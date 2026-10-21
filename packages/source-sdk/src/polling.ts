@@ -17,6 +17,8 @@ export interface PollContext<C> {
 export interface PollResult {
   total: number;
   items?: SourceReport["items"];
+  /** Replaces the default status line ("$1,234 · 56 items"), e.g. when the total isn't the platform's. */
+  status?: string;
 }
 
 export interface PollingSourceDefinition<S extends z.ZodTypeAny> {
@@ -131,7 +133,7 @@ export function createPollingSource<S extends z.ZodTypeAny>(
         const count = result.items?.length ?? 0;
         handle.setStatus({
           state: "ok",
-          message: `${formatCurrency(result.total)} · ${count} item${count === 1 ? "" : "s"}`,
+          message: result.status ?? `${formatCurrency(result.total)} · ${count} item${count === 1 ? "" : "s"}`,
           eventId,
         });
       } else {

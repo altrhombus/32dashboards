@@ -43,6 +43,10 @@ removing the distro removes the whole stack. The background is in
    pnpm bundles:build
    ```
 
+   Put the `admin` password in a password manager now: it's shown only
+   this once, and only a hash is kept. If it's lost, set a new one (see
+   [rotating secrets](rotating-secrets.md#dashboard-password)).
+
 5. **Run NodeCG as a service**, so it starts with WSL and restarts if it
    crashes:
 

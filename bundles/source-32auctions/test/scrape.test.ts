@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkIntegrity, parseItemsPage, parseTotalRaised, ScrapeIntegrityError } from "../src/extension/parser.js";
-import { scrapeAuction } from "../src/extension/scrape.js";
+import { scrapeAuction, TotalNotShownError } from "../src/extension/scrape.js";
 import { itemsUrl, summaryUrl, type Config } from "../src/config.js";
 
 // Same fixtures (and assertions) as the legacy Python parser tests.
@@ -13,6 +13,7 @@ const config: Config = {
   auctionId: "auc1",
   friendlyAuctionPath: "spring-gala",
   refreshIntervalSeconds: 10,
+  totalFrom: "page",
 };
 
 /** Serves canned pages and records requests, like the Python FakeSession. */
@@ -48,6 +49,31 @@ describe("parseItemsPage", () => {
 
   it("has no next page when the link is missing", () => {
     expect(parseItemsPage(fixture("items_page2.html"), `${BASE}/auction`).nextUrl).toBeNull();
+  });
+});
+
+describe("parseItemsPage, 2025 markup", () => {
+  it("reads cards wrapped in a.item-card-link", () => {
+    const pageUrl = "https://example.test/organizations/1/auctions/2?r=1&t=all";
+    const { cards, nextUrl } = parseItemsPage(fixture("items_page_2025.html"), pageUrl);
+    expect(cards).toEqual([
+      {
+        href: "/organizations/1/auctions/2/auction_items/6006",
+        title: "#006 - Signed baseball bat",
+        pictureUrl: "https://assets.example.test/pics/6006_s300.jpg?v=1",
+        price: "$700.00",
+        remaining: null,
+        value: "Priceless",
+        bids: "3",
+      },
+      expect.objectContaining({
+        title: "#056 - Museum tour for two",
+        price: "$1,050.50",
+        value: "$1,200.00",
+        bids: "1",
+      }),
+    ]);
+    expect(nextUrl).toBe("https://example.test/organizations/1/auctions/2?page=2&r=1&t=all");
   });
 });
 
@@ -118,7 +144,34 @@ describe("scrapeAuction", () => {
     const site = fakeSite({ ...pages, [summaryUrl(BASE, config)]: "<html></html>" });
     await expect(
       scrapeAuction({ config, secrets: {}, signal, baseUrl: BASE, fetchImpl: site.fetchImpl, sleep: noSleep }),
-    ).rejects.toThrow(/Total raised not found/);
+    ).rejects.toThrow(TotalNotShownError);
+  });
+
+  it("totals the items' current bids, without fetching the page, when the total comes from bids", async () => {
+    const site = fakeSite(pages);
+    const result = await scrapeAuction({
+      config: { ...config, totalFrom: "bids" },
+      secrets: {},
+      signal,
+      baseUrl: BASE,
+      fetchImpl: site.fetchImpl,
+    });
+    expect(site.requests.map((r) => r.url)).not.toContain(summaryUrl(BASE, config));
+    expect(result.total).toBe(result.items!.reduce((sum, i) => sum + (i.currentBid ?? 0), 0));
+    expect(result.total).toBeGreaterThan(0);
+  });
+
+  it("reports no total, only items, when the total isn't shown", async () => {
+    const site = fakeSite(pages);
+    const result = await scrapeAuction({
+      config: { ...config, totalFrom: "none" },
+      secrets: {},
+      signal,
+      baseUrl: BASE,
+      fetchImpl: site.fetchImpl,
+    });
+    expect(result.total).toBe(0);
+    expect(result.items).toHaveLength(3);
   });
 
   it("fails on markup changes", async () => {

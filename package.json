@@ -19,6 +19,7 @@
     "start": "pnpm bundles:build && nodecg start",
     "check-env": "bash scripts/check-env.sh",
     "kiosk-url": "bash scripts/kiosk-url.sh",
+    "demo": "node scripts/demo-event.mjs",
     "backup": "bash scripts/backup.sh",
     "restore": "bash scripts/restore.sh"
   },
@@ -32,6 +33,7 @@
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "prettier": "3.9.9",
+    "socket.io-client": "4.8.4",
     "turbo": "^2.3.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.18.0",

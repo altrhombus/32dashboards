@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" role="img" aria-label="Northside Bakery">
+  <rect width="360" height="120" rx="16" fill="#f5e6c8"/>
+  <path d="M38 78c0-22 14-38 32-38s32 16 32 38z" fill="#c8843a"/>
+  <path d="M50 70h40M54 60h32" stroke="#f5e6c8" stroke-width="4" stroke-linecap="round"/>
+  <text x="118" y="70" font-family="Georgia, serif" font-size="34" font-weight="700" fill="#5a3415">Northside</text>
+  <text x="120" y="98" font-family="Georgia, serif" font-size="20" letter-spacing="6" fill="#8a5a2b">BAKERY</text>
+</svg>
