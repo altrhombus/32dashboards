@@ -674,7 +674,19 @@ function Console() {
           <Moments moments={moments} />
         </div>
       ) : (
-        <p className="empty">Pick an event above and put it on the TV to start taking donations.</p>
+        <p className="empty">
+          Pick an event above and put it on the TV to start taking donations, or{" "}
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              window.top!.location.hash = "fullbleed/setup";
+            }}
+          >
+            set up a new event
+          </a>
+          .
+        </p>
       )}
 
       <div

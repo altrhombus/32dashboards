@@ -1,0 +1,474 @@
+/* New event guide. Tokens come from @32dashboards/nodecg-react/panel.css. */
+
+html,
+body {
+  background: var(--ink);
+  min-height: 100%;
+}
+
+.setup-loading {
+  padding: 24px;
+  color: var(--muted);
+}
+
+.setup {
+  display: grid;
+  gap: 20px;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The steps: a real sequence, so they're numbered. */
+.setup__top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rail__step {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.rail__n {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  font-size: 0.8rem;
+}
+
+.rail__step[data-done] {
+  color: var(--text);
+}
+
+.rail__step[data-done] .rail__n {
+  border-color: var(--go);
+  background: color-mix(in srgb, var(--go) 22%, transparent);
+}
+
+.rail__step[aria-current="step"] {
+  background: var(--raise-hi);
+  color: var(--text);
+}
+
+.rail__step[aria-current="step"] .rail__n {
+  border-color: var(--action);
+  background: var(--action);
+  color: var(--action-ink);
+}
+
+.setup__skip {
+  margin-left: auto;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.setup__body {
+  display: grid;
+  grid-template-columns: minmax(340px, 560px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+/* The question. */
+.card {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 14px;
+  background: var(--raise);
+}
+
+.card__title {
+  margin: 0;
+  font-size: 1.9rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.card__lead {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+  max-width: 52ch;
+}
+
+.card__fields {
+  display: grid;
+  gap: 16px;
+}
+
+.card__sub {
+  margin: 8px 0 0;
+  font-size: 1.05rem;
+}
+
+.card__nav {
+  display: flex;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.card__next,
+.big-button {
+  min-height: var(--target);
+  padding-inline: 22px;
+  font-size: 1.05rem;
+}
+
+.big-input {
+  min-height: var(--target);
+  font-size: 1.15rem;
+}
+
+.linkish {
+  justify-self: start;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--action);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.resume {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--action);
+  background: color-mix(in srgb, var(--action) 10%, transparent);
+  border-radius: 6px;
+}
+
+.link-row input {
+  flex: 1;
+}
+
+/* The auction we found. */
+.found {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--go);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--go) 8%, transparent);
+  animation: rise-in 0.35s ease-out both;
+}
+
+.found__logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.found__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.choices {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choice {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.choice:has(input:checked) {
+  border-color: var(--action);
+  background: color-mix(in srgb, var(--action) 10%, transparent);
+}
+
+.choice input {
+  min-height: 0;
+}
+
+.signin {
+  display: grid;
+  gap: 12px;
+}
+
+.badge-ok {
+  margin-left: 6px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--go) 22%, transparent);
+  color: var(--go);
+  font-size: 0.8rem;
+}
+
+/* What the connection found: a strip of real item photos. */
+.test {
+  display: grid;
+  gap: 10px;
+}
+
+.test p {
+  margin: 0;
+}
+
+.filmstrip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 112px;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.filmstrip figure {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  animation: rise-in 0.4s ease-out both;
+}
+
+.filmstrip img {
+  width: 112px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--ink);
+}
+
+.filmstrip figcaption {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.logo-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.logo-row__img,
+.logo-row__none {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background: #fff;
+  object-fit: contain;
+}
+
+.logo-row__none {
+  background: var(--ink);
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.cheer {
+  gap: 10px;
+}
+
+.cheer input {
+  width: 7.5rem;
+  min-height: var(--target);
+  font-size: 1.05rem;
+}
+
+.checks {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checks li {
+  display: grid;
+  grid-template-columns: 28px 9rem minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.checks__mark {
+  color: var(--caution);
+  font-weight: 700;
+}
+
+.checks li[data-ok] .checks__mark {
+  color: var(--go);
+}
+
+.burst {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* The TV, which fills in as you go. */
+.tv {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.tv__frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  box-shadow:
+    0 0 0 6px #05070e,
+    0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.tv__frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none;
+}
+
+/* When an answer reaches the TV, the frame glows once. */
+.tv__frame--changed {
+  animation: tv-glow 1.4s ease-out;
+}
+
+.tv figcaption {
+  min-height: 1.5em;
+  text-align: center;
+}
+
+.tv__changed {
+  display: inline-block;
+  color: var(--go);
+  font-weight: 600;
+  animation: rise-in 0.35s ease-out both;
+}
+
+@keyframes tv-glow {
+  0% {
+    box-shadow:
+      0 0 0 6px #05070e,
+      0 0 0 9px var(--go),
+      0 18px 40px rgba(0, 0, 0, 0.45);
+  }
+  100% {
+    box-shadow:
+      0 0 0 6px #05070e,
+      0 0 0 9px transparent,
+      0 18px 40px rgba(0, 0, 0, 0.45);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 1000px) {
+  .setup__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The TV first, smaller, so each answer's effect stays in view. */
+  .tv {
+    position: static;
+    order: -1;
+    max-width: 640px;
+  }
+}
+
+@media (max-width: 520px) {
+  .setup {
+    padding: 12px 12px 32px;
+  }
+
+  /* Numbers only, plus the current step's name, so the questions start near the top. */
+  .rail__step {
+    padding: 4px 6px;
+  }
+
+  .rail__step:not([aria-current="step"]) .rail__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .card {
+    padding: 18px 16px;
+  }
+
+  .card__title {
+    font-size: 1.5rem;
+  }
+
+  .found {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .found button {
+    grid-column: 1 / -1;
+  }
+
+  .checks li {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
+  .checks li .muted {
+    grid-column: 2;
+  }
+}

@@ -21,6 +21,12 @@
         "file": "live.html"
       },
       {
+        "name": "setup",
+        "title": "New event",
+        "fullbleed": true,
+        "file": "setup.html"
+      },
+      {
         "name": "events",
         "title": "Events",
         "width": 3,

@@ -35,3 +35,11 @@ export const itemsUrl = (base: string, c: Config) =>
   `${base}/organizations/${encodeURIComponent(c.orgId)}/auctions/${encodeURIComponent(c.auctionId)}?r=1&t=all`;
 export const summaryUrl = (base: string, c: Config) =>
   `${base}/${c.friendlyAuctionPath.replace(/^\/+/, "").split("/").map(encodeURIComponent).join("/")}`;
+
+/** Messages that help set an event up (see extension/index.ts). */
+export const auctionMessageSchemas = {
+  /** A pasted public auction link -> { friendlyAuctionPath, orgId, auctionId, title, organizationName, logoUrl }. */
+  lookupAuction: z.object({ url: z.string().trim().min(1).max(500) }).strict(),
+  /** Fetches once for a saved event -> { itemCount, photoCount, total, samples }. */
+  testConnection: z.object({ eventId: z.string().uuid() }).strict(),
+} as const;

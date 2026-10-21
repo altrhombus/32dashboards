@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import path from "node:path";
 import type NodeCG from "nodecg/types";
 import type { z } from "zod";
 import {
@@ -23,6 +24,7 @@ import {
 } from "@32dashboards/schema/core";
 import { CommandError, formatZodError, listenForCommand } from "@32dashboards/source-sdk";
 import type { FundraiserCoreApi } from "./api.js";
+import { importAsset } from "./importAsset.js";
 import * as core from "./state.js";
 
 export type { FundraiserCoreApi, ReportOutcome, SourceHandle } from "./api.js";
@@ -231,6 +233,12 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   listenForCommand(nodecg, "deleteScreen", coreMessageSchemas.deleteScreen, ({ id }) => {
     screens.value = core.deleteScreen(plain(screens.value ?? []), id);
   });
+
+  // The bundle lives at <runtime root>/bundles/fundraiser-core; NodeCG keeps assets in <runtime root>/assets.
+  const assetsRoot = path.resolve(__dirname, "..", "..", "..", "assets");
+  listenForCommand(nodecg, "importAsset", coreMessageSchemas.importAsset, ({ category, url, name }) =>
+    importAsset({ assetsRoot, namespace: nodecg.bundleName, category, url, name }),
+  );
 
   listenForCommand(nodecg, "refreshSource", coreMessageSchemas.refreshSource, ({ eventId }) => {
     const event = events.value?.find((e) => e.id === eventId);

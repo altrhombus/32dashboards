@@ -28,6 +28,14 @@ function Events() {
 
   return (
     <div className="panel">
+      <button
+        type="button"
+        className="primary guide-button"
+        onClick={() => (window.top!.location.hash = "fullbleed/setup")}
+      >
+        Set up a new event
+      </button>
+      <span className="muted">A guided setup: auction, look, celebrations. Or name one and create it directly:</span>
       <form
         className="row"
         onSubmit={(e) => {

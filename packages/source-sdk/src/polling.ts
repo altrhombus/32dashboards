@@ -43,6 +43,12 @@ export interface PollingSourceOptions {
 
 export interface PollingSource<C> {
   settings: EventSettings<C>;
+  /**
+   * Polls one event now, on screen or not, and stores the result for it (a
+   * "test the connection" button). Throws a readable error if the event isn't
+   * configured or the poll fails. Doesn't change the regular polling.
+   */
+  runOnce(eventId: string, options?: { timeoutMs?: number }): Promise<{ result: PollResult; outcome: string }>;
   stop(): void;
 }
 
@@ -164,8 +170,27 @@ export function createPollingSource<S extends z.ZodTypeAny>(
   target = currentTarget();
   restart();
 
+  async function runOnce(eventId: string, { timeoutMs = 60_000 } = {}) {
+    const config = settings.getConfig(eventId);
+    if (config === undefined) throw new Error("This event's settings aren't saved yet");
+    const secrets = settings.getSecrets(eventId);
+    const missing = (definition.requiredSecrets ?? []).filter((key) => !secrets[key]);
+    if (missing.length) throw new Error(`Missing ${missing.join(", ")}`);
+    const signal = AbortSignal.timeout(timeoutMs);
+    const result = await definition.poll({
+      eventId,
+      config,
+      secrets,
+      signal,
+      log: (level, message) => handle.log(level, message, eventId),
+    });
+    const outcome = handle.report({ eventId, total: result.total, items: result.items, observedAt: now() });
+    return { result, outcome };
+  }
+
   return {
     settings,
+    runOnce,
     stop() {
       stopped = true;
       for (const unsubscribe of unsubscribers) unsubscribe();
