@@ -65,7 +65,7 @@ network.
      the TV showed.
 
    Editing content (bid war options, prizes, sponsors, logos) is in the
-   **Show content** panel on the main dashboard tab. Changes show on the
+   **Show content** panel on the **Event** tab. Changes show on the
    TV as soon as you save.
 
 6. **After the event.** Switch to Celebration. When you're done, back up:
@@ -80,8 +80,8 @@ network.
 
 **TV not connected** (or a screen's name, **not connected**). That
 screen's kiosk isn't open, or it lost its connection. Run step 3 again
-for it; opening it twice is harmless. If the **Screens and layouts**
-panel lists a TV as "open without a screen name", it was opened without
+for it; opening it twice is harmless. If the **Screens** tab
+lists a TV as "open without a screen name", it was opened without
 `-Screen`, so it shows the built-in layouts.
 
 **Changing what a screen shows mid-show.** In the Live tab, **On each
@@ -98,7 +98,7 @@ layouts**.
 ones:
 
 - _Not configured for this event_: fill in the source's settings in its
-  panel (for 32auctions, the **32auctions source** panel).
+  panel on the **Sources** tab (for 32auctions, the **32auctions source** panel).
 - _HTTP 401/403_: the auction needs a fresh session cookie; see
   [rotating secrets](rotating-secrets.md).
 - _Total raised not found_: check the auction's public path, or the site

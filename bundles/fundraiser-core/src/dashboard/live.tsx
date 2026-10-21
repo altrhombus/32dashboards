@@ -21,6 +21,7 @@ import { screenPresence } from "@32dashboards/schema/core";
 import { formatAmount, formatTotal } from "@32dashboards/ui";
 import "@32dashboards/nodecg-react/panel.css";
 import "./live.css";
+import { parseAmount } from "./amount.js";
 import { send } from "./send.js";
 
 /*
@@ -108,7 +109,7 @@ function SourceStatus({
     return (
       <div className="status status--caution">
         <strong>No data source</strong>
-        <span>Pick one in Setup, Events.</span>
+        <span>Pick one on the Event tab, in Events.</span>
       </div>
     );
   }
@@ -333,6 +334,35 @@ function ScreenLayouts(props: {
   );
 }
 
+/** A typed-in amount beside the preset buttons ("Other amount" + Add). */
+function AmountForm({ label, onAdd, compact }: { label: string; onAdd: (amount: number) => void; compact?: boolean }) {
+  const [text, setText] = useState("");
+  const amount = parseAmount(text);
+  return (
+    <form
+      className={`row amount-form${compact ? " amount-form--compact" : ""}`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (amount === null) return;
+        onAdd(amount);
+        setText("");
+      }}
+    >
+      <input
+        inputMode="decimal"
+        enterKeyHint="done"
+        aria-label={label}
+        placeholder={compact ? "$" : "Other amount"}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+      <button type="submit" className="primary" disabled={amount === null}>
+        Add
+      </button>
+    </form>
+  );
+}
+
 function Money({
   live,
   event,
@@ -344,10 +374,7 @@ function Money({
   sourceLabel: string;
   act: Act;
 }) {
-  const [custom, setCustom] = useState("");
   const [correction, setCorrection] = useState("");
-  const amount = Number(custom);
-  const customValid = custom.trim() !== "" && Number.isFinite(amount) && amount > 0;
   const corrected = Number(correction);
   const correctionValid = correction.trim() !== "" && Number.isFinite(corrected);
 
@@ -375,26 +402,7 @@ function Money({
             </button>
           ))}
         </div>
-        <form
-          className="row"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!customValid) return;
-            add(amount);
-            setCustom("");
-          }}
-        >
-          <input
-            inputMode="decimal"
-            aria-label="Other amount"
-            placeholder="Other amount"
-            value={custom}
-            onChange={(e) => setCustom(e.target.value)}
-          />
-          <button type="submit" className="primary" disabled={!customValid}>
-            Add
-          </button>
-        </form>
+        <AmountForm label="Other venue amount" onAdd={add} />
       </div>
       <details>
         <summary className="muted">Correct the venue total</summary>
@@ -446,6 +454,7 @@ function AskMeTotal({ event, act }: { event: FundraiserEvent; act: Act }) {
           </button>
         ))}
       </div>
+      <AmountForm label="Other Ask Me amount" onAdd={add} />
     </section>
   );
 }
@@ -476,6 +485,7 @@ function BidWars({ event, act }: { event: FundraiserEvent; act: Act }) {
                   </button>
                 ))}
               </span>
+              <AmountForm compact label={`Other amount for ${o.name}`} onAdd={(d) => nudge(war, o.id, o.name, d)} />
             </div>
           ))}
         </div>

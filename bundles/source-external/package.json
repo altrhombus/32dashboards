@@ -7,6 +7,7 @@
     "build": "node ../../scripts/build-bundle.mjs",
     "dev": "node ../../scripts/build-bundle.mjs --watch",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint --max-warnings 0 src test",
     "test": "vitest run"
   },
   "nodecg": {
@@ -19,7 +20,8 @@
         "name": "external",
         "title": "External source",
         "width": 4,
-        "file": "external.html"
+        "file": "external.html",
+        "workspace": "Sources"
       }
     ]
   },

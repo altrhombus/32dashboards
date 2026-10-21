@@ -12,7 +12,7 @@
     "./fonts.css": "./src/theme/fonts.css"
   },
   "scripts": {
-    "lint": "eslint src",
+    "lint": "eslint --max-warnings 0 src",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

@@ -10,7 +10,8 @@
     "./panel.css": "./src/panel.css"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --max-warnings 0 src"
   },
   "peerDependencies": {
     "react": "^19.0.0"

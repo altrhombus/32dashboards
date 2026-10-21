@@ -7,6 +7,7 @@
     "build": "node ../../scripts/build-bundle.mjs",
     "dev": "node ../../scripts/build-bundle.mjs --watch",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint --max-warnings 0 src test",
     "test": "vitest run"
   },
   "nodecg": {
@@ -19,7 +20,8 @@
         "name": "32auctions",
         "title": "32auctions source",
         "width": 4,
-        "file": "32auctions.html"
+        "file": "32auctions.html",
+        "workspace": "Sources"
       }
     ]
   },

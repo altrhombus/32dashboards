@@ -31,7 +31,7 @@ const STATUS_BY_OUTCOME: Record<ReportOutcome, number> = {
 
 const ERRORS: Partial<Record<ReportOutcome, string>> = {
   "unknown-event": "No event with that id",
-  "wrong-source": `That event's source isn't "External push"; set it in the Events panel`,
+  "wrong-source": `That event's source isn't "External push"; set it in the Events panel on the Event tab`,
   stale: "Older than the result already stored for that event",
 };
 

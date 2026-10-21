@@ -129,7 +129,7 @@ describe("fundraiser-core extension", () => {
 
   it("recomputes liveState when a Replicant is edited directly", async () => {
     const { fake, live } = setup();
-    const eventId = await createActiveEvent(fake);
+    await createActiveEvent(fake);
     const events = fake.replicant<FundraiserEvent[]>("events");
     events.value = events.value.map((e) => ({ ...e, adjustment: 42 }));
     expect(live().total).toBe(42);

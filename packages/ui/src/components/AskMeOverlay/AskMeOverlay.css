@@ -45,32 +45,38 @@
   color: var(--color-accent);
 }
 
-.ask-me-overlay__delta {
-  position: absolute;
-  bottom: 30%;
+.ask-me-overlay__delta-slot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  /* Always this tall, so the total stays put when the pop-up comes and goes. */
+  min-height: 1.4em;
   font-size: 1.75rem;
+}
+
+.ask-me-overlay__delta {
+  padding: 0.05em 0.5em;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-success) 18%, transparent);
   font-weight: 700;
+  line-height: 1.2;
   color: var(--color-success);
-  animation: ask-me-delta-pop 3s var(--ease-overshoot);
+  animation: ask-me-delta-pop 3s var(--ease-overshoot) both;
 }
 
 @keyframes ask-me-delta-pop {
   0% {
     opacity: 0;
-    transform: translateY(20px) scale(0.8);
+    transform: translateY(0.3em) scale(0.8);
   }
-  15% {
+  12% {
     opacity: 1;
-    transform: translateY(0) scale(1.1);
+    transform: none;
   }
-  30% {
-    transform: translateY(0) scale(1);
-  }
-  80% {
+  85% {
     opacity: 1;
   }
   100% {
     opacity: 0;
-    transform: translateY(-20px) scale(1);
   }
 }

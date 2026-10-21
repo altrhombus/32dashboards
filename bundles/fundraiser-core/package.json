@@ -8,6 +8,7 @@
     "build": "node ../../scripts/build-bundle.mjs",
     "dev": "node ../../scripts/build-bundle.mjs --watch",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint --max-warnings 0 src",
     "test": "vitest run"
   },
   "nodecg": {
@@ -22,14 +23,16 @@
       {
         "name": "events",
         "title": "Events",
-        "width": 4,
-        "file": "events.html"
+        "width": 3,
+        "file": "events.html",
+        "workspace": "Event"
       },
       {
         "name": "show-content",
         "title": "Show content",
-        "width": 5,
-        "file": "show-content.html"
+        "width": 6,
+        "file": "show-content.html",
+        "workspace": "Event"
       }
     ],
     "assetCategories": [

@@ -52,7 +52,7 @@ export function LookEditor({ layoutId, layoutView, run }: { layoutId: string; la
 
   if (!events) return <p className="muted">Waiting for events…</p>;
   if (events.length === 0) {
-    return <p className="look-empty">Looks belong to events. Create an event in the Events panel first.</p>;
+    return <p className="look-empty">Looks belong to events. Create one in the Events panel on the Event tab first.</p>;
   }
   const sorted = [...events].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const event = sorted.find((e) => e.id === eventId) ?? sorted.find((e) => e.id === activeId) ?? sorted[0]!;

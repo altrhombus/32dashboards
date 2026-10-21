@@ -7,6 +7,7 @@
     "build": "node ../../scripts/build-bundle.mjs",
     "dev": "node ../../scripts/build-bundle.mjs --watch",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint --max-warnings 0 src test",
     "test": "vitest run"
   },
   "nodecg": {
@@ -30,9 +31,10 @@
       },
       {
         "name": "screens",
-        "title": "Screens and layouts",
-        "width": 5,
-        "file": "screens.html"
+        "title": "Screens",
+        "width": 7,
+        "file": "screens.html",
+        "workspace": "Screens"
       }
     ]
   },

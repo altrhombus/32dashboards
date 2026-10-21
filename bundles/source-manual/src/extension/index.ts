@@ -23,7 +23,7 @@ export default function sourceManual(nodecg: NodeCG.ServerAPI, core: FundraiserC
       observedAt: new Date().toISOString(),
     });
     if (outcome === "wrong-source") {
-      throw new CommandError(`Set this event's source to "Manual entry" in the Events panel first.`);
+      throw new CommandError(`Set this event's source to "Manual entry" in the Events panel (Event tab) first.`);
     }
     if (outcome !== "stored") throw new CommandError(`The core didn't accept the update (${outcome}).`);
   };

@@ -13,7 +13,8 @@ export function GrandCelebrationOverlay({ active, totalRaised, causeName }: Gran
 
   return (
     <div className="grand-celebration-overlay">
-      <ConfettiBurst active particleCount={220} />
+      {/* Keeps falling for as long as the thank-you is on screen. */}
+      <ConfettiBurst active continuous particleCount={220} />
       <div className="grand-celebration-overlay__message">
         <h1>Thank you</h1>
         <h2>

@@ -11,7 +11,7 @@
   To leave kiosk mode, press Alt+F4.
 
 .PARAMETER Screen
-  The screen id set up in the "Screens and layouts" panel, e.g. main-left.
+  The screen id set up on the dashboard's Screens tab, e.g. main-left.
   The kiosk then shows that screen's layouts. Each screen gets its own Edge
   profile, so two kiosks can run on one laptop. Default: no named screen.
 

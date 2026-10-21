@@ -26,23 +26,26 @@ function renderMarkdown(message: string): string {
 }
 
 export function AskMeOverlay({ askMe, visible = askMe.enabled }: AskMeOverlayProps) {
-  const [delta, setDelta] = useState<number | null>(null);
+  // What's been added recently: quick taps add up ("+$200") instead of replacing each other.
+  const [delta, setDelta] = useState<{ amount: number; key: number } | null>(null);
   const [burst, setBurst] = useState(false);
   const previousTotalRef = useRef(askMe.total);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     const diff = askMe.total - previousTotalRef.current;
     previousTotalRef.current = askMe.total;
     if (diff <= 0) return;
 
-    setDelta(diff);
+    setDelta((current) => ({ amount: (current?.amount ?? 0) + diff, key: (current?.key ?? 0) + 1 }));
     setBurst(true);
-    const timeout = setTimeout(() => {
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
       setDelta(null);
       setBurst(false);
     }, ASK_ME_DELTA_DISPLAY_MS);
-    return () => clearTimeout(timeout);
   }, [askMe.total]);
+  useEffect(() => () => clearTimeout(timerRef.current), []);
 
   if (!visible) return null;
 
@@ -52,10 +55,17 @@ export function AskMeOverlay({ askMe, visible = askMe.enabled }: AskMeOverlayPro
       <div className="ask-me-overlay__title">{askMe.title}</div>
       <div className="ask-me-overlay__message" dangerouslySetInnerHTML={{ __html: renderMarkdown(askMe.message) }} />
       <div className="ask-me-overlay__total-wrapper">
+        {/* A reserved line above the total, so the pop-up never covers it and the total doesn't move. */}
+        <div className="ask-me-overlay__delta-slot" aria-live="polite">
+          {delta && (
+            <span key={delta.key} className="ask-me-overlay__delta num">
+              +{formatAmount(delta.amount)}
+            </span>
+          )}
+        </div>
         <span className="ask-me-overlay__total-label">Ask Me Total</span>
         <span className="ask-me-overlay__total-amount num">{formatAmount(askMe.total)}</span>
       </div>
-      {delta !== null && <div className="ask-me-overlay__delta">+{formatAmount(delta)}</div>}
     </div>
   );
 }

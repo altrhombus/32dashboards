@@ -43,7 +43,11 @@ export function EventPicker(props: {
 }) {
   const { events, selected, activeId, onSelect, sourceLabel } = props;
   if (events.length === 0) {
-    return <p className="muted">No event uses {sourceLabel} yet. Pick it as an event's source in the Events panel.</p>;
+    return (
+      <p className="muted">
+        No event uses {sourceLabel} yet. Pick it as an event's source in the Events panel on the Event tab.
+      </p>
+    );
   }
   return (
     <label className="field">
