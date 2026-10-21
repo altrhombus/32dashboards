@@ -10,7 +10,7 @@ import {
 } from "@32dashboards/layout-engine/data";
 import { ScreenViewSchema, timestamp, type Screen, type ScreenView } from "@32dashboards/schema/core";
 import { kioskCatalog } from "./catalog.js";
-import { BUILT_IN_PREFIX, builtInById, builtInLayouts } from "./layouts.js";
+import { BUILT_IN_PREFIX, builtInById, builtInLayouts, templateById } from "./layouts.js";
 
 /*
  * Operator-saved layouts: the `layouts` Replicant's schema, the Messages that
@@ -44,8 +44,11 @@ const layoutId = z.string().uuid();
 const name = z.string().trim().min(1).max(60);
 
 export const kioskMessageSchemas = {
-  /** Copies a built-in or saved layout under a new name. Replies with the new id. */
-  copyLayout: z.object({ fromId: layoutRef, name: name.optional() }).strict(),
+  /**
+   * Copies a built-in layout, a template, or a saved layout under a new name,
+   * optionally for another scene. Replies with the new id.
+   */
+  copyLayout: z.object({ fromId: layoutRef, name: name.optional(), view: ScreenViewSchema.optional() }).strict(),
   renameLayout: z.object({ layoutId, name }).strict(),
   /** Replaces the draft. Refused if it has errors; replies with its warnings. */
   saveLayoutDraft: z.object({ layoutId, draft: BlockLayoutSchema }).strict(),
@@ -91,19 +94,22 @@ const replace = (layouts: SavedLayout[], next: SavedLayout) => layouts.map((l) =
 
 export function copyLayout(
   layouts: SavedLayout[],
-  input: { fromId: string; name?: string },
+  input: { fromId: string; name?: string; view?: ScreenView },
   deps: Deps,
 ): { layouts: SavedLayout[]; layoutId: string } {
   if (layouts.length >= MAX_LAYOUTS) throw new LayoutError(`There can be at most ${MAX_LAYOUTS} saved layouts.`);
   const builtIn = builtInById(input.fromId);
+  const template = templateById(input.fromId);
   const source = builtIn
-    ? { name: builtIn.name, view: builtIn.view, published: builtIn.blocks }
-    : find(layouts, input.fromId);
+    ? { name: `Copy of ${builtIn.name}`, view: builtIn.view, published: builtIn.blocks }
+    : template
+      ? { name: template.name, view: "main" as const, published: template.blocks }
+      : { ...find(layouts, input.fromId), name: `Copy of ${find(layouts, input.fromId).name}` };
   const now = deps.now();
   const copy = SavedLayoutSchema.parse({
     id: deps.newId(),
-    name: input.name ?? `Copy of ${source.name}`.slice(0, 60),
-    view: source.view,
+    name: input.name ?? source.name.slice(0, 60),
+    view: input.view ?? source.view,
     published: normalizeBlocks(source.published, kioskCatalog),
     draft: null,
     createdAt: now,
@@ -176,4 +182,23 @@ export function resolveLayout(view: ScreenView, screen: Screen | undefined, layo
   const { errors } = checkLayout(saved.published, saved.view);
   if (errors.length) return fallback(`"${saved.name}" can't be shown: ${errors.join("; ")}`);
   return { layout: compileBlocks(saved.published, { id: saved.id, name: saved.name }), problem: null };
+}
+
+/**
+ * The layout a dashboard preview shows: `ref` (a saved or built-in layout
+ * id), its draft when `draft` is set and it has one. Falls back like
+ * `resolveLayout`.
+ */
+export function resolvePreview(
+  ref: string,
+  view: ScreenView,
+  layouts: SavedLayout[],
+  draft: boolean,
+): ResolvedLayout {
+  const saved = layouts.find((l) => l.id === ref);
+  if (!saved) return resolveLayout(view, { id: "preview", name: "Preview", layouts: { [view]: ref } }, layouts);
+  const blocks = (draft && saved.draft) || saved.published;
+  const { errors } = checkLayout(blocks, saved.view);
+  if (errors.length) return { layout: builtInLayouts[view].layout, problem: errors.join("; ") };
+  return { layout: compileBlocks(blocks, { id: saved.id, name: saved.name }), problem: null };
 }

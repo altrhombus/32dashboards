@@ -23,6 +23,12 @@
     ],
     "dashboardPanels": [
       {
+        "name": "builder",
+        "title": "Layouts",
+        "fullbleed": true,
+        "file": "builder.html"
+      },
+      {
         "name": "screens",
         "title": "Screens and layouts",
         "width": 5,
@@ -40,6 +46,7 @@
     "@xstate/react": "^5.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-grid-layout": "2.2.4",
     "xstate": "^5.19.0",
     "zod": "^3.24.0"
   },

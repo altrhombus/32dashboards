@@ -28,6 +28,12 @@ describe("copyLayout", () => {
     expect(second.layouts.map((l) => l.name)).toEqual(["Copy of Main", "Lobby"]);
   });
 
+  it("starts a layout from a template, for a chosen scene", () => {
+    const { layouts } = library.copyLayout([], { fromId: "template:bigTotal", view: "intermission" }, deps);
+    expect(layouts[0]).toMatchObject({ name: "Big total", view: "intermission" });
+    expect(library.checkLayout(layouts[0]!.published, "intermission")).toEqual({ errors: [], warnings: [] });
+  });
+
   it("refuses an unknown source", () => {
     expect(() => library.copyLayout([], { fromId: "builtin:nope" }, deps)).toThrow(library.LayoutError);
   });
@@ -77,6 +83,21 @@ describe("deleteLayout", () => {
     const { layouts, layoutId } = copyOfMain();
     expect(() => library.deleteLayout(layouts, layoutId, [screen({ main: layoutId })])).toThrow(/Main room left/);
     expect(library.deleteLayout(layouts, layoutId, [screen({})])).toEqual([]);
+  });
+});
+
+describe("resolvePreview", () => {
+  it("shows a saved layout's draft when asked, else what's published", () => {
+    const { layouts, layoutId } = copyOfMain();
+    const draft = { ...layouts[0]!.published, blocks: layouts[0]!.published.blocks.slice(0, 2) };
+    const saved = library.saveLayoutDraft(layouts, layoutId, draft, deps).layouts;
+    expect(Object.keys(library.resolvePreview(layoutId, "main", saved, true).layout.slots)).toEqual(["header", "total"]);
+    expect(Object.keys(library.resolvePreview(layoutId, "main", saved, false).layout.slots)).toHaveLength(7);
+  });
+
+  it("previews built-in layouts by id, and falls back for unknown ones", () => {
+    expect(library.resolvePreview("builtin:askMe", "main", [], true).layout).toBe(builtInLayouts.askMe.layout);
+    expect(library.resolvePreview("nope", "main", [], true)).toMatchObject({ layout: builtInLayouts.main.layout });
   });
 });
 

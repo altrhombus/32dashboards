@@ -3,8 +3,9 @@ import type { Catalog } from "@32dashboards/layout-engine/data";
 
 /*
  * What kiosk layouts can place, as plain data: names and descriptions for
- * people, each size's smallest readable size on the 1920x1080 stage, and the
- * settings each takes. The extension validates saved layouts against it; the
+ * people, each size's smallest readable size on the 1920x1080 stage, the
+ * block size its text is designed for (content scales from there), and the
+ * settings each takes. Reference sizes are the built-in Main layout's blocks. The extension validates saved layouts against it; the
  * registry (registry.tsx) renders the same names, and a test keeps the two
  * in step.
  */
@@ -19,7 +20,7 @@ export const kioskCatalog: Catalog = {
     description: "The event's name and logo.",
     category: "brand",
     placement: "block",
-    variants: { default: { minWidth: 600, minHeight: 60 } },
+    variants: { default: { minWidth: 600, minHeight: 60, reference: { height: 68 }, maxScale: 1.6 } },
     repeatable: false,
     settings: none,
   },
@@ -28,7 +29,10 @@ export const kioskCatalog: Catalog = {
     description: "The fundraising total and the cause. Make it the biggest thing on screen.",
     category: "money",
     placement: "block",
-    variants: { hero: { minWidth: 900, minHeight: 200 }, compact: { minWidth: 400, minHeight: 100 } },
+    variants: {
+      hero: { minWidth: 900, minHeight: 200, reference: { width: 1250, height: 243 }, maxScale: 2.2 },
+      compact: { minWidth: 400, minHeight: 100, reference: { width: 400, height: 100 }, maxScale: 2.5 },
+    },
     repeatable: false,
     showsTotal: true,
     settings: none,
@@ -38,7 +42,7 @@ export const kioskCatalog: Catalog = {
     description: "Auction items worth a look: valuable items with few bids.",
     category: "items",
     placement: "block",
-    variants: { grid: { minWidth: 600, minHeight: 300 } },
+    variants: { grid: { minWidth: 600, minHeight: 300, reference: { width: 1320, height: 550 }, maxScale: 1.6 } },
     repeatable: false,
     settings: z.object({ title: title("Featured items"), size: z.number().int().min(1).max(12).default(6) }).strict(),
   },
@@ -47,7 +51,7 @@ export const kioskCatalog: Catalog = {
     description: "A countdown to the event's end time.",
     category: "show",
     placement: "block",
-    variants: { panel: { minWidth: 300, minHeight: 140 } },
+    variants: { panel: { minWidth: 300, minHeight: 140, reference: { width: 532, height: 155 }, maxScale: 2.5 } },
     repeatable: false,
     settings: z.object({ title: title("Time left") }).strict(),
   },
@@ -56,7 +60,7 @@ export const kioskCatalog: Catalog = {
     description: "The event's announcements, one after another.",
     category: "show",
     placement: "block",
-    variants: { list: { minWidth: 400, minHeight: 140 } },
+    variants: { list: { minWidth: 400, minHeight: 140, reference: { width: 532, height: 155 }, maxScale: 1.8 } },
     repeatable: false,
     settings: z.object({ title: title("Announcements") }).strict(),
   },
@@ -65,7 +69,7 @@ export const kioskCatalog: Catalog = {
     description: "Sponsor logos, one after another.",
     category: "brand",
     placement: "block",
-    variants: { carousel: { minWidth: 300, minHeight: 140 } },
+    variants: { carousel: { minWidth: 300, minHeight: 140, reference: { width: 532, height: 199 } } },
     repeatable: true,
     settings: z.object({ title: title("Thank you to our sponsors") }).strict(),
   },
@@ -74,7 +78,7 @@ export const kioskCatalog: Catalog = {
     description: "Rotates through incentives, bid wars, prizes, items and more, and celebrates milestones.",
     category: "show",
     placement: "block",
-    variants: { bar: { minWidth: 1200, minHeight: 100 } },
+    variants: { bar: { minWidth: 1200, minHeight: 100, reference: { height: 111 }, maxScale: 1.6 } },
     repeatable: false,
     settings: none,
   },
@@ -83,7 +87,7 @@ export const kioskCatalog: Catalog = {
     description: "The event's call to action, such as how to give.",
     category: "money",
     placement: "block",
-    variants: { banner: { minWidth: 800, minHeight: 80 } },
+    variants: { banner: { minWidth: 800, minHeight: 80, reference: { width: 1000, height: 80 }, maxScale: 2.5 } },
     repeatable: false,
     settings: none,
   },
@@ -101,7 +105,7 @@ export const kioskCatalog: Catalog = {
     description: "The operator's intermission message and countdown.",
     category: "scene",
     placement: "block",
-    variants: { hero: { minWidth: 900, minHeight: 300 } },
+    variants: { hero: { minWidth: 900, minHeight: 300, reference: { width: 1872, height: 506 }, maxScale: 1.5 } },
     repeatable: false,
     settings: none,
   },
@@ -110,7 +114,7 @@ export const kioskCatalog: Catalog = {
     description: "The Ask Me title, message, and its own running total.",
     category: "scene",
     placement: "block",
-    variants: { full: { minWidth: 1600, minHeight: 800 } },
+    variants: { full: { minWidth: 1600, minHeight: 800, reference: { width: 1920, height: 1080 }, maxScale: 1 } },
     repeatable: false,
     settings: none,
   },
@@ -119,7 +123,7 @@ export const kioskCatalog: Catalog = {
     description: "The end-of-night thank-you with the final total.",
     category: "scene",
     placement: "block",
-    variants: { full: { minWidth: 1600, minHeight: 800 } },
+    variants: { full: { minWidth: 1600, minHeight: 800, reference: { width: 1920, height: 1080 }, maxScale: 1 } },
     repeatable: false,
     showsTotal: true,
     settings: none,
@@ -129,7 +133,7 @@ export const kioskCatalog: Catalog = {
     description: "Shown before an event is on screen.",
     category: "scene",
     placement: "block",
-    variants: { full: { minWidth: 800, minHeight: 400 } },
+    variants: { full: { minWidth: 800, minHeight: 400, reference: { width: 1920, height: 1080 }, maxScale: 1 } },
     repeatable: false,
     settings: none,
   },

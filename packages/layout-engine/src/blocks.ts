@@ -102,8 +102,14 @@ export interface CatalogEntry {
   category: "money" | "items" | "show" | "brand" | "scene";
   /** Where it goes: a block on the grid, or a full-stage overlay. */
   placement: "block" | "overlay";
-  /** Each variant's smallest readable size on the stage, in design px. The first is the default. */
-  variants: Record<string, { minWidth: number; minHeight: number }>;
+  /**
+   * Each variant's sizes on the stage, in design px. The first is the default.
+   * - `minWidth`/`minHeight`: the smallest readable size; smaller blocks are refused.
+   * - `reference`: the block size the component's text is designed for. A
+   *   bigger or smaller block scales its content to match (see `contentScale`),
+   *   up to `maxScale`. Without one, content never scales.
+   */
+  variants: Record<string, VariantSize>;
   /** Whether a layout may place it more than once. */
   repeatable: boolean;
   /** Shows the fundraising total (layouts for most scenes should have one). */
@@ -112,6 +118,41 @@ export interface CatalogEntry {
   settings: z.ZodType<Record<string, unknown>, z.ZodTypeDef, unknown>;
 }
 export type Catalog = Record<string, CatalogEntry>;
+
+export interface VariantSize {
+  minWidth: number;
+  minHeight: number;
+  reference?: { width?: number; height?: number };
+  maxScale?: number;
+}
+
+/** Content never shrinks below this, however small its block (minimum sizes keep it readable). */
+export const MIN_CONTENT_SCALE = 0.6;
+export const DEFAULT_MAX_SCALE = 2;
+
+/**
+ * How much a block's content should scale for the block's size: the smaller
+ * of its width and height ratios to the variant's reference size, clamped,
+ * and rounded so tiny size changes don't re-render.
+ */
+export function contentScale(size: VariantSize | undefined, block: { width: number; height: number }): number {
+  const ref = size?.reference;
+  if (!ref || block.width <= 0 || block.height <= 0) return 1;
+  const ratios = [ref.width ? block.width / ref.width : null, ref.height ? block.height / ref.height : null].filter(
+    (r): r is number => r !== null,
+  );
+  if (ratios.length === 0) return 1;
+  const scale = Math.min(Math.max(Math.min(...ratios), MIN_CONTENT_SCALE), size.maxScale ?? DEFAULT_MAX_SCALE);
+  return Math.round(scale * 100) / 100;
+}
+
+/** The fewest grid cells a block needs to reach `px` along one axis. */
+export function cellsFor(layout: Pick<BlockLayout, "gap" | "padding">, axis: "width" | "height", px: number): number {
+  const cell = cellSize(layout)[axis];
+  const max = axis === "width" ? GRID_COLUMNS : GRID_ROWS;
+  for (let n = 1; n <= max; n++) if (n * cell + (n - 1) * layout.gap >= px - 0.5) return n;
+  return max;
+}
 
 export interface BlockProblems {
   /** Make the layout unusable: saving or publishing is refused. */

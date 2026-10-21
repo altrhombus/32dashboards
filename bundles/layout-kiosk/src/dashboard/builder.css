@@ -1,0 +1,304 @@
+/* Layout builder. Tokens come from @32dashboards/nodecg-react/panel.css. */
+
+html,
+body {
+  background: var(--ink);
+  min-height: 100%;
+}
+
+.builder {
+  display: grid;
+  gap: 12px;
+  padding: 12px 16px 24px;
+}
+
+.builder-loading {
+  padding: 24px;
+  color: var(--muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.picker select {
+  min-height: var(--target);
+  min-width: 16rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.topbar__where {
+  margin-left: auto;
+}
+
+.new-layout {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(10rem, auto);
+  gap: 10px 16px;
+  max-width: 900px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--raise);
+}
+
+.new-layout .starts,
+.new-layout > .row {
+  grid-column: 1 / -1;
+}
+
+.starts {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.start {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.editor {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) 300px;
+  gap: 16px;
+  align-items: start;
+}
+
+.palette,
+.inspector {
+  display: grid;
+  gap: 12px;
+}
+
+.palette__group {
+  display: grid;
+  gap: 4px;
+}
+
+.palette__item {
+  display: grid;
+  justify-items: start;
+  text-align: left;
+  min-height: var(--target);
+}
+
+.palette__item .muted {
+  font-size: 0.75rem;
+}
+
+.stagearea {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.stagearea__bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stagearea__hint {
+  margin: 0;
+}
+
+.toggle {
+  gap: 6px;
+  cursor: pointer;
+}
+
+.toggle input {
+  min-height: 0;
+}
+
+/* The canvas: the real kiosk underneath, the blocks you move on top. */
+.canvas {
+  position: relative;
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #000;
+  outline: 1px solid var(--line);
+}
+
+.canvas__preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none;
+}
+
+.canvas .react-grid-layout {
+  position: absolute;
+}
+
+.block {
+  border: 2px dashed color-mix(in srgb, var(--action) 70%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--action) 8%, transparent);
+  cursor: grab;
+  touch-action: none;
+}
+
+.block.react-draggable-dragging {
+  cursor: grabbing;
+}
+
+.block.is-selected {
+  border-style: solid;
+  border-color: var(--action);
+  background: color-mix(in srgb, var(--action) 18%, transparent);
+}
+
+.block.has-problem {
+  border-color: var(--caution);
+  background: color-mix(in srgb, var(--caution) 18%, transparent);
+}
+
+.block__label {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  max-width: calc(100% - 8px);
+  min-height: 0;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--action);
+  color: var(--action-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: inherit;
+}
+
+.block.has-problem .block__label {
+  background: var(--caution);
+}
+
+.canvas--clean .block {
+  border-color: transparent;
+  background: transparent;
+}
+
+.canvas--clean .block__label {
+  opacity: 0;
+}
+
+.canvas--clean .block.is-selected {
+  border: 2px solid var(--action);
+}
+
+.canvas .react-grid-item.react-grid-placeholder {
+  background: var(--action);
+  opacity: 0.25;
+  border-radius: 4px;
+}
+
+.canvas .react-grid-item > .react-resizable-handle::after {
+  border-color: var(--text);
+}
+
+.publish,
+.details {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--raise);
+}
+
+.publish p,
+.details p {
+  margin: 0;
+}
+
+.layout-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.problems {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+
+.problems li {
+  padding-left: 10px;
+  border-left: 3px solid;
+}
+
+.problems__error {
+  color: var(--caution);
+}
+
+.problems__warning {
+  color: var(--muted);
+}
+
+.builder-note {
+  min-height: 1.4em;
+  margin: 0;
+}
+
+@media (max-width: 1200px) {
+  .editor {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+
+  .palette {
+    grid-column: 1 / -1;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(160px, 1fr);
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 860px) {
+  .editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .topbar__where {
+    margin-left: 0;
+  }
+}

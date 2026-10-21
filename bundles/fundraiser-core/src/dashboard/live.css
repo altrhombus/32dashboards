@@ -133,6 +133,55 @@ h2 {
   font-weight: 600;
 }
 
+.stage__side {
+  display: grid;
+  gap: 16px;
+}
+
+.preview__screen {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+  font-weight: 400;
+}
+
+.screen-layouts {
+  display: grid;
+  gap: 6px;
+}
+
+.screen-layout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.screen-layout__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.screen-layout select {
+  min-height: var(--target);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.dot--go {
+  background: var(--go);
+}
+
+.dot--caution {
+  background: var(--caution);
+}
+
 .scenes {
   display: grid;
   grid-template-columns: 1fr 1fr;

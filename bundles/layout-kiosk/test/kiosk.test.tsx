@@ -2,58 +2,25 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { LayoutRenderer, validateLayout } from "@32dashboards/layout-engine";
 import {
-  FundraiserEventSchema,
   SCENE_IDS,
   type LiveStateReplicant,
   type SceneReplicant,
 } from "@32dashboards/schema/core";
-import { HUGE_TOTAL, LONG_DESCRIPTION, LONG_NAME, LONG_TITLE, worstCaseItems } from "@32dashboards/ui";
+import { LONG_DESCRIPTION, LONG_TITLE, worstCaseItems } from "@32dashboards/ui";
 import type { KioskData } from "../src/data.js";
 import { kioskCatalog } from "../src/catalog.js";
-import { builtInLayouts } from "../src/layouts.js";
+import { builtInLayouts, templates } from "../src/layouts.js";
 import { checkLayout } from "../src/library.js";
 import { kioskRegistry } from "../src/registry.js";
+import { sampleLive } from "../src/samples.js";
 import { buildSegments, selectFeaturedItems } from "../src/segments.js";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const NOW = "2026-10-10T12:00:00.000Z";
 
-/** An event with every field at its worst case. */
-const worstEvent = FundraiserEventSchema.parse({
-  id: id(1),
-  name: LONG_TITLE,
-  causeName: LONG_TITLE,
-  endDateTime: "2026-10-10T23:00:00.000Z",
-  theme: {},
-  askMe: { enabled: false, title: LONG_NAME, message: LONG_DESCRIPTION, total: HUGE_TOTAL },
-  announcements: [LONG_TITLE, "", "Doors close at 9"],
-  incentives: [
-    { id: id(2), name: LONG_TITLE, target: HUGE_TOTAL, active: true },
-    { id: id(3), name: "Inactive", target: 10, active: false },
-  ],
-  sponsors: [{ id: id(4), name: LONG_NAME, logoUrl: null, sortOrder: 0 }],
-  milestones: [{ id: id(5), amount: 1000, label: LONG_DESCRIPTION.slice(0, 120) }],
-  bidWars: [
-    { id: id(6), name: LONG_TITLE.slice(0, 120), options: [{ id: id(7), name: LONG_NAME, total: 5 }, { id: id(8), name: "B" }] },
-    { id: id(9), name: "One option only", options: [{ id: id(10), name: "A" }] },
-  ],
-  prizes: [{ id: id(11), name: LONG_NAME, description: LONG_DESCRIPTION, minimumDonation: 25 }],
-  callToAction: LONG_TITLE.slice(0, 160),
-  source: { adapterId: "manual" },
-  createdAt: NOW,
-  updatedAt: NOW,
-});
-
-const live: LiveStateReplicant = {
-  event: worstEvent,
-  rawTotal: HUGE_TOTAL,
-  adjustment: 0,
-  total: HUGE_TOTAL,
-  items: worstCaseItems,
-  hiddenItemCount: 0,
-  sourceId: "manual",
-  observedAt: NOW,
-};
+/** Every field at its worst case. */
+const live: LiveStateReplicant = sampleLive("worst");
+const worstEvent = live.event!;
 
 const scene = (sceneId: SceneReplicant["id"]): SceneReplicant => ({
   id: sceneId,
@@ -70,6 +37,19 @@ describe("kiosk layouts", () => {
       expect(checkLayout(builtIn.blocks, view)).toEqual({ errors: [], warnings: [] });
     },
   );
+
+  it.each(templates.filter((t) => t.blocks.blocks.length > 0).map((t) => [t.name, t] as const))(
+    "template %s has no errors or warnings",
+    (_name, template) => {
+      expect(checkLayout(template.blocks, "main")).toEqual({ errors: [], warnings: [] });
+    },
+  );
+
+  it("fills built-in blocks' settings with the catalog's defaults", () => {
+    const featured = builtInLayouts.main.blocks.blocks.find((b) => b.component === "featuredItems");
+    expect(featured?.settings).toEqual({ title: "Featured items", size: 6 });
+    expect(builtInLayouts.main.layout.slots.countdown?.options).toEqual({ title: "Time left" });
+  });
 
   it("has a layout for every scene", () => {
     for (const sceneId of SCENE_IDS) expect(builtInLayouts[sceneId]).toBeDefined();

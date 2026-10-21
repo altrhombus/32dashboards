@@ -62,8 +62,9 @@ removing the distro removes the whole stack. The background is in
 
 8. **Name the screens.** In the dashboard's **Screens and layouts**
    panel, add each TV (e.g. "Main room left", id `main-left`). For each
-   scene you can keep the built-in layout or choose another one. Copy a
-   built-in layout to give a screen its own. Then open each TV's kiosk
+   scene you can keep the built-in layout or choose another one. To make
+   your own, use the **Layouts** tab: start a new layout or copy a
+   built-in one, arrange it, and publish it. Then open each TV's kiosk
    with `open-kiosk.ps1 -Screen <id>`. With one TV, you can skip this
    step.
 

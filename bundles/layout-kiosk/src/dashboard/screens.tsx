@@ -16,11 +16,12 @@ import { builtInLayouts } from "../layouts.js";
 import type { KioskMessageName, KioskMessagePayload, LayoutsReplicant, SavedLayout } from "../library.js";
 import "@32dashboards/nodecg-react/panel.css";
 import "./screens.css";
+import { SELECTED_LAYOUT_KEY, writeStored } from "./shared.js";
 
 /*
  * Screens and layouts: name the TVs, choose what each shows for every scene,
- * and keep copies of layouts. Editing a layout's blocks comes with the
- * layout builder.
+ * and keep copies of layouts. Editing a layout's blocks happens in the
+ * Layouts tab (builder.tsx).
  */
 
 const CORE = "fundraiser-core";
@@ -37,6 +38,16 @@ const VIEW_NAMES: Record<ScreenView, string> = {
   celebration: "Celebration",
   standby: "Standby",
 };
+
+/** Opens a layout in the Layouts tab (the builder). */
+function openInBuilder(layoutId: string) {
+  writeStored(SELECTED_LAYOUT_KEY, layoutId);
+  try {
+    window.top!.location.hash = "fullbleed/builder";
+  } catch {
+    window.open("/dashboard/#fullbleed/builder", "_top");
+  }
+}
 
 const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
@@ -115,15 +126,15 @@ function ScreensPanel() {
 
       <section className="group" aria-labelledby="layouts-heading">
         <h2 id="layouts-heading">Layouts</h2>
-        <p className="muted">
-          Copy a layout to give it to a screen under its own name. Changing what's in a layout comes with the layout
-          builder.
-        </p>
+        <p className="muted">Change what's in a layout in the Layouts tab. Built-in layouts can be copied, not changed.</p>
         <ul className="layouts">
           {Object.values(builtInLayouts).map((b) => (
             <li key={b.id} className="list-row">
               <span className="layout-name">{b.name}</span>
               <span className="muted">Built in</span>
+              <button type="button" onClick={() => openInBuilder(b.id)}>
+                View
+              </button>
               <button type="button" onClick={() => run(sendKiosk("copyLayout", { fromId: b.id }), `Copied ${b.name}.`)}>
                 Copy
               </button>
@@ -320,6 +331,9 @@ function SavedLayoutRow({ layout, screens, run }: { layout: SavedLayout; screens
         {users.length > 0 && `, on ${users.join(", ")}`}
         {layout.draft && ", has unpublished changes"}
       </span>
+      <button type="button" className="primary" onClick={() => openInBuilder(layout.id)}>
+        Edit
+      </button>
       <button type="button" onClick={() => run(sendKiosk("copyLayout", { fromId: layout.id }), `Copied ${layout.name}.`)}>
         Copy
       </button>

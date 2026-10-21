@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ConfirmButton, errorText, useReplicant } from "@32dashboards/nodecg-react";
 import type {
@@ -13,7 +13,9 @@ import type {
   RegisteredSourcesReplicant,
   SceneId,
   SceneReplicant,
+  Screen,
   ScreensReplicant,
+  ScreenView,
 } from "@32dashboards/schema/core";
 import { screenPresence } from "@32dashboards/schema/core";
 import { formatAmount, formatTotal } from "@32dashboards/ui";
@@ -227,6 +229,72 @@ function Scenes({ scene, act }: { scene: SceneReplicant; act: Act }) {
 
 const VENUE_AMOUNTS = [20, 50, 100, 500];
 
+// --- Screens ---------------------------------------------------------------
+
+/** What the console needs from layout-kiosk's `layouts` Replicant (read by name, so core doesn't depend on that bundle). */
+interface LayoutSummary {
+  id: string;
+  name: string;
+  view: string;
+}
+
+const PREVIEW_SCREEN_KEY = "32dashboards.live.previewScreen";
+
+/** Mid-show, change which finished layout a screen shows for what's on air. Building layouts happens in the Layouts tab. */
+function ScreenLayouts(props: {
+  screens: ScreensReplicant;
+  layouts: LayoutSummary[];
+  view: ScreenView;
+  connected: Set<string>;
+  act: Act;
+}) {
+  const { screens, layouts, view, act } = props;
+  if (screens.length === 0) return null;
+  const forView = layouts.filter((l) => l.view === view);
+  const others = layouts.filter((l) => l.view !== view);
+  const viewName = view === "standby" ? "standby" : SCENES.find((s) => s.id === view)?.name;
+  const choose = (screen: Screen, ref: string) => {
+    const before = screen.layouts;
+    const layouts = { ...before };
+    if (ref) layouts[view] = ref;
+    else delete layouts[view];
+    const name = ref ? (props.layouts.find((l) => l.id === ref)?.name ?? "the chosen layout") : "the built-in layout";
+    act(send("saveScreen", { ...screen, layouts }), `${screen.name} now shows ${name}.`, () => void send("saveScreen", { ...screen, layouts: before }));
+  };
+  return (
+    <section className="screen-layouts" aria-label="Layouts on each screen">
+      <h2>On each screen now ({viewName})</h2>
+      {screens.map((screen) => (
+        <label key={screen.id} className="screen-layout">
+          <span className={`dot ${props.connected.has(screen.id) ? "dot--go" : "dot--caution"}`} aria-hidden="true" />
+          <span className="screen-layout__name">{screen.name}</span>
+          <select value={screen.layouts[view] ?? ""} onChange={(e) => choose(screen, e.target.value)}>
+            <option value="">Built-in</option>
+            {forView.length > 0 && (
+              <optgroup label={`Made for ${viewName}`}>
+                {forView.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {others.length > 0 && (
+              <optgroup label="Others">
+                {others.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+        </label>
+      ))}
+    </section>
+  );
+}
+
 function Money({ live, event, sourceLabel, act }: { live: LiveStateReplicant; event: FundraiserEvent; sourceLabel: string; act: Act }) {
   const [custom, setCustom] = useState("");
   const [correction, setCorrection] = useState("");
@@ -431,7 +499,15 @@ function Console() {
   const outputs = useReplicant<OutputsReplicant>("outputs") ?? [];
   const screens = useReplicant<ScreensReplicant>("screens") ?? [];
   const moments = useReplicant<MomentsReplicant>("moments") ?? [];
+  const layouts = useReplicant<LayoutSummary[]>("layouts", "layout-kiosk") ?? [];
   const now = useNow();
+  const [previewScreen, setPreviewScreen] = useState(() => {
+    try {
+      return localStorage.getItem(PREVIEW_SCREEN_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -448,6 +524,17 @@ function Console() {
 
   if (!events || !live || !scene) return <p className="console-loading">Connecting to NodeCG…</p>;
   const event = live.event;
+  const view: ScreenView = event ? scene.id : "standby";
+  const shownScreen = screens.find((s) => s.id === previewScreen);
+  const connected = new Set(screenPresence(screens, outputs, now).named.filter((n) => n.connected).map((n) => n.screen.id));
+  const pickPreview = (id: string) => {
+    setPreviewScreen(id);
+    try {
+      localStorage.setItem(PREVIEW_SCREEN_KEY, id);
+    } catch {
+      // Without storage the choice lasts until reload.
+    }
+  };
 
   return (
     <div className="console">
@@ -460,13 +547,33 @@ function Console() {
       <div className="stage">
         <figure className="preview">
           <div className="preview__frame">
-            <iframe title="What the TV shows" src="/bundles/layout-kiosk/graphics/kiosk.html?preview" tabIndex={-1} />
+            <iframe
+              title="What the TV shows"
+              src={`/bundles/layout-kiosk/graphics/kiosk.html?preview${shownScreen ? `&screen=${shownScreen.id}` : ""}`}
+              tabIndex={-1}
+            />
           </div>
           <figcaption>
             <span className="badge">On TV</span> {event ? event.name : "Standby screen (no event)"}
+            {screens.length > 0 && (
+              <label className="preview__screen">
+                <span className="muted">Preview shows</span>
+                <select value={shownScreen?.id ?? ""} onChange={(e) => pickPreview(e.target.value)}>
+                  <option value="">Built-in layouts</option>
+                  {screens.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </figcaption>
         </figure>
-        <Scenes scene={scene} act={act} />
+        <div className="stage__side">
+          <Scenes scene={scene} act={act} />
+          <ScreenLayouts screens={screens} layouts={layouts} view={view} connected={connected} act={act} />
+        </div>
       </div>
 
       {event ? (

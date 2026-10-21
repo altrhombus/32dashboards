@@ -84,6 +84,11 @@ for it; opening it twice is harmless. If the **Screens and layouts**
 panel lists a TV as "open without a screen name", it was opened without
 `-Screen`, so it shows the built-in layouts.
 
+**Changing what a screen shows mid-show.** In the Live tab, **On each
+screen now** lists the named screens; pick another finished layout for
+one. **Preview shows** picks which screen the preview follows. Build or
+edit layouts beforehand in the **Layouts** tab, not during the show.
+
 **A screen shows the built-in layout instead of the one chosen for it.**
 The chosen layout was deleted or can't be shown. The screen falls back
 rather than going blank; choose a layout for it again in **Screens and

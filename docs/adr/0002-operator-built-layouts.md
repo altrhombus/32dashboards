@@ -322,6 +322,66 @@ What step 1 built, and where it differs from the decision above.
     the built-in layouts. It should follow one screen, or let you pick
     which; that's for the design session.
 
+## Steps 2 and 3 notes (2026-10-20)
+
+What was built in steps 2 and 3, and where it differs from the plan.
+
+- **Content scales with its block.**
+  - Each catalog size has a `reference` (the block size its text is designed
+    for; the built-in Main layout's blocks) and a `maxScale`.
+  - The renderer measures each slot and applies CSS `zoom` with
+    `contentScale()`: the smaller of the width and height ratios, clamped
+    between 0.6 and `maxScale`. Unlike a transform, `zoom` scales the
+    content while it still lays out to fill the block.
+  - The full-screen scenes keep a cap of 1.
+  - Per-component TV-size CSS is now keyed on `data-component`, not the
+    grid area name.
+- **The Layouts tab** (fullbleed panel `builder` in layout-kiosk):
+  - **Palette:** the catalog's components, grouped. Each is added where it
+    fits: at its reference size, else at its minimum, else "no room".
+  - **Canvas:** the real kiosk in an iframe
+    (`?preview&layout=<id>&view=<scene>&draft&sample=demo|worst`), under
+    a react-grid-layout 2.2.4 grid that blocks collisions, caps the grid
+    at 24 rows, and won't shrink a block below its readable size.
+  - **Inspector:** the selected block's size on the TV and its text
+    scale, its style (size variant), and its settings. A form is generated
+    from the catalog's settings schema for text, whole-number and on/off
+    fields. With nothing selected, it shows the gap, the padding, and the
+    thank-you pop-ups switch.
+  - **Problems:** errors and warnings appear as you edit. Edits save as a
+    draft 0.6 s after each change if there are no errors; Publish is
+    enabled once the draft is saved and error-free.
+  - **Undo and redo:** up to 50 steps.
+  - **Keyboard:** arrows move the selected block, Shift+arrows resize it,
+    Delete removes it, Ctrl+Z and Ctrl+Y undo and redo.
+  - **Built-in layouts** open read-only, with "Copy to change it".
+  - **New layout:** a name, a scene, and a starting point: the Blank, Big
+    total or Total and items template, or that scene's built-in layout.
+    `copyLayout` takes `template:<id>` and an optional `view`.
+- **Preview data:** "the event on screen", "a sample show", or "the
+  longest text" (`src/samples.ts`; the kiosk tests use the same worst-case
+  data). Samples wear the on-screen event's theme when there is one.
+  Preview-only URL options are ignored without `?preview`, so a TV can't
+  get stuck on a draft.
+- **The Live console:**
+  - "On each screen now" changes a named screen's layout for what's on
+    air, among finished layouts, with Undo.
+  - "Preview shows" makes the preview follow one named screen.
+  - The console reads layout-kiosk's `layouts` Replicant by name and only
+    needs ids, names and scenes, so the core still doesn't depend on that
+    bundle.
+- **Screens and layouts panel:** "Edit" and "View" open a layout in the
+  Layouts tab.
+- **Fixed along the way:** step 1 had dropped the built-in layouts' card
+  headings, because their blocks weren't filled with the catalog's
+  defaults. Built-ins and templates are now normalized when they're
+  defined, and a test covers it.
+- **Not done:**
+  - dragging from the palette onto the canvas (click to add instead);
+  - editing several layouts at once in one tab;
+  - noticing edits made to the same layout in another tab, which the
+    server's copy only replaces when you have nothing unsaved.
+
 ## Questions for the design session
 
 - Which components are missing from the catalog? For example: a QR code
