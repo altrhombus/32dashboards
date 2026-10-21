@@ -18,8 +18,9 @@ function item(title: string): SourceItem {
 
 function withEvent(adapterId: string | null = "fake") {
   const deps = makeDeps();
-  let { state, eventId } = core.createEvent(empty, { name: "Spring Gala" }, deps);
-  state = core.updateEvent(state, { eventId, patch: { source: { adapterId } } }, deps);
+  const created = core.createEvent(empty, { name: "Spring Gala" }, deps);
+  const { eventId } = created;
+  const state = core.updateEvent(created.state, { eventId, patch: { source: { adapterId } } }, deps);
   return { state, eventId, deps };
 }
 

@@ -48,9 +48,11 @@ function Panel() {
   const saved = eventId ? configs?.[eventId] : undefined;
   const savedJson = JSON.stringify(saved ?? null);
   // Reload the form when switching events or when the saved config changes elsewhere.
+  // savedJson stands in for `saved`, which is a new object on every Replicant update.
   useEffect(() => {
     setDraft(toDraft(saved));
     setSecretDrafts({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, savedJson]);
 
   if (!loaded) return <p className="panel">Waiting for state…</p>;
