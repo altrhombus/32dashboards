@@ -44,6 +44,9 @@ export function ThemeProvider({ theme, children }: ThemeProviderProps) {
         "--color-bg-to": theme.backgroundTo,
         "--font-display": fontStack(theme.fontDisplay, DISPLAY_FALLBACK),
         "--font-mono": fontStack(theme.fontMono, MONO_FALLBACK),
+        // Set here, not inherited from body: body resolves --font-display at
+        // :root, before this element overrides it.
+        fontFamily: "var(--font-display)",
         background: "linear-gradient(160deg, var(--color-bg-from), var(--color-bg-to))",
         minHeight: "100vh",
         width: "100%",

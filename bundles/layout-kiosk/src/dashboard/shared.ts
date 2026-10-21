@@ -16,3 +16,9 @@ export function writeStored(key: string, value: string): void {
     // Private windows can refuse storage; everything works without it.
   }
 }
+
+/** Which part of the Layouts tab is open: arranging a layout, or an event's look. */
+export const BUILDER_MODE_KEY = "32dashboards.builder.mode";
+
+/** The event whose look the Layouts tab is editing. */
+export const LOOK_EVENT_KEY = "32dashboards.builder.lookEvent";

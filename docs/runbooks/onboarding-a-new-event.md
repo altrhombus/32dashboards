@@ -35,9 +35,12 @@ quickest start is often to duplicate last year's.
    - *Event details*: the name and cause shown on the TV, when bidding
      closes (the TV counts down to it), announcements, and the Ask Me
      title and message.
-   - *Look and sponsors*: event logo, colors (the panel warns about
-     hard-to-read or broadcast-unsafe colors), and sponsors with logos.
-     Upload logos first in the dashboard's **Assets** tab.
+   - *Look and sponsors*: sponsors with logos. **Edit the look** opens
+     the event's colors, logo and fonts in the **Layouts** tab, beside a
+     live preview of each scene: start from a palette, adjust it to the
+     brand (each color warns if it's hard to read or broadcast-unsafe),
+     pick fonts that ship with the kiosk, and save. Upload logos first in
+     the dashboard's **Assets** tab.
    - *Call to action*: how people give, e.g. "Bid at 32auctions.com/gala".
    - *Hidden items*: words that keep matching items (e.g. "raffle") off
      the TV.

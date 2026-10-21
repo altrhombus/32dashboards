@@ -382,6 +382,39 @@ What was built in steps 2 and 3, and where it differs from the plan.
   - noticing edits made to the same layout in another tab, which the
     server's copy only replaces when you have nothing unsaved.
 
+## Event look notes (2026-10-20)
+
+The look stays with the event, as decided above, but it's now edited in
+the Layouts tab beside the same live preview.
+
+- **"Event look" mode in the Layouts tab** edits one event's theme:
+  - starting palettes (`PALETTES` in `@32dashboards/ui`, each tested
+    against `validateTheme`);
+  - the four colors, with each one's contrast or broadcast-safe warning
+    shown under it;
+  - the logo, from the event-logos assets;
+  - the word and number fonts.
+
+  The preview shows any scene; it uses the event's real content when the
+  event is on screen, and the sample show otherwise. Unsaved changes are
+  posted to the preview iframe (`PREVIEW_THEME_MESSAGE`, preview only).
+  Saving uses `updateEvent`.
+- **The Show content panel** summarizes the look and links to it. It no
+  longer edits colors or the logo itself, so there's one place to change
+  them.
+- **Fonts ship with the kiosk:** five word fonts and three number fonts
+  from Fontsource (OFL), latin only, about 1.2 MB in all. A font name
+  that isn't bundled still works, falling back to a system font, and the
+  editor says so.
+- **Fixed:** the event's word font never reached the TV. `body` resolved
+  `--font-display` at `:root`, before the theme overrode it, so only
+  components that ask for the number font directly got the theme's
+  choice. `ThemeProvider` now sets `font-family` itself.
+- **New events start broadcast-safe:** the default accent is `#ebc81e`
+  instead of `#ffd700`. Events already saved keep their colors.
+- **Not done:** per-layout looks (a lobby screen with its own
+  background), left for the design session.
+
 ## Questions for the design session
 
 - Which components are missing from the catalog? For example: a QR code

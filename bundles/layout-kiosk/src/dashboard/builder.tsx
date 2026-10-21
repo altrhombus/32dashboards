@@ -15,8 +15,10 @@ import { kioskCatalog } from "../catalog.js";
 import { builtInById, builtInLayouts, templates } from "../layouts.js";
 import { checkLayout, type KioskMessageName, type KioskMessagePayload, type LayoutsReplicant } from "../library.js";
 import "@32dashboards/nodecg-react/panel.css";
+import "@32dashboards/ui/fonts.css";
 import "./builder.css";
-import { SELECTED_LAYOUT_KEY as SELECTED_KEY, readStored, writeStored } from "./shared.js";
+import { LookEditor } from "./look.js";
+import { BUILDER_MODE_KEY, SELECTED_LAYOUT_KEY as SELECTED_KEY, readStored, writeStored } from "./shared.js";
 
 /*
  * The layout builder: arrange the kiosk's components on the 24x24 grid over a
@@ -57,10 +59,18 @@ function Builder() {
   const [selectedId, setSelectedId] = useState(() => readStored(SELECTED_KEY) ?? builtInLayouts.main.id);
   const [note, setNote] = useState<Note | null>(null);
   const [creating, setCreating] = useState(false);
+  const [mode, setMode] = useState<"arrange" | "look">(() => (readStored(BUILDER_MODE_KEY) === "look" ? "look" : "arrange"));
+  const switchMode = (next: "arrange" | "look") => {
+    setMode(next);
+    writeStored(BUILDER_MODE_KEY, next);
+  };
 
-  // The Screens and layouts panel opens a layout by writing its id.
+  // Other panels open a layout, or the look, by writing to storage.
   useEffect(() => {
-    const onStorage = (e: StorageEvent) => e.key === SELECTED_KEY && e.newValue && setSelectedId(e.newValue);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === SELECTED_KEY && e.newValue) setSelectedId(e.newValue);
+      if (e.key === BUILDER_MODE_KEY && (e.newValue === "look" || e.newValue === "arrange")) setMode(e.newValue);
+    };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
@@ -93,6 +103,14 @@ function Builder() {
   return (
     <div className="builder">
       <header className="topbar">
+        <div className="modes" role="tablist" aria-label="What to change">
+          <button type="button" role="tab" aria-selected={mode === "arrange"} onClick={() => switchMode("arrange")}>
+            Arrange layouts
+          </button>
+          <button type="button" role="tab" aria-selected={mode === "look"} onClick={() => switchMode("look")}>
+            Event look
+          </button>
+        </div>
         <label className="picker">
           <span className="visually-hidden">Layout</span>
           <select value={saved?.id ?? builtIn!.id} onChange={(e) => select(e.target.value)}>
@@ -115,26 +133,30 @@ function Builder() {
             </optgroup>
           </select>
         </label>
-        <button type="button" onClick={() => setCreating((c) => !c)} aria-expanded={creating}>
-          New layout
-        </button>
-        <button
-          type="button"
-          onClick={() =>
-            run(sendKiosk("copyLayout", { fromId: saved?.id ?? builtIn!.id }), "Copied. You're editing the copy.").then(
-              (id) => select(String(id)),
-              () => {},
-            )
-          }
-        >
-          {builtIn ? "Copy to change it" : "Copy"}
-        </button>
+        {mode === "arrange" && (
+          <>
+            <button type="button" onClick={() => setCreating((c) => !c)} aria-expanded={creating}>
+              New layout
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                run(sendKiosk("copyLayout", { fromId: saved?.id ?? builtIn!.id }), "Copied. You're editing the copy.").then(
+                  (id) => select(String(id)),
+                  () => {},
+                )
+              }
+            >
+              {builtIn ? "Copy to change it" : "Copy"}
+            </button>
+          </>
+        )}
         <span className="topbar__where muted">
           {usedOn.length ? `On ${usedOn.join(", ")}` : "Not on any screen yet"}
         </span>
       </header>
 
-      {creating && (
+      {mode === "arrange" && creating && (
         <NewLayout
           onCancel={() => setCreating(false)}
           onCreate={(input) =>
@@ -149,7 +171,9 @@ function Builder() {
         />
       )}
 
-      {saved ? (
+      {mode === "look" ? (
+        <LookEditor layoutId={saved?.id ?? builtIn!.id} layoutView={saved?.view ?? builtIn!.view} run={run} />
+      ) : saved ? (
         <Editor
           key={saved.id}
           layoutId={saved.id}

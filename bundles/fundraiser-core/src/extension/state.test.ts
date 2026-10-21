@@ -32,7 +32,7 @@ describe("createEvent", () => {
     const { state, eventId } = core.createEvent(empty, { name: "Spring Gala" }, makeDeps());
     expect(state.events).toHaveLength(1);
     expect(state.events[0]).toMatchObject({ id: eventId, name: "Spring Gala", adjustment: 0, filters: [] });
-    expect(state.events[0]?.theme.accentColor).toBe("#ffd700");
+    expect(state.events[0]?.theme.accentColor).toBe("#ebc81e");
     expect(state.activeEventId).toBeNull();
   });
 });

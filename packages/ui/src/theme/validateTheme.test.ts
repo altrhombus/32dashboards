@@ -12,8 +12,8 @@ describe("contrastRatio", () => {
 });
 
 describe("validateTheme", () => {
-  it("flags the default theme's out-of-range accent only as a warning", () => {
-    const issues = validateTheme(base);
+  it("flags an out-of-range accent only as a warning", () => {
+    const issues = validateTheme({ ...base, accentColor: "#ffd700" });
     expect(issues.filter((i) => i.level === "error")).toEqual([]);
     expect(issues.map((i) => i.field)).toContain("accentColor");
   });

@@ -301,41 +301,52 @@ function AssetSelect(props: { label: string; assets: Asset[]; value: string | nu
 }
 
 const COLOR_FIELDS = [
-  ["accentColor", "Accent (total, highlights)"],
-  ["secondaryColor", "Secondary (headings, bars)"],
+  ["accentColor", "Accent"],
+  ["secondaryColor", "Secondary"],
   ["backgroundFrom", "Background, top"],
   ["backgroundTo", "Background, bottom"],
 ] as const;
 
+/**
+ * Opens the event's look in the Layouts tab (layout-kiosk's builder), which
+ * edits it beside a live preview. The storage keys are that panel's.
+ */
+function editLook(eventId: string) {
+  try {
+    localStorage.setItem("32dashboards.builder.mode", "look");
+    localStorage.setItem("32dashboards.builder.lookEvent", eventId);
+  } catch {
+    // Without storage the Layouts tab opens on its last view.
+  }
+  window.top!.location.hash = "fullbleed/builder";
+}
+
 function LookAndSponsors({ event, run }: { event: FundraiserEvent; run: Run }) {
-  const eventLogos = useAssets("event-logos");
   const sponsorLogos = useAssets("sponsor-logos");
-  const [theme, setTheme, themeDirty] = useDraft(event.theme);
   const [sponsors, setSponsors, sponsorsDirty] = useDraft(event.sponsors);
+  const theme = event.theme;
   const issues = validateTheme(theme);
+  const logoName = theme.logoUrl ? decodeURIComponent(theme.logoUrl.split("/").pop() ?? "") : null;
 
   return (
     <>
-      <p className="muted">Upload logos in the dashboard's Assets tab, then pick them here.</p>
-      <label className="field">
-        <span>Event logo (top left of the TV)</span>
-        <AssetSelect label="Event logo" assets={eventLogos} value={theme.logoUrl} onChange={(logoUrl) => setTheme({ ...theme, logoUrl })} />
-      </label>
-      {COLOR_FIELDS.map(([key, label]) => (
-        <label key={key} className="row">
-          <input type="color" value={theme[key]} onChange={(e) => setTheme({ ...theme, [key]: e.target.value })} />
-          {label}
-        </label>
-      ))}
-      {issues.map((issue, i) => (
-        <p key={i} className={issue.level === "error" ? "error" : "warning"}>
-          {issue.message}
+      <div className="row" aria-label="Colors">
+        {COLOR_FIELDS.map(([key, label]) => (
+          <span key={key} title={`${label}: ${theme[key]}`} className="swatch" style={{ background: theme[key] }} />
+        ))}
+        <span className="muted">
+          {logoName ? `Logo: ${logoName}` : "No logo"}. Words in {theme.fontDisplay}, numbers in {theme.fontMono}.
+        </span>
+      </div>
+      {issues.length > 0 && (
+        <p className="warning">
+          {issues.length === 1 ? "1 color needs a look." : `${issues.length} colors need a look.`}
         </p>
-      ))}
-      {issues.length === 0 && <p className="muted">Colors meet contrast and broadcast-safe rules.</p>}
-      <button type="button" className="primary" disabled={!themeDirty} onClick={() => run(send("updateEvent", { eventId: event.id, patch: { theme } }))}>
-        Save look
+      )}
+      <button type="button" className="primary" onClick={() => editLook(event.id)}>
+        Edit the look
       </button>
+      <p className="muted">Colors, logo and fonts are edited in the Layouts tab, next to a live preview.</p>
 
       <h4 style={{ margin: "8px 0 0" }}>Sponsors</h4>
       {sponsors.map((sponsor, index) => (

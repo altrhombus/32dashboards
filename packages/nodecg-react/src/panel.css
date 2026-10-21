@@ -185,6 +185,15 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* A small color sample. */
+.swatch {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  outline: 1px solid var(--line);
+}
+
 /* A ConfirmButton waiting for its second tap. */
 .is-armed {
   border-color: var(--caution) !important;

@@ -1,8 +1,9 @@
 import { createRoot } from "react-dom/client";
 import { LayoutRenderer, contentScale, type Slot } from "@32dashboards/layout-engine";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { newId, useReplicant } from "@32dashboards/nodecg-react";
 import {
+  EventThemeSchema,
   ScreenIdSchema,
   ScreenViewSchema,
   ThemeSchema,
@@ -12,8 +13,10 @@ import {
 } from "@32dashboards/schema/core";
 import { ThemeProvider } from "@32dashboards/ui";
 import "@32dashboards/ui/tokens.css";
+import "@32dashboards/ui/fonts.css";
 import { kioskCatalog } from "../catalog.js";
 import { resolveLayout, resolvePreview, type LayoutsReplicant } from "../library.js";
+import { PREVIEW_THEME_MESSAGE } from "../preview.js";
 import { sampleLive, type SampleKind } from "../samples.js";
 import { kioskRegistry } from "../registry.js";
 import { useDonationMoments, useInfoBar } from "../useShow.js";
@@ -54,6 +57,24 @@ const preview = isPreview
     }
   : null;
 
+/** In a preview, the look the parent page is trying out (null: the event's own). */
+function usePreviewTheme() {
+  const [theme, setTheme] = useState<ReturnType<typeof EventThemeSchema.parse> | null>(null);
+  useEffect(() => {
+    if (!isPreview) return;
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.data?.type !== PREVIEW_THEME_MESSAGE) return;
+      const parsed = e.data.theme === null ? null : EventThemeSchema.safeParse(e.data.theme);
+      setTheme(parsed && parsed.success ? parsed.data : null);
+    };
+    window.addEventListener("message", onMessage);
+    // Ask for the look in case the parent posted it before we were listening.
+    window.parent?.postMessage({ type: `${PREVIEW_THEME_MESSAGE}:ready` }, window.location.origin);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+  return theme;
+}
+
 /** Bigger blocks get bigger text: scale each slot's content from its component's reference size. */
 function slotScale(slot: Slot, size: { width: number; height: number }): number {
   const entry = kioskCatalog[slot.component];
@@ -93,6 +114,7 @@ function Kiosk() {
     if (!realScene || !forced || forced === realScene.id) return realScene;
     return { ...realScene, id: forced, message: realScene.message ?? "Back in a few minutes", countdownTo: realScene.countdownTo };
   }, [realScene]);
+  const previewTheme = usePreviewTheme();
   const { display, celebrate } = useInfoBar(live);
   const toasts = useDonationMoments(live?.event?.id ?? null, celebrate);
   useHeartbeat();
@@ -113,7 +135,7 @@ function Kiosk() {
   if (!live || !scene) return null;
 
   return (
-    <ThemeProvider theme={live.event?.theme ?? DEFAULT_THEME}>
+    <ThemeProvider theme={previewTheme ?? live.event?.theme ?? DEFAULT_THEME}>
       <LayoutRenderer
         layout={layout}
         registry={kioskRegistry}
