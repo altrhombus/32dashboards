@@ -159,7 +159,10 @@ export const kioskRegistry: Registry<KioskData> = {
     ),
   }),
 
-  sponsors: defineComponent<KioskData, { sponsors: NonNullable<KioskData["live"]["event"]>["sponsors"]; title?: unknown }>({
+  sponsors: defineComponent<
+    KioskData,
+    { sponsors: NonNullable<KioskData["live"]["event"]>["sponsors"]; title?: unknown }
+  >({
     variants: ["carousel"],
     select: ({ live }, { options }) =>
       live.event?.sponsors.length
@@ -216,4 +219,3 @@ export const kioskRegistry: Registry<KioskData> = {
     component: () => <div className="kiosk-standby">Starting soon</div>,
   }),
 };
-

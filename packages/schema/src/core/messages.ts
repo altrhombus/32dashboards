@@ -75,9 +75,7 @@ export type NudgeAdjustmentMessage = z.infer<typeof NudgeAdjustmentMessageSchema
 export const NudgeAskMeMessageSchema = z.object({ eventId, delta: z.number().finite() }).strict();
 export type NudgeAskMeMessage = z.infer<typeof NudgeAskMeMessageSchema>;
 
-export const SetFiltersMessageSchema = z
-  .object({ eventId, filters: FundraiserEventSchema.shape.filters })
-  .strict();
+export const SetFiltersMessageSchema = z.object({ eventId, filters: FundraiserEventSchema.shape.filters }).strict();
 export type SetFiltersMessage = z.infer<typeof SetFiltersMessageSchema>;
 
 /** Asks the event's adapter to fetch now instead of waiting for its next cycle. */

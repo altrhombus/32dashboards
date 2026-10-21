@@ -31,7 +31,13 @@ describe("validateTheme", () => {
   });
 
   it("passes a broadcast-safe, high-contrast theme", () => {
-    const safe = { ...base, accentColor: "#ebc314", secondaryColor: "#4dd0e1", backgroundFrom: "#181c2a", backgroundTo: "#23284a" };
+    const safe = {
+      ...base,
+      accentColor: "#ebc314",
+      secondaryColor: "#4dd0e1",
+      backgroundFrom: "#181c2a",
+      backgroundTo: "#23284a",
+    };
     expect(validateTheme(safe)).toEqual([]);
   });
 });

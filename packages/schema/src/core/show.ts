@@ -63,7 +63,10 @@ export type InfoBarSegmentKind = z.infer<typeof InfoBarSegmentKindSchema>;
 
 /** Which segments the info bar rotates through, in order, and for how long each shows. */
 export const InfoBarConfigSchema = z.object({
-  segments: z.array(InfoBarSegmentKindSchema).max(INFO_BAR_SEGMENTS.length).default([...INFO_BAR_SEGMENTS]),
+  segments: z
+    .array(InfoBarSegmentKindSchema)
+    .max(INFO_BAR_SEGMENTS.length)
+    .default([...INFO_BAR_SEGMENTS]),
   segmentSeconds: z.number().int().min(4).max(120).default(12),
 });
 export type InfoBarConfig = z.infer<typeof InfoBarConfigSchema>;

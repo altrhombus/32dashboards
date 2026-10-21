@@ -29,7 +29,6 @@ import { send } from "./send.js";
  * it changed; actions that end the show take a second tap.
  */
 
-
 /** Re-renders every `ms` so relative times stay fresh. */
 function useNow(ms = 5_000): number {
   const [now, setNow] = useState(() => Date.now());
@@ -93,7 +92,17 @@ function TvStatus({ screens, outputs, now }: { screens: ScreensReplicant; output
   );
 }
 
-function SourceStatus({ event, sources, now, act }: { event: FundraiserEvent; sources: RegisteredSourcesReplicant; now: number; act: Act }) {
+function SourceStatus({
+  event,
+  sources,
+  now,
+  act,
+}: {
+  event: FundraiserEvent;
+  sources: RegisteredSourcesReplicant;
+  now: number;
+  act: Act;
+}) {
   const adapterId = event.source.adapterId;
   if (!adapterId) {
     return (
@@ -119,7 +128,11 @@ function SourceStatus({ event, sources, now, act }: { event: FundraiserEvent; so
         {source.label}: {failing ? "needs a look" : "receiving data"}
       </strong>
       <span>{failing ? source.status.message : `Last data ${ago(source.lastResultAt, now)}`}</span>
-      <button type="button" className="status__action" onClick={() => act(send("refreshSource", { eventId: event.id }), "Asked the source to fetch now.")}>
+      <button
+        type="button"
+        className="status__action"
+        onClick={() => act(send("refreshSource", { eventId: event.id }), "Asked the source to fetch now.")}
+      >
         Fetch now
       </button>
     </div>
@@ -149,7 +162,10 @@ function EventSwitcher({ events, activeId, act }: { events: EventsReplicant; act
           label={target ? "Put on TV" : "Take off TV"}
           confirmLabel="Tap again to switch the TV"
           onConfirm={() =>
-            act(send("activateEvent", { eventId: choice || null }), target ? `${target.name} is on the TV.` : "The TV shows the standby screen.")
+            act(
+              send("activateEvent", { eventId: choice || null }),
+              target ? `${target.name} is on the TV.` : "The TV shows the standby screen.",
+            )
           }
         />
       )}
@@ -196,11 +212,23 @@ function Scenes({ scene, act }: { scene: SceneReplicant; act: Act }) {
         );
         if (s.id === "celebration" && !onAir) {
           return (
-            <ConfirmButton key={s.id} className="scene" label={content} confirmLabel="Tap again to end with the celebration" onConfirm={() => go(s.id)} />
+            <ConfirmButton
+              key={s.id}
+              className="scene"
+              label={content}
+              confirmLabel="Tap again to end with the celebration"
+              onConfirm={() => go(s.id)}
+            />
           );
         }
         return (
-          <button key={s.id} type="button" className={`scene${onAir ? " scene--on-air" : ""}`} aria-pressed={onAir} onClick={() => go(s.id)}>
+          <button
+            key={s.id}
+            type="button"
+            className={`scene${onAir ? " scene--on-air" : ""}`}
+            aria-pressed={onAir}
+            onClick={() => go(s.id)}
+          >
             {content}
           </button>
         );
@@ -215,7 +243,13 @@ function Scenes({ scene, act }: { scene: SceneReplicant; act: Act }) {
         />
         <div className="chips" role="group" aria-label="Intermission countdown">
           {[null, 5, 10, 15, 30].map((m) => (
-            <button key={m ?? "none"} type="button" aria-pressed={minutes === m} className="chip" onClick={() => setMinutes(m)}>
+            <button
+              key={m ?? "none"}
+              type="button"
+              aria-pressed={minutes === m}
+              className="chip"
+              onClick={() => setMinutes(m)}
+            >
               {m ? `${m} min` : "No countdown"}
             </button>
           ))}
@@ -259,7 +293,11 @@ function ScreenLayouts(props: {
     if (ref) layouts[view] = ref;
     else delete layouts[view];
     const name = ref ? (props.layouts.find((l) => l.id === ref)?.name ?? "the chosen layout") : "the built-in layout";
-    act(send("saveScreen", { ...screen, layouts }), `${screen.name} now shows ${name}.`, () => void send("saveScreen", { ...screen, layouts: before }));
+    act(
+      send("saveScreen", { ...screen, layouts }),
+      `${screen.name} now shows ${name}.`,
+      () => void send("saveScreen", { ...screen, layouts: before }),
+    );
   };
   return (
     <section className="screen-layouts" aria-label="Layouts on each screen">
@@ -295,7 +333,17 @@ function ScreenLayouts(props: {
   );
 }
 
-function Money({ live, event, sourceLabel, act }: { live: LiveStateReplicant; event: FundraiserEvent; sourceLabel: string; act: Act }) {
+function Money({
+  live,
+  event,
+  sourceLabel,
+  act,
+}: {
+  live: LiveStateReplicant;
+  event: FundraiserEvent;
+  sourceLabel: string;
+  act: Act;
+}) {
   const [custom, setCustom] = useState("");
   const [correction, setCorrection] = useState("");
   const amount = Number(custom);
@@ -336,7 +384,13 @@ function Money({ live, event, sourceLabel, act }: { live: LiveStateReplicant; ev
             setCustom("");
           }}
         >
-          <input inputMode="decimal" aria-label="Other amount" placeholder="Other amount" value={custom} onChange={(e) => setCustom(e.target.value)} />
+          <input
+            inputMode="decimal"
+            aria-label="Other amount"
+            placeholder="Other amount"
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+          />
           <button type="submit" className="primary" disabled={!customValid}>
             Add
           </button>
@@ -358,7 +412,13 @@ function Money({ live, event, sourceLabel, act }: { live: LiveStateReplicant; ev
             setCorrection("");
           }}
         >
-          <input inputMode="decimal" aria-label="Venue total" placeholder={formatAmount(live.adjustment)} value={correction} onChange={(e) => setCorrection(e.target.value)} />
+          <input
+            inputMode="decimal"
+            aria-label="Venue total"
+            placeholder={formatAmount(live.adjustment)}
+            value={correction}
+            onChange={(e) => setCorrection(e.target.value)}
+          />
           <button type="submit" disabled={!correctionValid}>
             Set venue total
           </button>
@@ -430,7 +490,10 @@ function Incentives({ event, total, act }: { event: FundraiserEvent; total: numb
   const pin = (id: string | null) => {
     const incentives = event.incentives.map((i) => ({ ...i, displayNow: i.id === id }));
     const name = active.find((i) => i.id === id)?.name;
-    act(send("updateEvent", { eventId: event.id, patch: { incentives } }), name ? `${name} is pinned to the info bar.` : "Info bar is rotating again.");
+    act(
+      send("updateEvent", { eventId: event.id, patch: { incentives } }),
+      name ? `${name} is pinned to the info bar.` : "Info bar is rotating again.",
+    );
   };
   return (
     <section className="block" aria-label="Incentives">
@@ -445,7 +508,12 @@ function Incentives({ event, total, act }: { event: FundraiserEvent; total: numb
                 {formatTotal(total)} of {formatAmount(i.target)} ({pct}%)
               </span>
             </div>
-            <button type="button" aria-pressed={i.displayNow} className="chip" onClick={() => pin(i.displayNow ? null : i.id)}>
+            <button
+              type="button"
+              aria-pressed={i.displayNow}
+              className="chip"
+              onClick={() => pin(i.displayNow ? null : i.id)}
+            >
               {i.displayNow ? "Unpin" : "Pin to info bar"}
             </button>
           </div>
@@ -526,7 +594,11 @@ function Console() {
   const event = live.event;
   const view: ScreenView = event ? scene.id : "standby";
   const shownScreen = screens.find((s) => s.id === previewScreen);
-  const connected = new Set(screenPresence(screens, outputs, now).named.filter((n) => n.connected).map((n) => n.screen.id));
+  const connected = new Set(
+    screenPresence(screens, outputs, now)
+      .named.filter((n) => n.connected)
+      .map((n) => n.screen.id),
+  );
   const pickPreview = (id: string) => {
     setPreviewScreen(id);
     try {
@@ -595,7 +667,11 @@ function Console() {
         <p className="empty">Pick an event above and put it on the TV to start taking donations.</p>
       )}
 
-      <div className={`feedback${feedback ? " feedback--shown" : ""}${feedback?.error ? " feedback--error" : ""}`} role="status" aria-live="polite">
+      <div
+        className={`feedback${feedback ? " feedback--shown" : ""}${feedback?.error ? " feedback--error" : ""}`}
+        role="status"
+        aria-live="polite"
+      >
         {feedback && (
           <>
             <span>{feedback.text}</span>

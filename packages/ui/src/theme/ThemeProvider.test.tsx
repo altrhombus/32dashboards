@@ -23,7 +23,7 @@ describe("ThemeProvider", () => {
     const { container } = render(
       <ThemeProvider theme={theme}>
         <span>child</span>
-      </ThemeProvider>
+      </ThemeProvider>,
     );
     const root = container.querySelector(".theme-root") as HTMLElement;
     expect(root.style.getPropertyValue("--color-accent")).toBe("#00ff00");
@@ -33,7 +33,7 @@ describe("ThemeProvider", () => {
     const { container } = render(
       <ThemeProvider theme={{ ...theme, fontDisplay: "Lexend" }}>
         <span>child</span>
-      </ThemeProvider>
+      </ThemeProvider>,
     );
     const root = container.querySelector(".theme-root") as HTMLElement;
     expect(root.style.getPropertyValue("--font-display")).toMatch(/^"Lexend", /);
@@ -44,7 +44,7 @@ describe("ThemeProvider", () => {
     render(
       <ThemeProvider theme={theme}>
         <Probe />
-      </ThemeProvider>
+      </ThemeProvider>,
     );
     expect(screen.getByTestId("probe").textContent).toBe("#00ff00");
   });

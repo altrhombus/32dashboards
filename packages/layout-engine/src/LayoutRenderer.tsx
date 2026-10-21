@@ -123,7 +123,10 @@ export function LayoutRenderer<D>({ layout, registry, data, fit = "window", slot
   };
 
   return (
-    <div className="layout-viewport" style={{ width: layout.width * scale, height: layout.height * scale, margin: "0 auto" }}>
+    <div
+      className="layout-viewport"
+      style={{ width: layout.width * scale, height: layout.height * scale, margin: "0 auto" }}
+    >
       <div className="layout-stage" data-layout={layout.id} style={stage}>
         <div className="layout-grid" style={gridStyle}>
           {Object.entries(layout.slots).map(([area, slot]) => (

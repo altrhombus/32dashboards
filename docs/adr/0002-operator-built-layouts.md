@@ -76,6 +76,7 @@ definitions the code does today.
   (palette and settings forms) and the registry (rendering) all import
   it. `defineComponent` checks that every registry entry has a catalog
   entry, and the reverse.
+
 - **Layouts as blocks on a snap grid.** The builder edits a block layout:
   - a list of `{ component, variant, settings, x, y, w, h }` on a
     24 x 24 grid, so a cell is 80 x 45 design pixels;
@@ -87,6 +88,7 @@ definitions the code does today.
   block layouts too, so a runner can copy and edit them. Fixed-pixel
   tracks (the 88 px header, the 520 px side column) round to the nearest
   cell.
+
 - **`layouts` Replicant (persisted, owned by layout-kiosk):**
   - each layout has an id, a name, and the scene it was made for (a hint,
     not a restriction);
@@ -96,6 +98,7 @@ definitions the code does today.
 
   Edits go to `draft`. `publishLayout` validates the draft and swaps it
   in, so a screen never shows a half-built layout.
+
 - **Server-side validation.** The extension checks every saved draft and
   every publish against the catalog:
   - errors block the save: blocks overlapping or leaving the stage,
@@ -106,6 +109,7 @@ definitions the code does today.
     block".
 
   Messages use `listenForCommand` with zod schemas, like core commands.
+
 - **Named screens.** The kiosk URL gets `?screen=<id>` (`kiosk-url.sh` and
   `open-kiosk.ps1` take a screen name), and the heartbeat carries it, so
   a screen keeps its identity across reloads.
@@ -135,17 +139,18 @@ definitions the code does today.
 
 ### Option A: Block builder compiled to today's layout definitions (chosen)
 
-| Dimension | Assessment |
-|-----------|------------|
-| Volunteer-friendly | High: drag, resize, pick from a palette |
+| Dimension            | Assessment                                           |
+| -------------------- | ---------------------------------------------------- |
+| Volunteer-friendly   | High: drag, resize, pick from a palette              |
 | Keeps ADR-0001 rules | Yes: minimum sizes and warnings enforced server-side |
-| Renderer changes | None |
-| Effort | Medium-high |
+| Renderer changes     | None                                                 |
+| Effort               | Medium-high                                          |
 
 **Pros:** Full freedom where it's safe. Built-ins become editable starting
 points. Second screens and rooms need no code.
 
 **Cons:**
+
 - The snap grid is coarser than hand-written CSS, so the built-ins shift
   slightly when converted.
 - It's a new dependency.
@@ -156,11 +161,11 @@ points. Second screens and rooms need no code.
 Pick a template ("big total with sidebar", "two columns", "full screen"),
 then choose which component fills each box.
 
-| Dimension | Assessment |
-|-----------|------------|
-| Volunteer-friendly | Highest: nothing to drag |
-| Freedom | Low: new arrangements need a developer |
-| Effort | Low |
+| Dimension          | Assessment                             |
+| ------------------ | -------------------------------------- |
+| Volunteer-friendly | Highest: nothing to drag               |
+| Freedom            | Low: new arrangements need a developer |
+| Effort             | Low                                    |
 
 **Pros:** Hard to make a bad screen. Works on a phone.
 
@@ -172,11 +177,11 @@ templates, which are just block layouts.
 
 ### Option C: Expose the CSS grid directly (tracks and area strings)
 
-| Dimension | Assessment |
-|-----------|------------|
-| Volunteer-friendly | Low |
-| Freedom | Highest |
-| Effort | Low-medium |
+| Dimension          | Assessment |
+| ------------------ | ---------- |
+| Volunteer-friendly | Low        |
+| Freedom            | Highest    |
+| Effort             | Low-medium |
 
 **Pros:** Pixel-exact. No compile step.
 
@@ -233,6 +238,7 @@ Each step ships on its own and is useful without the next.
      for each scene.
 
    Outcome: two screens can show different built-in layouts.
+
 2. **The builder:**
    - a fullbleed panel with a palette from the catalog, a 24 x 24 canvas,
      drag and resize, minimum sizes, and warnings;
@@ -274,7 +280,7 @@ What step 1 built, and where it differs from the decision above.
     of 230 px, and the info bar 111 px instead of 128 px.
 - **The "total isn't the largest block" warning was dropped.** On the
   main layout, featured items rightly cover more of the screen than the
-  total does. The rule is about the biggest *text*, which block sizes
+  total does. The rule is about the biggest _text_, which block sizes
   can't measure. The "nothing shows the total" warning stays, for the
   main, intermission and celebration scenes.
 - **`layouts` Replicant and Messages** (layout-kiosk):
@@ -302,6 +308,7 @@ What step 1 built, and where it differs from the decision above.
 
   Its two-tap `ConfirmButton` moved from the Live console to
   `@32dashboards/nodecg-react`.
+
 - **The Live console's status strip** names a missing screen
   ("Main room left not connected"), or counts them ("1 of 2 screens
   connected").
@@ -399,6 +406,7 @@ the Layouts tab beside the same live preview.
   event is on screen, and the sample show otherwise. Unsaved changes are
   posted to the preview iframe (`PREVIEW_THEME_MESSAGE`, preview only).
   Saving uses `updateEvent`.
+
 - **The Show content panel** summarizes the look and links to it. It no
   longer edits colors or the logo itself, so there's one place to change
   them.

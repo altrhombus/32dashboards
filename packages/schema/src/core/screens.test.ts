@@ -28,7 +28,11 @@ describe("screenPresence", () => {
   });
 
   it("lists kiosks without a named screen, and ignores other outputs", () => {
-    const { unnamed } = screenPresence(screens, [output("a", null), output("b", "lobby"), output("c", null, 5, "stream")], NOW);
+    const { unnamed } = screenPresence(
+      screens,
+      [output("a", null), output("b", "lobby"), output("c", null, 5, "stream")],
+      NOW,
+    );
     expect(unnamed.map((u) => u.screenId)).toEqual([null, "lobby"]);
   });
 });

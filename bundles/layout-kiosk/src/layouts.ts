@@ -10,7 +10,8 @@ import type { ScreenView } from "@32dashboards/schema/core";
 import { kioskCatalog } from "./catalog.js";
 
 /** Parses a layout and fills each block's settings with the catalog's defaults (card headings, item counts). */
-const complete = (input: BlockLayoutInput): BlockLayout => normalizeBlocks(BlockLayoutSchema.parse(input), kioskCatalog);
+const complete = (input: BlockLayoutInput): BlockLayout =>
+  normalizeBlocks(BlockLayoutSchema.parse(input), kioskCatalog);
 
 /*
  * The built-in venue-TV look, one block layout per scene, on the 24x24 snap
@@ -87,7 +88,11 @@ export const TEMPLATE_PREFIX = "template:";
 
 /** Starting points for a new layout. Not shown on any screen by themselves. */
 const templateInputs: Record<string, { name: string; description: string; blocks: BlockLayoutInput }> = {
-  blank: { name: "Blank", description: "An empty screen.", blocks: { blocks: [], overlays: [{ component: "toasts" }] } },
+  blank: {
+    name: "Blank",
+    description: "An empty screen.",
+    blocks: { blocks: [], overlays: [{ component: "toasts" }] },
+  },
   bigTotal: {
     name: "Big total",
     description: "The total, as big as it gets, with the call to action and the info bar.",

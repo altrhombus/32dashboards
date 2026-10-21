@@ -149,7 +149,10 @@ describe("createPollingSource", () => {
     await expect(t.fake.send("setConfig", { eventId: A, config: { url: "u" } })).rejects.toThrow(/intervalSeconds/);
     await expect(t.fake.send("setSecret", { eventId: A, key: "other", value: "x" })).rejects.toThrow(/Unknown secret/);
     await expect(
-      t.fake.send("setConfig", { eventId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", config: { url: "u", intervalSeconds: 1 } }),
+      t.fake.send("setConfig", {
+        eventId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        config: { url: "u", intervalSeconds: 1 },
+      }),
     ).rejects.toThrow(/No event/);
   });
 

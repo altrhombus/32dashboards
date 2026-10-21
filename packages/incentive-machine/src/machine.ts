@@ -26,8 +26,7 @@ export interface IncentiveMachineContext {
 }
 
 export type IncentiveMachineEvent =
-  | { type: "CONFIG_UPDATED"; incentives: Incentive[]; totalRaised: number }
-  | { type: "MARQUEE_CYCLE_COMPLETE" };
+  { type: "CONFIG_UPDATED"; incentives: Incentive[]; totalRaised: number } | { type: "MARQUEE_CYCLE_COMPLETE" };
 
 function activeIncentives(incentives: Incentive[]): Incentive[] {
   return incentives.filter((i) => i.active);
@@ -68,7 +67,7 @@ export const incentiveMachine = setup({
     ingestConfig: assign(({ context, event }) => {
       if (event.type !== "CONFIG_UPDATED") return {};
       const newlyMet = activeIncentives(event.incentives).filter(
-        (i) => isMet(i, event.totalRaised) && !context.metIncentiveIds.has(i.id)
+        (i) => isMet(i, event.totalRaised) && !context.metIncentiveIds.has(i.id),
       );
       const metIncentiveIds = new Set(context.metIncentiveIds);
       for (const incentive of newlyMet) metIncentiveIds.add(incentive.id);
@@ -113,7 +112,7 @@ export const incentiveMachine = setup({
     hasNewlyMetInEvent: ({ context, event }) => {
       if (event.type !== "CONFIG_UPDATED") return false;
       return activeIncentives(event.incentives).some(
-        (i) => isMet(i, event.totalRaised) && !context.metIncentiveIds.has(i.id)
+        (i) => isMet(i, event.totalRaised) && !context.metIncentiveIds.has(i.id),
       );
     },
   },

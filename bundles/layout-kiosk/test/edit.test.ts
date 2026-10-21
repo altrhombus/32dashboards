@@ -13,7 +13,13 @@ describe("addBlock", () => {
     const result = edit.addBlock(empty(), kioskCatalog, "countdown");
     if ("error" in result) throw new Error(result.error);
     const block = result.layout.blocks[0]!;
-    expect(block).toMatchObject({ id: "countdown", component: "countdown", x: 0, y: 0, settings: { title: "Time left" } });
+    expect(block).toMatchObject({
+      id: "countdown",
+      component: "countdown",
+      x: 0,
+      y: 0,
+      settings: { title: "Time left" },
+    });
     expect(edit.blockPixels(result.layout, block).width).toBeGreaterThanOrEqual(532);
     expect(checkLayout(result.layout, "askMe").errors).toEqual([]);
   });
@@ -47,7 +53,12 @@ describe("addBlock", () => {
 describe("applyGrid", () => {
   it("applies moves and keeps the same object when nothing changed", () => {
     const layout = main();
-    expect(edit.applyGrid(layout, layout.blocks.map((b) => ({ i: b.id, x: b.x, y: b.y, w: b.w, h: b.h })))).toBe(layout);
+    expect(
+      edit.applyGrid(
+        layout,
+        layout.blocks.map((b) => ({ i: b.id, x: b.x, y: b.y, w: b.w, h: b.h })),
+      ),
+    ).toBe(layout);
     const moved = edit.applyGrid(layout, [{ i: "countdown", x: 17, y: 8, w: 7, h: 3 }]);
     expect(moved.blocks.find((b) => b.id === "countdown")?.h).toBe(3);
   });

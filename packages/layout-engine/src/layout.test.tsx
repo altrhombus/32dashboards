@@ -122,10 +122,17 @@ describe("LayoutRenderer", () => {
     );
 
     const { container } = render(
-      <LayoutRenderer layout={layout} registry={registry} data={{ total: 1, sponsors: ["A"] }} fit="none" slotScale={slotScale} />,
+      <LayoutRenderer
+        layout={layout}
+        registry={registry}
+        data={{ total: 1, sponsors: ["A"] }}
+        fit="none"
+        slotScale={slotScale}
+      />,
     );
     act(() => observed?.());
-    const content = (area: string) => container.querySelector(`.layout-slot--${area} .layout-slot__content`) as HTMLElement;
+    const content = (area: string) =>
+      container.querySelector(`.layout-slot--${area} .layout-slot__content`) as HTMLElement;
     expect(content("hero").dataset.scale).toBe("2");
     expect(content("side").dataset.scale).toBe("1");
     expect(slotScale).toHaveBeenCalledWith(layout.slots.hero, { width: 600, height: 100 });
@@ -135,7 +142,9 @@ describe("LayoutRenderer", () => {
 
   it("scales the stage to fit the window", () => {
     Object.assign(window, { innerWidth: 960, innerHeight: 1000 });
-    const { container } = render(<LayoutRenderer layout={layout} registry={registry} data={{ total: 1, sponsors: [] }} />);
+    const { container } = render(
+      <LayoutRenderer layout={layout} registry={registry} data={{ total: 1, sponsors: [] }} />,
+    );
     expect((container.querySelector(".layout-stage") as HTMLElement).style.transform).toBe("scale(0.5)");
   });
 });

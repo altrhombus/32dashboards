@@ -122,7 +122,10 @@ function EventLook(props: {
     const onMessage = (e: MessageEvent) => {
       if (e.origin !== window.location.origin || e.source !== frame.current?.contentWindow) return;
       if (e.data?.type === `${PREVIEW_THEME_MESSAGE}:ready`) {
-        frame.current?.contentWindow?.postMessage({ type: PREVIEW_THEME_MESSAGE, theme: themeRef.current }, window.location.origin);
+        frame.current?.contentWindow?.postMessage(
+          { type: PREVIEW_THEME_MESSAGE, theme: themeRef.current },
+          window.location.origin,
+        );
       }
     };
     window.addEventListener("message", onMessage);
@@ -159,7 +162,9 @@ function EventLook(props: {
                   className="palette-swatch"
                   aria-pressed={chosen}
                   onClick={() => set(p.colors)}
-                  style={{ background: `linear-gradient(160deg, ${p.colors.backgroundFrom}, ${p.colors.backgroundTo})` }}
+                  style={{
+                    background: `linear-gradient(160deg, ${p.colors.backgroundFrom}, ${p.colors.backgroundTo})`,
+                  }}
                 >
                   <span className="palette-swatch__dots" aria-hidden="true">
                     <span style={{ background: p.colors.accentColor }} />
@@ -180,7 +185,12 @@ function EventLook(props: {
             const mine = issues.filter((i) => i.field === key);
             return (
               <div key={key} className="color-field">
-                <input type="color" aria-label={label} value={/^#[0-9a-f]{6}$/i.test(theme[key]) ? theme[key] : "#000000"} onChange={(e) => set({ [key]: e.target.value })} />
+                <input
+                  type="color"
+                  aria-label={label}
+                  value={/^#[0-9a-f]{6}$/i.test(theme[key]) ? theme[key] : "#000000"}
+                  onChange={(e) => set({ [key]: e.target.value })}
+                />
                 <span className="color-field__text">
                   <strong>{label}</strong>
                   <span className="muted">{hint}</span>
@@ -205,7 +215,11 @@ function EventLook(props: {
 
         <section className="look__group">
           <h2>Logo</h2>
-          <select aria-label="Event logo" value={theme.logoUrl ?? ""} onChange={(e) => set({ logoUrl: e.target.value || null })}>
+          <select
+            aria-label="Event logo"
+            value={theme.logoUrl ?? ""}
+            onChange={(e) => set({ logoUrl: e.target.value || null })}
+          >
             <option value="">No logo</option>
             {theme.logoUrl && !props.logos.some((a) => a.url === theme.logoUrl) && (
               <option value={theme.logoUrl}>{theme.logoUrl} (not found)</option>
@@ -240,7 +254,13 @@ function EventLook(props: {
       <section className="look__preview" aria-label="Preview">
         <div className="row look__views" role="group" aria-label="Scene to preview">
           {SCREEN_VIEWS.map((v) => (
-            <button key={v} type="button" className="chip" aria-pressed={props.view === v} onClick={() => props.onView(v)}>
+            <button
+              key={v}
+              type="button"
+              className="chip"
+              aria-pressed={props.view === v}
+              onClick={() => props.onView(v)}
+            >
               {VIEW_NAMES[v]}
             </button>
           ))}
@@ -302,7 +322,12 @@ function FontPicker(props: {
       )}
       {props.fonts.map((font) => (
         <label key={font.family} className="font-card">
-          <input type="radio" name={props.title} checked={props.value === font.family} onChange={() => props.onChange(font.family)} />
+          <input
+            type="radio"
+            name={props.title}
+            checked={props.value === font.family}
+            onChange={() => props.onChange(font.family)}
+          />
           <span className="font-card__sample clamp-1" style={{ fontFamily: fontStack(font.family, props.fallback) }}>
             {props.sample}
           </span>

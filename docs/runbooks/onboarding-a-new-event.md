@@ -32,20 +32,20 @@ quickest start is often to duplicate last year's.
      id, to whoever runs the pushing program. The token is shown once.
 
 4. **Set up the show** in the **Show content** panel:
-   - *Event details*: the name and cause shown on the TV, when bidding
+   - _Event details_: the name and cause shown on the TV, when bidding
      closes (the TV counts down to it), announcements, and the Ask Me
      title and message.
-   - *Look and sponsors*: sponsors with logos. **Edit the look** opens
+   - _Look and sponsors_: sponsors with logos. **Edit the look** opens
      the event's colors, logo and fonts in the **Layouts** tab, beside a
      live preview of each scene: start from a palette, adjust it to the
      brand (each color warns if it's hard to read or broadcast-unsafe),
      pick fonts that ship with the kiosk, and save. Upload logos first in
      the dashboard's **Assets** tab.
-   - *Call to action*: how people give, e.g. "Bid at 32auctions.com/gala".
-   - *Hidden items*: words that keep matching items (e.g. "raffle") off
+   - _Call to action_: how people give, e.g. "Bid at 32auctions.com/gala".
+   - _Hidden items_: words that keep matching items (e.g. "raffle") off
      the TV.
-   - *Info bar rotation*, *Milestones*, *Incentives*, *Bid wars*,
-     *Prizes*: what the TV rotates through and celebrates.
+   - _Info bar rotation_, _Milestones_, _Incentives_, _Bid wars_,
+     _Prizes_: what the TV rotates through and celebrates.
 
 5. **Rehearse.** Put the event on the TV from the **Live** tab before
    doors open, check the preview and the status strip, and tap

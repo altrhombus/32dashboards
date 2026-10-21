@@ -16,7 +16,12 @@ export default function sourceManual(nodecg: NodeCG.ServerAPI, core: FundraiserC
   const plain = (): EntriesReplicant => JSON.parse(JSON.stringify(entries.value ?? {}));
 
   const report = (eventId: string, entry: ManualEntry) => {
-    const outcome = handle.report({ eventId, total: entry.total, items: entry.items, observedAt: new Date().toISOString() });
+    const outcome = handle.report({
+      eventId,
+      total: entry.total,
+      items: entry.items,
+      observedAt: new Date().toISOString(),
+    });
     if (outcome === "wrong-source") {
       throw new CommandError(`Set this event's source to "Manual entry" in the Events panel first.`);
     }

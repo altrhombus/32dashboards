@@ -51,7 +51,7 @@ export function ThemeProvider({ theme, children }: ThemeProviderProps) {
         minHeight: "100vh",
         width: "100%",
       }) as CSSProperties,
-    [theme]
+    [theme],
   );
 
   return (

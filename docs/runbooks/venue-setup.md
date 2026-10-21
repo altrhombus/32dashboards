@@ -24,6 +24,7 @@ removing the distro removes the whole stack. The background is in
    - Run `wsl --shutdown` in PowerShell, then reopen Ubuntu.
 
 3. **Install the toolchain inside WSL** (never on Windows):
+
    ```sh
    sudo apt update && sudo apt install -y git sqlite3 jq build-essential
    curl -fsSL https://fnm.vercel.app/install | bash   # then reopen the terminal
@@ -33,6 +34,7 @@ removing the distro removes the whole stack. The background is in
 
 4. **Get the code and build it.** Keep it in the WSL filesystem, not
    under `/mnt/c`:
+
    ```sh
    git clone https://github.com/altrhombus/32dashboards ~/32dashboards
    cd ~/32dashboards
@@ -43,14 +45,17 @@ removing the distro removes the whole stack. The background is in
 
 5. **Run NodeCG as a service**, so it starts with WSL and restarts if it
    crashes:
+
    ```sh
    bash infra/wsl/install-service.sh
    ```
 
 6. **Let other devices reach the dashboard.** In an elevated PowerShell:
+
    ```powershell
    & '\\wsl.localhost\Ubuntu\home\<you>\32dashboards\infra\windows\setup-firewall.ps1'
    ```
+
    This allows the NodeCG port through both the Windows Defender and the
    Hyper-V firewall. Then open `http://<laptop-ip>:9090` from a phone on
    the same network to confirm.
@@ -75,7 +80,7 @@ removing the distro removes the whole stack. The background is in
    `wsl --shutdown`, and check again.
 
 10. **Take a first backup:** `pnpm backup`. See
-   [backup and restore](backup-and-restore.md).
+    [backup and restore](backup-and-restore.md).
 
 ## Optional hardening
 

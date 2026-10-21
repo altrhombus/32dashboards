@@ -96,11 +96,12 @@ layouts**.
 
 **The source needs a look.** The status strip shows the reason. Common
 ones:
-- *Not configured for this event*: fill in the source's settings in its
+
+- _Not configured for this event_: fill in the source's settings in its
   panel (for 32auctions, the **32auctions source** panel).
-- *HTTP 401/403*: the auction needs a fresh session cookie; see
+- _HTTP 401/403_: the auction needs a fresh session cookie; see
   [rotating secrets](rotating-secrets.md).
-- *Total raised not found*: check the auction's public path, or the site
+- _Total raised not found_: check the auction's public path, or the site
   layout changed. Keep the show going with **Add cash or checks**.
 
 Tap **Fetch now** after fixing it.

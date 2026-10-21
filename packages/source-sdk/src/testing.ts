@@ -75,7 +75,11 @@ export function createFakeCore(events: FundraiserEvent[] = []): FakeCore {
 }
 
 /** A minimal valid event for tests; every field not given takes its schema default. */
-export function testEvent(id: string, adapterId: string | null, overrides: Partial<FundraiserEvent> = {}): FundraiserEvent {
+export function testEvent(
+  id: string,
+  adapterId: string | null,
+  overrides: Partial<FundraiserEvent> = {},
+): FundraiserEvent {
   return FundraiserEventSchema.parse({
     id,
     name: `Event ${id.slice(0, 4)}`,

@@ -67,8 +67,18 @@ export function createFakeNodecg(bundleName = "fundraiser-core", world: FakeWorl
   const api = {
     bundleName,
     extensions: world.extensions,
-    log: { trace: logAt("trace"), debug: logAt("debug"), info: logAt("info"), warn: logAt("warn"), error: logAt("error") },
-    Replicant(name: string, namespaceOrOpts?: string | { defaultValue?: unknown }, maybeOpts?: { defaultValue?: unknown }) {
+    log: {
+      trace: logAt("trace"),
+      debug: logAt("debug"),
+      info: logAt("info"),
+      warn: logAt("warn"),
+      error: logAt("error"),
+    },
+    Replicant(
+      name: string,
+      namespaceOrOpts?: string | { defaultValue?: unknown },
+      maybeOpts?: { defaultValue?: unknown },
+    ) {
       const namespace = typeof namespaceOrOpts === "string" ? namespaceOrOpts : bundleName;
       const opts = typeof namespaceOrOpts === "string" ? maybeOpts : namespaceOrOpts;
       let replicant = world.replicants.get(key(namespace, name));

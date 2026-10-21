@@ -91,7 +91,10 @@ describe("resolvePreview", () => {
     const { layouts, layoutId } = copyOfMain();
     const draft = { ...layouts[0]!.published, blocks: layouts[0]!.published.blocks.slice(0, 2) };
     const saved = library.saveLayoutDraft(layouts, layoutId, draft, deps).layouts;
-    expect(Object.keys(library.resolvePreview(layoutId, "main", saved, true).layout.slots)).toEqual(["header", "total"]);
+    expect(Object.keys(library.resolvePreview(layoutId, "main", saved, true).layout.slots)).toEqual([
+      "header",
+      "total",
+    ]);
     expect(Object.keys(library.resolvePreview(layoutId, "main", saved, false).layout.slots)).toHaveLength(7);
   });
 
@@ -104,7 +107,9 @@ describe("resolvePreview", () => {
 describe("resolveLayout", () => {
   it("shows the built-in layout when the screen chose nothing or isn't set up", () => {
     expect(library.resolveLayout("main", undefined, [])).toEqual({ layout: builtInLayouts.main.layout, problem: null });
-    expect(library.resolveLayout("askMe", screen({ main: "builtin:main" }), []).layout).toBe(builtInLayouts.askMe.layout);
+    expect(library.resolveLayout("askMe", screen({ main: "builtin:main" }), []).layout).toBe(
+      builtInLayouts.askMe.layout,
+    );
   });
 
   it("shows a chosen built-in, even one made for another scene", () => {
@@ -127,7 +132,10 @@ describe("resolveLayout", () => {
     expect(missing.problem).toMatch(/no longer exists/);
 
     const { layouts, layoutId } = copyOfMain();
-    const broken = layouts.map((l) => ({ ...l, published: { ...l.published, blocks: [...l.published.blocks, l.published.blocks[0]!] } }));
+    const broken = layouts.map((l) => ({
+      ...l,
+      published: { ...l.published, blocks: [...l.published.blocks, l.published.blocks[0]!] },
+    }));
     const resolved = library.resolveLayout("main", screen({ main: layoutId }), broken);
     expect(resolved.layout).toBe(builtInLayouts.main.layout);
     expect(resolved.problem).toMatch(/can't be shown/);

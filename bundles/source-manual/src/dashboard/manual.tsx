@@ -34,7 +34,13 @@ function Panel() {
 
   return (
     <div className="panel">
-      <EventPicker events={events} selected={selected} activeId={activeId} onSelect={select} sourceLabel="manual entry" />
+      <EventPicker
+        events={events}
+        selected={selected}
+        activeId={activeId}
+        onSelect={select}
+        sourceLabel="manual entry"
+      />
       {eventId && (
         <>
           <div className="total">{formatCurrency(entry?.total ?? 0)}</div>
@@ -42,17 +48,31 @@ function Panel() {
             className="row"
             onSubmit={(e) => {
               e.preventDefault();
-              if (valid && value > 0) run(send("addDonation", { eventId, amount: value })).then(() => setAmount(""), () => {});
+              if (valid && value > 0)
+                run(send("addDonation", { eventId, amount: value })).then(
+                  () => setAmount(""),
+                  () => {},
+                );
             }}
           >
-            <input inputMode="decimal" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <input
+              inputMode="decimal"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
             <button type="submit" disabled={!valid || value === 0}>
               Add donation
             </button>
             <button
               type="button"
               disabled={!valid}
-              onClick={() => run(send("setTotal", { eventId, total: value })).then(() => setAmount(""), () => {})}
+              onClick={() =>
+                run(send("setTotal", { eventId, total: value })).then(
+                  () => setAmount(""),
+                  () => {},
+                )
+              }
             >
               Set total
             </button>
@@ -93,18 +113,33 @@ function ItemRow(props: { eventId: string; item?: SourceItem; run: (p: Promise<u
         e.preventDefault();
         if (!valid) return;
         const payload = { ...item, id: item?.id, title: title.trim(), currentBid, bidCount };
-        run(send("upsertItem", { eventId, item: payload })).then(() => {
-          if (!item) {
-            setTitle("");
-            setBid("");
-            setBids("");
-          }
-        }, () => {});
+        run(send("upsertItem", { eventId, item: payload })).then(
+          () => {
+            if (!item) {
+              setTitle("");
+              setBid("");
+              setBids("");
+            }
+          },
+          () => {},
+        );
       }}
     >
       <input placeholder={item ? "Title" : "New item title"} value={title} onChange={(e) => setTitle(e.target.value)} />
-      <input style={{ width: 80 }} inputMode="decimal" placeholder="Bid" value={bid} onChange={(e) => setBid(e.target.value)} />
-      <input style={{ width: 56 }} inputMode="numeric" placeholder="Bids" value={bids} onChange={(e) => setBids(e.target.value)} />
+      <input
+        style={{ width: 80 }}
+        inputMode="decimal"
+        placeholder="Bid"
+        value={bid}
+        onChange={(e) => setBid(e.target.value)}
+      />
+      <input
+        style={{ width: 56 }}
+        inputMode="numeric"
+        placeholder="Bids"
+        value={bids}
+        onChange={(e) => setBids(e.target.value)}
+      />
       <button type="submit" disabled={!valid || !dirty}>
         {item ? "Save" : "Add"}
       </button>

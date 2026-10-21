@@ -25,7 +25,10 @@ export default function layoutKiosk(nodecg: NodeCG.ServerAPI): void {
   /** Runs a layout command, turning LayoutErrors into readable rejections. */
   function command<N extends library.KioskMessageName>(
     name: N,
-    run: (current: LayoutsReplicant, payload: z.output<(typeof kioskMessageSchemas)[N]>) => {
+    run: (
+      current: LayoutsReplicant,
+      payload: z.output<(typeof kioskMessageSchemas)[N]>,
+    ) => {
       layouts: LayoutsReplicant;
       reply?: unknown;
     },

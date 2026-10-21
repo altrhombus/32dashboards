@@ -59,7 +59,9 @@ function Builder() {
   const [selectedId, setSelectedId] = useState(() => readStored(SELECTED_KEY) ?? builtInLayouts.main.id);
   const [note, setNote] = useState<Note | null>(null);
   const [creating, setCreating] = useState(false);
-  const [mode, setMode] = useState<"arrange" | "look">(() => (readStored(BUILDER_MODE_KEY) === "look" ? "look" : "arrange"));
+  const [mode, setMode] = useState<"arrange" | "look">(() =>
+    readStored(BUILDER_MODE_KEY) === "look" ? "look" : "arrange",
+  );
   const switchMode = (next: "arrange" | "look") => {
     setMode(next);
     writeStored(BUILDER_MODE_KEY, next);
@@ -97,8 +99,9 @@ function Builder() {
 
   const saved = layouts.find((l) => l.id === selectedId);
   const builtIn = saved ? undefined : (builtInById(selectedId) ?? builtInLayouts.main);
-  const usedOn = screens
-    .flatMap((s) => SCREEN_VIEWS.filter((v) => s.layouts[v] === (saved?.id ?? builtIn?.id)).map((v) => `${s.name} (${VIEW_NAMES[v]})`));
+  const usedOn = screens.flatMap((s) =>
+    SCREEN_VIEWS.filter((v) => s.layouts[v] === (saved?.id ?? builtIn?.id)).map((v) => `${s.name} (${VIEW_NAMES[v]})`),
+  );
 
   return (
     <div className="builder">
@@ -141,7 +144,10 @@ function Builder() {
             <button
               type="button"
               onClick={() =>
-                run(sendKiosk("copyLayout", { fromId: saved?.id ?? builtIn!.id }), "Copied. You're editing the copy.").then(
+                run(
+                  sendKiosk("copyLayout", { fromId: saved?.id ?? builtIn!.id }),
+                  "Copied. You're editing the copy.",
+                ).then(
                   (id) => select(String(id)),
                   () => {},
                 )
@@ -225,7 +231,13 @@ function NewLayout(props: {
     >
       <label className="field">
         <span>Name</span>
-        <input autoFocus maxLength={60} placeholder="e.g. Lobby, big total" value={name} onChange={(e) => setName(e.target.value)} />
+        <input
+          autoFocus
+          maxLength={60}
+          placeholder="e.g. Lobby, big total"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
       </label>
       <label className="field">
         <span>For which scene</span>
@@ -339,7 +351,8 @@ function Editor(props: {
   useEffect(() => {
     if (serverJson === lastServer.current) return;
     lastServer.current = serverJson;
-    if (saveState === "saved" || saveState === "blocked") dispatch({ type: "reset", working: JSON.parse(serverJson) as BlockLayout });
+    if (saveState === "saved" || saveState === "blocked")
+      dispatch({ type: "reset", working: JSON.parse(serverJson) as BlockLayout });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverJson]);
 
@@ -389,7 +402,9 @@ function Editor(props: {
 
   const selectedBlock = working.blocks.find((b) => b.id === selected) ?? null;
   const problemBlocks = new Set(
-    working.blocks.filter((b) => problems.errors.some((e) => e.startsWith(kioskCatalog[b.component]?.name ?? b.component))).map((b) => b.id),
+    working.blocks
+      .filter((b) => problems.errors.some((e) => e.startsWith(kioskCatalog[b.component]?.name ?? b.component)))
+      .map((b) => b.id),
   );
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -642,9 +657,10 @@ function PublishBox(props: {
             className="primary"
             disabled={!props.hasDraft || props.dirty || props.errors.length > 0}
             onClick={() =>
-              void run(sendKiosk("publishLayout", { layoutId }), props.inUse ? "Published. Screens using it now show the change." : "Published.").catch(
-                () => {},
-              )
+              void run(
+                sendKiosk("publishLayout", { layoutId }),
+                props.inUse ? "Published. Screens using it now show the change." : "Published.",
+              ).catch(() => {})
             }
           >
             Publish
@@ -653,14 +669,19 @@ function PublishBox(props: {
             label="Discard changes"
             confirmLabel="Tap again to discard"
             disabled={!props.hasDraft && !props.dirty}
-            onConfirm={() => void run(sendKiosk("discardLayoutDraft", { layoutId }), "Changes discarded.").catch(() => {})}
+            onConfirm={() =>
+              void run(sendKiosk("discardLayoutDraft", { layoutId }), "Changes discarded.").catch(() => {})
+            }
           />
           <ConfirmButton
             label="Delete"
             confirmLabel="Tap again to delete"
             disabled={props.inUse}
             onConfirm={() =>
-              void run(sendKiosk("deleteLayout", { layoutId }), `Deleted "${props.name}".`).then(props.onDeleted, () => {})
+              void run(sendKiosk("deleteLayout", { layoutId }), `Deleted "${props.name}".`).then(
+                props.onDeleted,
+                () => {},
+              )
             }
           />
         </div>
@@ -684,14 +705,23 @@ function PublishBox(props: {
   );
 }
 
-function RenameLayout({ layoutId, name, run }: { layoutId: string; name: string; run: (p: Promise<unknown>, done?: string) => Promise<unknown> }) {
+function RenameLayout({
+  layoutId,
+  name,
+  run,
+}: {
+  layoutId: string;
+  name: string;
+  run: (p: Promise<unknown>, done?: string) => Promise<unknown>;
+}) {
   const [value, setValue] = useState(name);
   useEffect(() => setValue(name), [name]);
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        if (value.trim() && value.trim() !== name) void run(sendKiosk("renameLayout", { layoutId, name: value.trim() }), "Renamed.").catch(() => {});
+        if (value.trim() && value.trim() !== name)
+          void run(sendKiosk("renameLayout", { layoutId, name: value.trim() }), "Renamed.").catch(() => {});
       }}
     >
       <label className="field">
@@ -784,7 +814,12 @@ function BlockInspector(props: {
         }
         return (
           <label key={field.key} className="row toggle">
-            <input type="checkbox" checked={Boolean(value)} disabled={props.readOnly} onChange={(e) => set(field.key, e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={Boolean(value)}
+              disabled={props.readOnly}
+              onChange={(e) => set(field.key, e.target.checked)}
+            />
             {label}
           </label>
         );

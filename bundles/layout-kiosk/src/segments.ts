@@ -1,12 +1,5 @@
 import type { InfoBarSegment } from "@32dashboards/incentive-machine";
-import type {
-  BidWar,
-  Incentive,
-  LiveStateReplicant,
-  Prize,
-  SourceItem,
-  Sponsor,
-} from "@32dashboards/schema/core";
+import type { BidWar, Incentive, LiveStateReplicant, Prize, SourceItem, Sponsor } from "@32dashboards/schema/core";
 
 /*
  * Turns the active event into info bar segments: one per incentive, bid
@@ -62,7 +55,9 @@ export function buildSegments(live: LiveStateReplicant): SegmentPlan {
         if (event.callToAction.trim()) add("callToAction", { kind: "callToAction", text: event.callToAction });
         break;
       case "announcements":
-        event.announcements.forEach((text, i) => text.trim() && add(`announcement:${i}:${text}`, { kind: "announcement", text }));
+        event.announcements.forEach(
+          (text, i) => text.trim() && add(`announcement:${i}:${text}`, { kind: "announcement", text }),
+        );
         break;
       case "sponsors":
         for (const sponsor of event.sponsors) add(`sponsor:${sponsor.id}`, { kind: "sponsor", sponsor });
@@ -75,7 +70,11 @@ export function buildSegments(live: LiveStateReplicant): SegmentPlan {
   const pinnedIncentive =
     active.find((i) => i.displayNow) ?? active.find((i) => i.displayUntilMet && live.total < i.target);
   const pinned: Segment | null = pinnedIncentive
-    ? { key: `incentive:${pinnedIncentive.id}`, durationMs: ms, content: { kind: "incentive", incentive: pinnedIncentive } }
+    ? {
+        key: `incentive:${pinnedIncentive.id}`,
+        durationMs: ms,
+        content: { kind: "incentive", incentive: pinnedIncentive },
+      }
     : null;
 
   return { segments, pinned };

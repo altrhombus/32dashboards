@@ -23,8 +23,16 @@ export const BlockSchema = z.object({
   /** One of the component's variants; its first when omitted. */
   variant: z.string().optional(),
   settings,
-  x: z.number().int().min(0).max(GRID_COLUMNS - 1),
-  y: z.number().int().min(0).max(GRID_ROWS - 1),
+  x: z
+    .number()
+    .int()
+    .min(0)
+    .max(GRID_COLUMNS - 1),
+  y: z
+    .number()
+    .int()
+    .min(0)
+    .max(GRID_ROWS - 1),
   w: z.number().int().min(1).max(GRID_COLUMNS),
   h: z.number().int().min(1).max(GRID_ROWS),
 });
@@ -37,7 +45,10 @@ export const BlockLayoutSchema = z.object({
   padding: z.number().int().min(0).max(160).default(24),
   blocks: z.array(BlockSchema).max(48),
   /** Full-stage components drawn over the blocks (thank-you toasts), in order. */
-  overlays: z.array(z.object({ component: z.string().min(1), settings })).max(8).default([]),
+  overlays: z
+    .array(z.object({ component: z.string().min(1), settings }))
+    .max(8)
+    .default([]),
 });
 export type BlockLayout = z.infer<typeof BlockLayoutSchema>;
 export type BlockLayoutInput = z.input<typeof BlockLayoutSchema>;
@@ -165,7 +176,11 @@ export interface BlockProblems {
  * Checks a block layout against a catalog. `expectTotal` asks for the
  * warning when nothing on the layout shows the total.
  */
-export function validateBlocks(input: unknown, catalog: Catalog, options: { expectTotal?: boolean } = {}): BlockProblems {
+export function validateBlocks(
+  input: unknown,
+  catalog: Catalog,
+  options: { expectTotal?: boolean } = {},
+): BlockProblems {
   const parsed = BlockLayoutSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -212,7 +227,8 @@ export function validateBlocks(input: unknown, catalog: Catalog, options: { expe
     }
     const result = entry.settings.safeParse(block.settings);
     if (!result.success) {
-      for (const issue of result.error.issues) errors.push(`${entry.name}: ${issue.path.join(".") || "settings"}: ${issue.message}`);
+      for (const issue of result.error.issues)
+        errors.push(`${entry.name}: ${issue.path.join(".") || "settings"}: ${issue.message}`);
     }
   }
   for (const [component, count] of counts) {

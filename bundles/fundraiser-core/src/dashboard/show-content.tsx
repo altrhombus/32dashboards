@@ -79,7 +79,11 @@ function ListEditor<T extends { id: string }>(props: {
             if (field.type === "checkbox") {
               return (
                 <label key={field.key}>
-                  <input type="checkbox" checked={Boolean(value)} onChange={(e) => update(index, field.key, e.target.checked)} />{" "}
+                  <input
+                    type="checkbox"
+                    checked={Boolean(value)}
+                    onChange={(e) => update(index, field.key, e.target.checked)}
+                  />{" "}
                   {field.label}
                 </label>
               );
@@ -115,7 +119,11 @@ function ListEditor<T extends { id: string }>(props: {
         <button type="button" disabled={!dirty} onClick={() => props.onSave(draft)}>
           Save
         </button>
-        {dirty && <button type="button" onClick={() => setDraft(props.items)}>Discard</button>}
+        {dirty && (
+          <button type="button" onClick={() => setDraft(props.items)}>
+            Discard
+          </button>
+        )}
       </div>
     </>
   );
@@ -141,10 +149,18 @@ function BidWars({ event, run }: { event: FundraiserEvent; run: Run }) {
       {draft.map((war, index) => (
         <div key={war.id} className="event">
           <div className="row">
-            <input value={war.name} placeholder="Bid war name" onChange={(e) => updateWar(index, { name: e.target.value })} />
+            <input
+              value={war.name}
+              placeholder="Bid war name"
+              onChange={(e) => updateWar(index, { name: e.target.value })}
+            />
             <label>
-              <input type="checkbox" checked={war.active} onChange={(e) => updateWar(index, { active: e.target.checked })} /> In
-              rotation
+              <input
+                type="checkbox"
+                checked={war.active}
+                onChange={(e) => updateWar(index, { active: e.target.checked })}
+              />{" "}
+              In rotation
             </label>
             <button type="button" onClick={() => setDraft(draft.filter((_, i) => i !== index))}>
               Remove
@@ -225,7 +241,10 @@ function InfoBarEditor({ event, run }: { event: FundraiserEvent; run: Run }) {
           <button type="button" disabled={index === draft.segments.length - 1} onClick={() => move(index, 1)}>
             ↓
           </button>
-          <button type="button" onClick={() => setDraft({ ...draft, segments: draft.segments.filter((k) => k !== kind) })}>
+          <button
+            type="button"
+            onClick={() => setDraft({ ...draft, segments: draft.segments.filter((k) => k !== kind) })}
+          >
             Remove
           </button>
         </div>
@@ -249,7 +268,11 @@ function InfoBarEditor({ event, run }: { event: FundraiserEvent; run: Run }) {
           }}
         />
       </label>
-      <button type="button" disabled={!dirty} onClick={() => run(send("updateEvent", { eventId: event.id, patch: { infoBar: draft } }))}>
+      <button
+        type="button"
+        disabled={!dirty}
+        onClick={() => run(send("updateEvent", { eventId: event.id, patch: { infoBar: draft } }))}
+      >
         Save
       </button>
     </>
@@ -267,7 +290,11 @@ function CallToAction({ event, run }: { event: FundraiserEvent; run: Run }) {
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
       />
-      <button type="button" disabled={!dirty} onClick={() => run(send("updateEvent", { eventId: event.id, patch: { callToAction: draft } }))}>
+      <button
+        type="button"
+        disabled={!dirty}
+        onClick={() => run(send("updateEvent", { eventId: event.id, patch: { callToAction: draft } }))}
+      >
         Save
       </button>
     </div>
@@ -285,7 +312,12 @@ function useAssets(category: "event-logos" | "sponsor-logos"): Asset[] {
   return useReplicant<Asset[]>(`assets:${category}`) ?? [];
 }
 
-function AssetSelect(props: { label: string; assets: Asset[]; value: string | null; onChange: (url: string | null) => void }) {
+function AssetSelect(props: {
+  label: string;
+  assets: Asset[];
+  value: string | null;
+  onChange: (url: string | null) => void;
+}) {
   const missing = props.value && !props.assets.some((a) => a.url === props.value);
   return (
     <select aria-label={props.label} value={props.value ?? ""} onChange={(e) => props.onChange(e.target.value || null)}>
@@ -372,7 +404,12 @@ function LookAndSponsors({ event, run }: { event: FundraiserEvent; run: Run }) {
         </div>
       ))}
       <div className="row">
-        <button type="button" onClick={() => setSponsors([...sponsors, { id: newId(), name: "", logoUrl: null, sortOrder: sponsors.length }])}>
+        <button
+          type="button"
+          onClick={() =>
+            setSponsors([...sponsors, { id: newId(), name: "", logoUrl: null, sortOrder: sponsors.length }])
+          }
+        >
           Add sponsor
         </button>
         <button
@@ -380,7 +417,12 @@ function LookAndSponsors({ event, run }: { event: FundraiserEvent; run: Run }) {
           className="primary"
           disabled={!sponsorsDirty}
           onClick={() =>
-            run(send("updateEvent", { eventId: event.id, patch: { sponsors: sponsors.map((s, i) => ({ ...s, sortOrder: i })) } }))
+            run(
+              send("updateEvent", {
+                eventId: event.id,
+                patch: { sponsors: sponsors.map((s, i) => ({ ...s, sortOrder: i })) },
+              }),
+            )
           }
         >
           Save sponsors
@@ -431,7 +473,10 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
           name: draft.name.trim(),
           causeName: draft.causeName.trim(),
           endDateTime: fromLocalInput(draft.endDateTime),
-          announcements: draft.announcements.split("\n").map((a) => a.trim()).filter(Boolean),
+          announcements: draft.announcements
+            .split("\n")
+            .map((a) => a.trim())
+            .filter(Boolean),
           askMe: { title: draft.askMeTitle, message: draft.askMeMessage },
         },
       }),
@@ -467,7 +512,11 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
         <button type="button" className="primary" disabled={!dirty || !draft.name.trim()} onClick={save}>
           Save details
         </button>
-        {dirty && <button type="button" onClick={() => setDraft(saved)}>Discard</button>}
+        {dirty && (
+          <button type="button" onClick={() => setDraft(saved)}>
+            Discard
+          </button>
+        )}
       </div>
     </>
   );
@@ -508,7 +557,8 @@ function ShowContent() {
     setError(null);
     promise.catch((err) => setError(errorText(err)));
   };
-  const save = (patch: Parameters<typeof send<"updateEvent">>[1]["patch"]) => run(send("updateEvent", { eventId: event.id, patch }));
+  const save = (patch: Parameters<typeof send<"updateEvent">>[1]["patch"]) =>
+    run(send("updateEvent", { eventId: event.id, patch }));
 
   return (
     <div className="panel">
@@ -529,7 +579,9 @@ function ShowContent() {
         <Section title="Event details">
           <EventDetails event={event} run={run} />
         </Section>
-        <Section title={`Look and sponsors (${event.sponsors.length} sponsor${event.sponsors.length === 1 ? "" : "s"})`}>
+        <Section
+          title={`Look and sponsors (${event.sponsors.length} sponsor${event.sponsors.length === 1 ? "" : "s"})`}
+        >
           <LookAndSponsors event={event} run={run} />
         </Section>
         <Section title={`Hidden items (${event.filters.length})`}>
@@ -563,7 +615,14 @@ function ShowContent() {
               { key: "displayNow", label: "Pin now", type: "checkbox" },
               { key: "displayUntilMet", label: "Pin until met", type: "checkbox" },
             ]}
-            blank={() => ({ id: newId(), name: "", target: 0, active: true, displayNow: false, displayUntilMet: false })}
+            blank={() => ({
+              id: newId(),
+              name: "",
+              target: 0,
+              active: true,
+              displayNow: false,
+              displayUntilMet: false,
+            })}
             addLabel="Add incentive"
             onSave={(incentives) => save({ incentives })}
           />

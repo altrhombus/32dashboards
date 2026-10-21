@@ -1,31 +1,31 @@
 <html>
-<body>
-<!-- Simulates an upstream 32auctions markup change: the title heading's
+  <body>
+    <!-- Simulates an upstream 32auctions markup change: the title heading's
      class was renamed, so h5.text-truncate-2.narrow no longer matches
      anything. Used to verify check_scrape_integrity() fails loudly instead
      of silently accepting an all-null-title scrape as "successful". -->
-<div class="items">
-  <a class="item" href="/item/1">
-    <div class="card">
-      <div class="img-section"><img src="/images/item1.jpg" /></div>
-      <h5 class="text-truncate-2 narrow-renamed">Signed Guitar</h5>
-      <h6 class="text-truncate">$50</h6>
-      <div class="card-text small text-truncate text-muted">Remaining: 2 days</div>
-      <div class="card-text small text-truncate text-muted">Value: $100</div>
-      <div class="card-text small text-truncate text-muted">Bids: 3</div>
+    <div class="items">
+      <a class="item" href="/item/1">
+        <div class="card">
+          <div class="img-section"><img src="/images/item1.jpg" /></div>
+          <h5 class="text-truncate-2 narrow-renamed">Signed Guitar</h5>
+          <h6 class="text-truncate">$50</h6>
+          <div class="card-text small text-truncate text-muted">Remaining: 2 days</div>
+          <div class="card-text small text-truncate text-muted">Value: $100</div>
+          <div class="card-text small text-truncate text-muted">Bids: 3</div>
+        </div>
+      </a>
+      <a class="item" href="/item/2">
+        <div class="card">
+          <div class="img-section"><img src="/images/item2.jpg" /></div>
+          <h5 class="text-truncate-2 narrow-renamed">Gift Basket</h5>
+          <h6 class="text-truncate">$20</h6>
+          <div class="card-text small text-truncate text-muted">Remaining: 1 day</div>
+          <div class="card-text small text-truncate text-muted">Value: $30</div>
+          <div class="card-text small text-truncate text-muted">Bids: 0</div>
+        </div>
+      </a>
     </div>
-  </a>
-  <a class="item" href="/item/2">
-    <div class="card">
-      <div class="img-section"><img src="/images/item2.jpg" /></div>
-      <h5 class="text-truncate-2 narrow-renamed">Gift Basket</h5>
-      <h6 class="text-truncate">$20</h6>
-      <div class="card-text small text-truncate text-muted">Remaining: 1 day</div>
-      <div class="card-text small text-truncate text-muted">Value: $30</div>
-      <div class="card-text small text-truncate text-muted">Bids: 0</div>
-    </div>
-  </a>
-</div>
-<ul class="pagination"></ul>
-</body>
+    <ul class="pagination"></ul>
+  </body>
 </html>

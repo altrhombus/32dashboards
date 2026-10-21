@@ -22,7 +22,13 @@
   --action-ink: #0d1430;
   --radius: 10px;
   --target: 44px;
-  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  font-family:
+    "Segoe UI Variable Text",
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    Roboto,
+    sans-serif;
   color: var(--text);
   font-variant-numeric: tabular-nums;
   line-height: 1.4;

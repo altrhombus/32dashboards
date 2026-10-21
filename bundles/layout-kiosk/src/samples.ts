@@ -47,7 +47,14 @@ function demoEvent() {
     sponsors: [{ id: id(102), name: "Northside Bakery", logoUrl: null, sortOrder: 0 }],
     milestones: [{ id: id(103), amount: 10000, label: "A month of food for every dog" }],
     bidWars: [
-      { id: id(104), name: "Name the shelter cat", options: [{ id: id(105), name: "Biscuit", total: 340 }, { id: id(106), name: "Pepper", total: 280 }] },
+      {
+        id: id(104),
+        name: "Name the shelter cat",
+        options: [
+          { id: id(105), name: "Biscuit", total: 340 },
+          { id: id(106), name: "Pepper", total: 280 },
+        ],
+      },
     ],
     prizes: [{ id: id(107), name: "Weekend getaway", description: "Two nights for two", minimumDonation: 50 }],
     callToAction: "Scan the code on your table to give",
@@ -73,7 +80,14 @@ function worstEvent() {
     sponsors: [{ id: id(4), name: LONG_NAME, logoUrl: null, sortOrder: 0 }],
     milestones: [{ id: id(5), amount: 1000, label: LONG_DESCRIPTION.slice(0, 120) }],
     bidWars: [
-      { id: id(6), name: LONG_TITLE.slice(0, 120), options: [{ id: id(7), name: LONG_NAME, total: 5 }, { id: id(8), name: "B" }] },
+      {
+        id: id(6),
+        name: LONG_TITLE.slice(0, 120),
+        options: [
+          { id: id(7), name: LONG_NAME, total: 5 },
+          { id: id(8), name: "B" },
+        ],
+      },
       { id: id(9), name: "One option only", options: [{ id: id(10), name: "A" }] },
     ],
     prizes: [{ id: id(11), name: LONG_NAME, description: LONG_DESCRIPTION, minimumDonation: 25 }],

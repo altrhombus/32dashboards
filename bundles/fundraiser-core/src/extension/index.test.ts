@@ -101,7 +101,9 @@ describe("fundraiser-core extension", () => {
 
   it("rejects invalid reports without throwing", () => {
     const { api } = setup();
-    expect(api.registerSource("fake", { label: "Fake" }).report({ eventId: "nope", total: -1, observedAt: "later" })).toBe("invalid");
+    expect(
+      api.registerSource("fake", { label: "Fake" }).report({ eventId: "nope", total: -1, observedAt: "later" }),
+    ).toBe("invalid");
   });
 
   it("lists registered sources and refuses duplicates", () => {
@@ -222,7 +224,9 @@ describe("fundraiser-core extension", () => {
   it("fills defaults for events stored by an older version", () => {
     const fake = createFakeNodecg();
     const old = { id: "11111111-1111-4111-8111-111111111111", name: "Old", theme: {}, askMe: {}, source: {} };
-    fake.api.Replicant("events", { defaultValue: [{ ...old, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" }] });
+    fake.api.Replicant("events", {
+      defaultValue: [{ ...old, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" }],
+    });
     fundraiserCore(fake.api);
     expect(fake.replicant<FundraiserEvent[]>("events").value[0]).toMatchObject({
       milestones: [],
@@ -249,7 +253,10 @@ describe("fundraiser-core extension", () => {
       await fake.send("outputHeartbeat", { instanceId: "tv-1", output: "kiosk" });
       vi.advanceTimersByTime(30_000);
       await fake.send("outputHeartbeat", { instanceId: "tv-2", output: "kiosk" });
-      expect(fake.replicant<{ instanceId: string }[]>("outputs").value.map((o) => o.instanceId)).toEqual(["tv-1", "tv-2"]);
+      expect(fake.replicant<{ instanceId: string }[]>("outputs").value.map((o) => o.instanceId)).toEqual([
+        "tv-1",
+        "tv-2",
+      ]);
       vi.advanceTimersByTime(45_000);
       expect(fake.replicant<{ instanceId: string }[]>("outputs").value.map((o) => o.instanceId)).toEqual(["tv-2"]);
     } finally {

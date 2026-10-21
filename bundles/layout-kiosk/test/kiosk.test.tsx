@@ -1,11 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { LayoutRenderer, validateLayout } from "@32dashboards/layout-engine";
-import {
-  SCENE_IDS,
-  type LiveStateReplicant,
-  type SceneReplicant,
-} from "@32dashboards/schema/core";
+import { SCENE_IDS, type LiveStateReplicant, type SceneReplicant } from "@32dashboards/schema/core";
 import { LONG_DESCRIPTION, LONG_TITLE, worstCaseItems } from "@32dashboards/ui";
 import type { KioskData } from "../src/data.js";
 import { kioskCatalog } from "../src/catalog.js";
@@ -69,9 +65,22 @@ describe("kiosk layouts", () => {
       live,
       scene: scene(sceneId),
       infoBar: { type: "segment", segment: plan.segments[0]! },
-      toasts: [{ kind: "new-bid", id: id(20), eventId: id(1), at: NOW, itemId: "x", itemTitle: LONG_TITLE, amount: 99, bidCount: 9 }],
+      toasts: [
+        {
+          kind: "new-bid",
+          id: id(20),
+          eventId: id(1),
+          at: NOW,
+          itemId: "x",
+          itemTitle: LONG_TITLE,
+          amount: 99,
+          bidCount: 9,
+        },
+      ],
     };
-    const { container } = render(<LayoutRenderer layout={builtInLayouts[sceneId].layout} registry={kioskRegistry} data={data} fit="none" />);
+    const { container } = render(
+      <LayoutRenderer layout={builtInLayouts[sceneId].layout} registry={kioskRegistry} data={data} fit="none" />,
+    );
     expect(container.querySelector("[data-slot-error]")).toBeNull();
     expect(errors).not.toHaveBeenCalled();
     if (sceneId === "main" || sceneId === "intermission") {
@@ -84,7 +93,18 @@ describe("kiosk layouts", () => {
     const data: KioskData = {
       live,
       scene: scene("main"),
-      infoBar: { type: "celebration", moment: { kind: "milestone", id: id(30), eventId: id(1), at: NOW, milestoneId: id(5), amount: 1000, label: "First grand" } },
+      infoBar: {
+        type: "celebration",
+        moment: {
+          kind: "milestone",
+          id: id(30),
+          eventId: id(1),
+          at: NOW,
+          milestoneId: id(5),
+          amount: 1000,
+          label: "First grand",
+        },
+      },
       toasts: [],
     };
     render(<LayoutRenderer layout={builtInLayouts.main.layout} registry={kioskRegistry} data={data} fit="none" />);
@@ -119,7 +139,9 @@ describe("buildSegments", () => {
       buildSegments({ ...live, total, event: { ...worstEvent, incentives } }).pinned?.key ?? null;
     const base = { name: "X", active: true, displayNow: false, displayUntilMet: false };
     expect(withIncentives([{ ...base, id: id(40), target: 100 }])).toBeNull();
-    expect(withIncentives([{ ...base, id: id(40), target: 100, displayUntilMet: true }], 50)).toBe(`incentive:${id(40)}`);
+    expect(withIncentives([{ ...base, id: id(40), target: 100, displayUntilMet: true }], 50)).toBe(
+      `incentive:${id(40)}`,
+    );
     expect(withIncentives([{ ...base, id: id(40), target: 100, displayUntilMet: true }], 150)).toBeNull();
     expect(
       withIncentives([

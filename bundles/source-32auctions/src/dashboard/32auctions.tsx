@@ -78,7 +78,11 @@ function Panel() {
           >
             {field("orgId", "Organization ID", "From the admin URL: /organizations/<this>/auctions/…")}
             {field("auctionId", "Auction ID", "From the admin URL: …/auctions/<this>")}
-            {field("friendlyAuctionPath", "Public auction path", "32auctions.com/<this>, where the total raised is shown")}
+            {field(
+              "friendlyAuctionPath",
+              "Public auction path",
+              "32auctions.com/<this>, where the total raised is shown",
+            )}
             {field("refreshIntervalSeconds", "Refresh every (seconds)")}
             <div className="row">
               <button type="submit" disabled={!dirty}>
@@ -96,11 +100,14 @@ function Panel() {
           </form>
 
           <div className="panel" style={{ padding: 0 }}>
-            <div className="muted">Only needed for private auctions. Values are stored on the server and never shown again.</div>
+            <div className="muted">
+              Only needed for private auctions. Values are stored on the server and never shown again.
+            </div>
             {SECRET_KEYS.map((key) => (
               <label key={key} className="field">
                 <span>
-                  {SECRET_LABELS[key]} {keysSet.includes(key) ? <span className="badge">set</span> : <span className="muted">not set</span>}
+                  {SECRET_LABELS[key]}{" "}
+                  {keysSet.includes(key) ? <span className="badge">set</span> : <span className="muted">not set</span>}
                 </span>
                 <span className="row">
                   <input

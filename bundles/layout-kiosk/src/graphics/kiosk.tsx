@@ -95,7 +95,10 @@ function useHeartbeat() {
   useEffect(() => {
     if (isPreview) return;
     const instanceId = newId();
-    const beat = () => void nodecg.sendMessageToBundle("outputHeartbeat", CORE, { instanceId, output: "kiosk", screenId }).catch(() => {});
+    const beat = () =>
+      void nodecg
+        .sendMessageToBundle("outputHeartbeat", CORE, { instanceId, output: "kiosk", screenId })
+        .catch(() => {});
     beat();
     const timer = setInterval(beat, HEARTBEAT_MS);
     return () => clearInterval(timer);
@@ -112,7 +115,12 @@ function Kiosk() {
   const scene = useMemo<SceneReplicant | undefined>(() => {
     const forced = preview?.view && preview.view !== "standby" ? preview.view : null;
     if (!realScene || !forced || forced === realScene.id) return realScene;
-    return { ...realScene, id: forced, message: realScene.message ?? "Back in a few minutes", countdownTo: realScene.countdownTo };
+    return {
+      ...realScene,
+      id: forced,
+      message: realScene.message ?? "Back in a few minutes",
+      countdownTo: realScene.countdownTo,
+    };
   }, [realScene]);
   const previewTheme = usePreviewTheme();
   const { display, celebrate } = useInfoBar(live);

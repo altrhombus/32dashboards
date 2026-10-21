@@ -140,7 +140,9 @@ export function setOverlay(layout: BlockLayout, component: string, on: boolean):
   if (on === has) return layout;
   return {
     ...layout,
-    overlays: on ? [...layout.overlays, { component, settings: {} }] : layout.overlays.filter((o) => o.component !== component),
+    overlays: on
+      ? [...layout.overlays, { component, settings: {} }]
+      : layout.overlays.filter((o) => o.component !== component),
   };
 }
 
@@ -170,7 +172,13 @@ export function settingFields(schema: z.ZodTypeAny): SettingField[] {
     if (inner instanceof z.ZodString) {
       fields.push({ key, kind: "text", maxLength: inner.maxLength ?? undefined, fallback: String(fallback ?? "") });
     } else if (inner instanceof z.ZodNumber) {
-      fields.push({ key, kind: "number", min: inner.minValue ?? undefined, max: inner.maxValue ?? undefined, fallback: Number(fallback ?? 0) });
+      fields.push({
+        key,
+        kind: "number",
+        min: inner.minValue ?? undefined,
+        max: inner.maxValue ?? undefined,
+        fallback: Number(fallback ?? 0),
+      });
     } else if (inner instanceof z.ZodBoolean) {
       fields.push({ key, kind: "toggle", fallback: Boolean(fallback) });
     }

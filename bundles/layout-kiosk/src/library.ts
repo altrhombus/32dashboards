@@ -155,7 +155,8 @@ export function discardLayoutDraft(layouts: SavedLayout[], id: string, deps: Dep
 export function deleteLayout(layouts: SavedLayout[], id: string, screens: Screen[]): SavedLayout[] {
   const layout = find(layouts, id);
   const users = screens.filter((s) => Object.values(s.layouts).includes(id)).map((s) => s.name);
-  if (users.length) throw new LayoutError(`"${layout.name}" is in use on ${users.join(", ")}. Choose another layout there first.`);
+  if (users.length)
+    throw new LayoutError(`"${layout.name}" is in use on ${users.join(", ")}. Choose another layout there first.`);
   return layouts.filter((l) => l.id !== id);
 }
 
@@ -189,12 +190,7 @@ export function resolveLayout(view: ScreenView, screen: Screen | undefined, layo
  * id), its draft when `draft` is set and it has one. Falls back like
  * `resolveLayout`.
  */
-export function resolvePreview(
-  ref: string,
-  view: ScreenView,
-  layouts: SavedLayout[],
-  draft: boolean,
-): ResolvedLayout {
+export function resolvePreview(ref: string, view: ScreenView, layouts: SavedLayout[], draft: boolean): ResolvedLayout {
   const saved = layouts.find((l) => l.id === ref);
   if (!saved) return resolveLayout(view, { id: "preview", name: "Preview", layouts: { [view]: ref } }, layouts);
   const blocks = (draft && saved.draft) || saved.published;

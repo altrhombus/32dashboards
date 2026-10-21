@@ -95,8 +95,8 @@ function ScreensPanel() {
         <h2 id="screens-heading">Screens</h2>
         {screens.length === 0 && (
           <p className="muted">
-            No named screens yet, so every TV shows the built-in layouts. Name each TV to choose what it shows and to see
-            whether it's connected.
+            No named screens yet, so every TV shows the built-in layouts. Name each TV to choose what it shows and to
+            see whether it's connected.
           </p>
         )}
         {presence.named.map(({ screen, connected, since }) => (
@@ -126,7 +126,9 @@ function ScreensPanel() {
 
       <section className="group" aria-labelledby="layouts-heading">
         <h2 id="layouts-heading">Layouts</h2>
-        <p className="muted">Change what's in a layout in the Layouts tab. Built-in layouts can be copied, not changed.</p>
+        <p className="muted">
+          Change what's in a layout in the Layouts tab. Built-in layouts can be copied, not changed.
+        </p>
         <ul className="layouts">
           {Object.values(builtInLayouts).map((b) => (
             <li key={b.id} className="list-row">
@@ -280,7 +282,12 @@ function AddScreen({ initialId, taken, run }: { initialId: string; taken: string
     >
       <label className="field">
         <span>New screen</span>
-        <input placeholder="e.g. Main room left" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
+        <input
+          placeholder="e.g. Main room left"
+          maxLength={60}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
       </label>
       <label className="field">
         <span className="muted">Id in its address</span>
@@ -334,7 +341,10 @@ function SavedLayoutRow({ layout, screens, run }: { layout: SavedLayout; screens
       <button type="button" className="primary" onClick={() => openInBuilder(layout.id)}>
         Edit
       </button>
-      <button type="button" onClick={() => run(sendKiosk("copyLayout", { fromId: layout.id }), `Copied ${layout.name}.`)}>
+      <button
+        type="button"
+        onClick={() => run(sendKiosk("copyLayout", { fromId: layout.id }), `Copied ${layout.name}.`)}
+      >
         Copy
       </button>
       <ConfirmButton
