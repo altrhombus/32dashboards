@@ -310,10 +310,30 @@ h2 {
   font-weight: 600;
 }
 
+.amount-form input {
+  width: 9rem;
+  min-height: var(--target);
+  font-size: 1.05rem;
+}
+
+.amount-form button {
+  min-height: var(--target);
+}
+
+.amount-form--compact input {
+  width: 5rem;
+  min-height: 36px;
+  font-size: 1rem;
+}
+
+.amount-form--compact button {
+  min-height: 36px;
+}
+
 .war__option,
 .incentive {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 10px;
   align-items: center;
   padding: 6px 0;
@@ -417,7 +437,8 @@ h2 {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .war__option .chips {
+  .war__option .chips,
+  .war__option .amount-form {
     grid-column: 1 / -1;
   }
 }

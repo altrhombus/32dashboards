@@ -19,7 +19,8 @@
         "name": "manual",
         "title": "Manual source",
         "width": 4,
-        "file": "manual.html"
+        "file": "manual.html",
+        "workspace": "Sources"
       }
     ]
   },

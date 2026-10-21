@@ -19,7 +19,8 @@
         "name": "32auctions",
         "title": "32auctions source",
         "width": 4,
-        "file": "32auctions.html"
+        "file": "32auctions.html",
+        "workspace": "Sources"
       }
     ]
   },

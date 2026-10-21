@@ -36,7 +36,7 @@ stops working at once, including the TV. Reopen the kiosk with
 
 The source needs to sign in for private auctions, and for auctions that
 hide their total from the public (it's shown only to the organizer). Sign-in
-details are per event, in the **32auctions source** panel. Values are stored
+details are per event, in the **32auctions source** panel on the **Sources** tab. Values are stored
 on this laptop (`db/source-secrets/32auctions.json`, readable only by its
 owner) and never shown again; **Clear** removes them.
 
@@ -69,6 +69,6 @@ only). Neither needs a sign-in for a public auction.
 
 ## External push token
 
-In the **External source** panel, tap **Replace token**. The new token is
+In the **External source** panel on the **Sources** tab, tap **Replace token**. The new token is
 shown once; the old one stops working immediately. **Revoke** turns pushes
 off until you create a new token.

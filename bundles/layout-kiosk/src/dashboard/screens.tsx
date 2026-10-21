@@ -13,13 +13,13 @@ import {
   type ScreenView,
 } from "@32dashboards/schema/core";
 import { builtInLayouts } from "../layouts.js";
-import type { KioskMessageName, KioskMessagePayload, LayoutsReplicant, SavedLayout } from "../library.js";
+import type { LayoutsReplicant, SavedLayout } from "../library.js";
 import "@32dashboards/nodecg-react/panel.css";
 import "./screens.css";
-import { SELECTED_LAYOUT_KEY, writeStored } from "./shared.js";
+import { SELECTED_LAYOUT_KEY, readStored, writeStored } from "./shared.js";
 
 /*
- * Screens and layouts: name the TVs, choose what each shows for every scene,
+ * Screens: name the TVs, choose what each shows for every scene,
  * and keep copies of layouts. Editing a layout's blocks happens in the
  * Layouts tab (builder.tsx).
  */
@@ -28,8 +28,6 @@ const CORE = "fundraiser-core";
 
 const sendCore = <N extends CoreMessageName>(name: N, payload: CoreMessagePayload<N>) =>
   nodecg.sendMessageToBundle(name, CORE, payload);
-const sendKiosk = <N extends KioskMessageName>(name: N, payload: KioskMessagePayload<N>) =>
-  nodecg.sendMessage(name, payload);
 
 const VIEW_NAMES: Record<ScreenView, string> = {
   main: "Main",
@@ -124,28 +122,18 @@ function ScreensPanel() {
         <AddScreen key={newScreenId} initialId={newScreenId} taken={screens.map((s) => s.id)} run={run} />
       </section>
 
-      <section className="group" aria-labelledby="layouts-heading">
-        <h2 id="layouts-heading">Layouts</h2>
+      <section className="group" aria-label="Layouts">
         <p className="muted">
-          Change what's in a layout in the Layouts tab. Built-in layouts can be copied, not changed.
+          Build, copy, rename and delete layouts in the Layouts tab. Each screen above picks one for every scene.
         </p>
-        <ul className="layouts">
-          {Object.values(builtInLayouts).map((b) => (
-            <li key={b.id} className="list-row">
-              <span className="layout-name">{b.name}</span>
-              <span className="muted">Built in</span>
-              <button type="button" onClick={() => openInBuilder(b.id)}>
-                View
-              </button>
-              <button type="button" onClick={() => run(sendKiosk("copyLayout", { fromId: b.id }), `Copied ${b.name}.`)}>
-                Copy
-              </button>
-            </li>
-          ))}
-          {layouts.map((layout) => (
-            <SavedLayoutRow key={layout.id} layout={layout} screens={screens} run={run} />
-          ))}
-        </ul>
+        <div className="row">
+          <button
+            type="button"
+            onClick={() => openInBuilder(readStored(SELECTED_LAYOUT_KEY) ?? builtInLayouts.main.id)}
+          >
+            Open the Layouts tab
+          </button>
+        </div>
       </section>
 
       {message && (
@@ -305,55 +293,6 @@ function AddScreen({ initialId, taken, run }: { initialId: string; taken: string
       </button>
       {idProblem && <p className="warning">{idProblem}</p>}
     </form>
-  );
-}
-
-function SavedLayoutRow({ layout, screens, run }: { layout: SavedLayout; screens: Screen[]; run: Run }) {
-  const [name, setName] = useState(layout.name);
-  useEffect(() => setName(layout.name), [layout.name]);
-  const users = screens.filter((s) => Object.values(s.layouts).includes(layout.id)).map((s) => s.name);
-
-  return (
-    <li className="list-row">
-      <form
-        className="grow"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (name.trim() && name.trim() !== layout.name) {
-            run(sendKiosk("renameLayout", { layoutId: layout.id, name: name.trim() }), "Renamed.");
-          }
-        }}
-      >
-        <input
-          aria-label="Layout name"
-          className="layout-name"
-          maxLength={60}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={(e) => e.currentTarget.form?.requestSubmit()}
-        />
-      </form>
-      <span className="muted">
-        Made for {VIEW_NAMES[layout.view]}
-        {users.length > 0 && `, on ${users.join(", ")}`}
-        {layout.draft && ", has unpublished changes"}
-      </span>
-      <button type="button" className="primary" onClick={() => openInBuilder(layout.id)}>
-        Edit
-      </button>
-      <button
-        type="button"
-        onClick={() => run(sendKiosk("copyLayout", { fromId: layout.id }), `Copied ${layout.name}.`)}
-      >
-        Copy
-      </button>
-      <ConfirmButton
-        label="Delete"
-        confirmLabel="Tap again to delete"
-        disabled={users.length > 0}
-        onConfirm={() => run(sendKiosk("deleteLayout", { layoutId: layout.id }), `Deleted ${layout.name}.`)}
-      />
-    </li>
   );
 }
 

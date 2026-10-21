@@ -167,7 +167,7 @@ body,
   font-size: 7rem;
 }
 
-[data-component="askMe"] .ask-me-overlay__delta {
+[data-component="askMe"] .ask-me-overlay__delta-slot {
   font-size: 3.5rem;
 }
 

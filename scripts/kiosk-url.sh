@@ -2,7 +2,7 @@
 # Prints the keyed kiosk graphic URL for the admin user. NodeCG creates the key
 # on the user's first successful dashboard login, so log in once first.
 #   pnpm -s kiosk-url [screen-id]
-# A screen id (set up in the "Screens and layouts" panel) makes the kiosk show
+# A screen id (set up on the dashboard's Screens tab) makes the kiosk show
 # that screen's layouts, and lets the Live console tell the screens apart.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

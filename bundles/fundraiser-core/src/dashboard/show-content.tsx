@@ -551,7 +551,7 @@ function ShowContent() {
 
   if (!events) return <p className="panel">Waiting for state…</p>;
   const event = events.find((e) => e.id === selectedId) ?? events.find((e) => e.id === activeId) ?? events[0];
-  if (!event) return <p className="panel">No events yet. Create one in the Events panel.</p>;
+  if (!event) return <p className="panel">No events yet. Create one in the Events panel on the Event tab.</p>;
 
   const run: Run = (promise) => {
     setError(null);
@@ -576,6 +576,7 @@ function ShowContent() {
 
       {/* key: drafts reset when switching events */}
       <div key={event.id} className="panel" style={{ padding: 0 }}>
+        <h3 className="group-heading">About the event</h3>
         <Section title="Event details">
           <EventDetails event={event} run={run} />
         </Section>
@@ -584,15 +585,7 @@ function ShowContent() {
         >
           <LookAndSponsors event={event} run={run} />
         </Section>
-        <Section title={`Hidden items (${event.filters.length})`}>
-          <HiddenItems event={event} run={run} />
-        </Section>
-        <Section title="Call to action">
-          <CallToAction event={event} run={run} />
-        </Section>
-        <Section title="Info bar rotation">
-          <InfoBarEditor event={event} run={run} />
-        </Section>
+        <h3 className="group-heading">Goals and extras</h3>
         <Section title={`Milestones (${event.milestones.length})`}>
           <ListEditor
             items={event.milestones}
@@ -643,6 +636,16 @@ function ShowContent() {
             addLabel="Add prize"
             onSave={(prizes) => save({ prizes })}
           />
+        </Section>
+        <h3 className="group-heading">On the TV</h3>
+        <Section title="Call to action">
+          <CallToAction event={event} run={run} />
+        </Section>
+        <Section title="Info bar rotation">
+          <InfoBarEditor event={event} run={run} />
+        </Section>
+        <Section title={`Hidden items (${event.filters.length})`}>
+          <HiddenItems event={event} run={run} />
         </Section>
       </div>
 

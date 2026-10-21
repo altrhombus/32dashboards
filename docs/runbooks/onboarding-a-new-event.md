@@ -6,7 +6,7 @@ quickest start is often to duplicate last year's.
 
 ## Steps
 
-1. **Create the event.** In the dashboard's **Events** panel, either type
+1. **Create the event.** On the dashboard's **Event** tab, in the **Events** panel, either type
    a name and tap **Create**, or tap **Duplicate** on a past event.
    Duplicating copies the look, sponsors, incentives, milestones, bid
    wars, prizes, announcements, filters, and source settings, and resets
@@ -20,7 +20,7 @@ quickest start is often to duplicate last year's.
    - **External push** when another program sends results (see
      `bundles/source-external/src/extension/index.ts` for the format).
 
-3. **Configure the source** in its panel:
+3. **Configure the source** in its panel on the **Sources** tab:
    - **32auctions source**: the organization ID and auction ID (both from
      the auction's admin URL, `/organizations/<org>/auctions/<auction>`),
      the public path (`32auctions.com/<path>`, where the total raised is
@@ -31,7 +31,7 @@ quickest start is often to duplicate last year's.
    - **External source**: create a token and give it, with the event's
      id, to whoever runs the pushing program. The token is shown once.
 
-4. **Set up the show** in the **Show content** panel:
+4. **Set up the show** in the **Show content** panel on the **Event** tab:
    - _Event details_: the name and cause shown on the TV, when bidding
      closes (the TV counts down to it), announcements, and the Ask Me
      title and message.

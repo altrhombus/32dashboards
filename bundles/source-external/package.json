@@ -19,7 +19,8 @@
         "name": "external",
         "title": "External source",
         "width": 4,
-        "file": "external.html"
+        "file": "external.html",
+        "workspace": "Sources"
       }
     ]
   },

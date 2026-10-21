@@ -22,14 +22,16 @@
       {
         "name": "events",
         "title": "Events",
-        "width": 4,
-        "file": "events.html"
+        "width": 3,
+        "file": "events.html",
+        "workspace": "Event"
       },
       {
         "name": "show-content",
         "title": "Show content",
-        "width": 5,
-        "file": "show-content.html"
+        "width": 6,
+        "file": "show-content.html",
+        "workspace": "Event"
       }
     ],
     "assetCategories": [
