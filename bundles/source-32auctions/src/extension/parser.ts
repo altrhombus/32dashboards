@@ -1,10 +1,11 @@
 import * as cheerio from "cheerio";
 
 /*
- * 32auctions markup parsing. The selectors are ported verbatim from the
- * legacy Python scraper, which was validated against the real site;
- * changing them risks new scraping bugs. Fixtures in test/fixtures are the
- * same ones the Python tests used.
+ * 32auctions markup parsing. The selectors were ported from the legacy Python
+ * scraper, which was validated against the real site, and its fixtures are in
+ * test/fixtures. In 2025 the site wrapped each card in `a.item-card-link`
+ * (inside `div.item`) instead of `a.item`; both are matched, and
+ * items_page_2025.html covers the newer markup.
  */
 
 /** Stop following "next" links after this many pages, cycles or not. */
@@ -34,7 +35,7 @@ export function parseItemsPage(html: string, pageUrl: string): { cards: ScrapedC
   const $ = cheerio.load(html);
   const cards: ScrapedCard[] = [];
 
-  $("a.item").each((_, anchor) => {
+  $("a.item, a.item-card-link").each((_, anchor) => {
     const card = $(anchor).find(".card").first();
     if (!card.length) return;
 
