@@ -44,6 +44,47 @@ describe("fundraiser-core extension", () => {
     expect(live()).toMatchObject({ rawTotal: 1000, adjustment: 150, total: 1150, sourceId: "fake" });
   });
 
+  it("counts every Ask Me tap, even ones sent before the last was seen", async () => {
+    const { fake } = setup();
+    const eventId = await createActiveEvent(fake);
+
+    // Two taps from a phone that hasn't heard back from the first yet.
+    await Promise.all([
+      fake.send("nudgeAskMe", { eventId, delta: 100 }),
+      fake.send("nudgeAskMe", { eventId, delta: 100 }),
+    ]);
+
+    const events = fake.replicant<{ id: string; askMe: { total: number } }[]>("events").value;
+    expect(events.find((e) => e.id === eventId)?.askMe.total).toBe(200);
+  });
+
+  it("saves, replaces, and deletes named screens", async () => {
+    const { fake } = setup();
+    await fake.send("saveScreen", { id: "main-left", name: "Main room left", layouts: { main: "builtin:main" } });
+    await fake.send("saveScreen", { id: "lobby", name: "Lobby" });
+    await fake.send("saveScreen", { id: "main-left", name: "Left TV", layouts: {} });
+    expect(fake.replicant("screens").value).toEqual([
+      { id: "main-left", name: "Left TV", layouts: {} },
+      { id: "lobby", name: "Lobby", layouts: {} },
+    ]);
+    await expect(fake.send("saveScreen", { id: "Main Left", name: "x" })).rejects.toThrow(/Screen ids/);
+    await expect(fake.send("saveScreen", { id: "x", name: "x", layouts: { nope: "a" } })).rejects.toThrow();
+    await fake.send("deleteScreen", { id: "lobby" });
+    await expect(fake.send("deleteScreen", { id: "lobby" })).rejects.toThrow(/No screen/);
+    expect(fake.replicant<unknown[]>("screens").value).toHaveLength(1);
+  });
+
+  it("records which screen an output checked in as", async () => {
+    const { fake } = setup();
+    await fake.send("outputHeartbeat", { instanceId: "a", output: "kiosk", screenId: "lobby" });
+    await fake.send("outputHeartbeat", { instanceId: "b", output: "kiosk" });
+    const outputs = fake.replicant<{ instanceId: string; screenId: string | null }[]>("outputs").value;
+    expect(outputs.map((o) => [o.instanceId, o.screenId])).toEqual([
+      ["a", "lobby"],
+      ["b", null],
+    ]);
+  });
+
   it("keeps a late result on the event it was fetched for", async () => {
     const { fake, api, live } = setup();
     const first = await createActiveEvent(fake);
@@ -60,7 +101,9 @@ describe("fundraiser-core extension", () => {
 
   it("rejects invalid reports without throwing", () => {
     const { api } = setup();
-    expect(api.registerSource("fake", { label: "Fake" }).report({ eventId: "nope", total: -1, observedAt: "later" })).toBe("invalid");
+    expect(
+      api.registerSource("fake", { label: "Fake" }).report({ eventId: "nope", total: -1, observedAt: "later" }),
+    ).toBe("invalid");
   });
 
   it("lists registered sources and refuses duplicates", () => {
@@ -181,7 +224,9 @@ describe("fundraiser-core extension", () => {
   it("fills defaults for events stored by an older version", () => {
     const fake = createFakeNodecg();
     const old = { id: "11111111-1111-4111-8111-111111111111", name: "Old", theme: {}, askMe: {}, source: {} };
-    fake.api.Replicant("events", { defaultValue: [{ ...old, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" }] });
+    fake.api.Replicant("events", {
+      defaultValue: [{ ...old, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" }],
+    });
     fundraiserCore(fake.api);
     expect(fake.replicant<FundraiserEvent[]>("events").value[0]).toMatchObject({
       milestones: [],
@@ -208,7 +253,10 @@ describe("fundraiser-core extension", () => {
       await fake.send("outputHeartbeat", { instanceId: "tv-1", output: "kiosk" });
       vi.advanceTimersByTime(30_000);
       await fake.send("outputHeartbeat", { instanceId: "tv-2", output: "kiosk" });
-      expect(fake.replicant<{ instanceId: string }[]>("outputs").value.map((o) => o.instanceId)).toEqual(["tv-1", "tv-2"]);
+      expect(fake.replicant<{ instanceId: string }[]>("outputs").value.map((o) => o.instanceId)).toEqual([
+        "tv-1",
+        "tv-2",
+      ]);
       vi.advanceTimersByTime(45_000);
       expect(fake.replicant<{ instanceId: string }[]>("outputs").value.map((o) => o.instanceId)).toEqual(["tv-2"]);
     } finally {

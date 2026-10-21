@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { LayoutDefinitionSchema, LayoutRenderer, defineComponent, validateLayout, type Registry } from "./index.js";
 
@@ -85,7 +85,7 @@ describe("LayoutRenderer", () => {
     const { container } = render(
       <LayoutRenderer layout={layout} registry={registry} data={{ total: 1, sponsors: [] }} fit="none" />,
     );
-    expect(container.querySelector(".layout-slot--side")).toBeEmptyDOMElement();
+    expect(container.querySelector(".layout-slot--side .layout-slot__content")).toBeEmptyDOMElement();
   });
 
   it("keeps the rest of the screen up when one component fails", () => {
@@ -99,9 +99,52 @@ describe("LayoutRenderer", () => {
     spy.mockRestore();
   });
 
+  it("scales each slot's content for its measured size", () => {
+    let observed: (() => void) | undefined;
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: () => void) {
+          observed = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const sizes: Record<string, number> = { hero: 600, side: 300, bar: 900 };
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (this: HTMLElement) {
+      const area = [...this.classList].find((c) => c.startsWith("layout-slot--"))?.slice("layout-slot--".length);
+      return area ? (sizes[area] ?? 0) : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(100);
+    const slotScale = vi.fn((slot: { component: string }, size: { width: number }) =>
+      slot.component === "total" ? size.width / 300 : 1,
+    );
+
+    const { container } = render(
+      <LayoutRenderer
+        layout={layout}
+        registry={registry}
+        data={{ total: 1, sponsors: ["A"] }}
+        fit="none"
+        slotScale={slotScale}
+      />,
+    );
+    act(() => observed?.());
+    const content = (area: string) =>
+      container.querySelector(`.layout-slot--${area} .layout-slot__content`) as HTMLElement;
+    expect(content("hero").dataset.scale).toBe("2");
+    expect(content("side").dataset.scale).toBe("1");
+    expect(slotScale).toHaveBeenCalledWith(layout.slots.hero, { width: 600, height: 100 });
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
   it("scales the stage to fit the window", () => {
     Object.assign(window, { innerWidth: 960, innerHeight: 1000 });
-    const { container } = render(<LayoutRenderer layout={layout} registry={registry} data={{ total: 1, sponsors: [] }} />);
+    const { container } = render(
+      <LayoutRenderer layout={layout} registry={registry} data={{ total: 1, sponsors: [] }} />,
+    );
     expect((container.querySelector(".layout-stage") as HTMLElement).style.transform).toBe("scale(0.5)");
   });
 });

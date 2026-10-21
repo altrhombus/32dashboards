@@ -32,6 +32,17 @@ network.
    Edge opens the kiosk full-screen. Within ten seconds the Live tab's
    status strip should say **TV connected**.
 
+   With named screens (see [venue setup](venue-setup.md), step 8), open
+   each one by its id, and say which display it goes on:
+
+   ```powershell
+   ...\open-kiosk.ps1 -Screen main-left
+   ...\open-kiosk.ps1 -Screen main-right -Position 1920,0
+   ```
+
+   The strip then says **2 screens connected**, or names the screen
+   that's missing.
+
 4. **Put the event on the TV.** In the Live tab, pick the event at the top
    left, tap **Put on TV**, then tap again to confirm. Check the strip:
    the source should say **receiving data** (manual-entry events say so
@@ -67,16 +78,30 @@ network.
 
 ## Troubleshooting
 
-**TV not connected.** The kiosk isn't open, or it lost its connection.
-Run step 3 again; opening it twice is harmless.
+**TV not connected** (or a screen's name, **not connected**). That
+screen's kiosk isn't open, or it lost its connection. Run step 3 again
+for it; opening it twice is harmless. If the **Screens and layouts**
+panel lists a TV as "open without a screen name", it was opened without
+`-Screen`, so it shows the built-in layouts.
+
+**Changing what a screen shows mid-show.** In the Live tab, **On each
+screen now** lists the named screens; pick another finished layout for
+one. **Preview shows** picks which screen the preview follows. Build or
+edit layouts beforehand in the **Layouts** tab, not during the show.
+
+**A screen shows the built-in layout instead of the one chosen for it.**
+The chosen layout was deleted or can't be shown. The screen falls back
+rather than going blank; choose a layout for it again in **Screens and
+layouts**.
 
 **The source needs a look.** The status strip shows the reason. Common
 ones:
-- *Not configured for this event*: fill in the source's settings in its
+
+- _Not configured for this event_: fill in the source's settings in its
   panel (for 32auctions, the **32auctions source** panel).
-- *HTTP 401/403*: the auction needs a fresh session cookie; see
+- _HTTP 401/403_: the auction needs a fresh session cookie; see
   [rotating secrets](rotating-secrets.md).
-- *Total raised not found*: check the auction's public path, or the site
+- _Total raised not found_: check the auction's public path, or the site
   layout changed. Keep the show going with **Add cash or checks**.
 
 Tap **Fetch now** after fixing it.

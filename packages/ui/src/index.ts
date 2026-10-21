@@ -3,6 +3,8 @@ export * from "./display/format.js";
 export * from "./theme/validateTheme.js";
 export * from "./fixtures/worstCase.js";
 export * from "./theme/ThemeProvider.js";
+export * from "./theme/fonts.js";
+export * from "./theme/palettes.js";
 export * from "./hooks/useCountdown.js";
 export * from "./hooks/useAnimatedNumber.js";
 export * from "./hooks/useSSE.js";

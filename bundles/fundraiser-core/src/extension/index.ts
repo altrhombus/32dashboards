@@ -17,6 +17,7 @@ import {
   type RegisteredSource,
   type RegisteredSourcesReplicant,
   type SceneReplicant,
+  type ScreensReplicant,
   type SourceLogReplicant,
   type SourceResultsReplicant,
 } from "@32dashboards/schema/core";
@@ -32,11 +33,7 @@ const deps: core.Deps = { now: () => new Date().toISOString(), newId: randomUUID
 const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 /** Runs every listener, logging (not propagating) failures so one bad adapter can't break the core. */
-function notify<A extends unknown[]>(
-  nodecg: NodeCG.ServerAPI,
-  listeners: Set<(...args: A) => void>,
-  ...args: A
-): void {
+function notify<A extends unknown[]>(nodecg: NodeCG.ServerAPI, listeners: Set<(...args: A) => void>, ...args: A): void {
   for (const listener of listeners) {
     try {
       listener(...args);
@@ -59,6 +56,7 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   const sourceLog = nodecg.Replicant<SourceLogReplicant>("sourceLog", { defaultValue: [], persistent: false });
   const moments = nodecg.Replicant<MomentsReplicant>("moments", { defaultValue: [], persistent: false });
   const outputs = nodecg.Replicant<OutputsReplicant>("outputs", { defaultValue: [], persistent: false });
+  const screens = nodecg.Replicant<ScreensReplicant>("screens", { defaultValue: [] });
   const scene = nodecg.Replicant<SceneReplicant>("scene", {
     defaultValue: { id: "main", countdownTo: null, message: null, changedAt: deps.now() },
   });
@@ -140,7 +138,10 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   /** Registers a Message whose command is a pure state transition. */
   function command<N extends CoreMessageName>(
     name: N,
-    run: (state: core.CoreState, payload: z.output<(typeof coreMessageSchemas)[N]>) => {
+    run: (
+      state: core.CoreState,
+      payload: z.output<(typeof coreMessageSchemas)[N]>,
+    ) => {
       state: core.CoreState;
       reply?: unknown;
     },
@@ -188,6 +189,7 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
       ]);
     }
   });
+  command("nudgeAskMe", (state, { eventId, delta }) => ({ state: core.nudgeAskMe(state, eventId, delta, deps) }));
   command("setFilters", (state, { eventId, filters }) => ({
     state: core.setFilters(state, eventId, filters, deps),
   }));
@@ -207,14 +209,27 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
     if (live.length !== current.length) outputs.value = live;
   };
   setInterval(pruneOutputs, 15_000).unref();
-  listenForCommand(nodecg, "outputHeartbeat", coreMessageSchemas.outputHeartbeat, ({ instanceId, output }) => {
-    const now = deps.now();
-    const current = plain(outputs.value ?? []);
-    const existing = current.find((o) => o.instanceId === instanceId);
-    outputs.value = existing
-      ? current.map((o) => (o === existing ? { ...o, output, lastSeenAt: now } : o))
-      : [...current, { instanceId, output, firstSeenAt: now, lastSeenAt: now }];
-    pruneOutputs();
+  listenForCommand(
+    nodecg,
+    "outputHeartbeat",
+    coreMessageSchemas.outputHeartbeat,
+    ({ instanceId, output, screenId = null }) => {
+      const now = deps.now();
+      const current = plain(outputs.value ?? []);
+      const existing = current.find((o) => o.instanceId === instanceId);
+      outputs.value = existing
+        ? current.map((o) => (o === existing ? { ...o, output, screenId, lastSeenAt: now } : o))
+        : [...current, { instanceId, output, screenId, firstSeenAt: now, lastSeenAt: now }];
+      pruneOutputs();
+    },
+  );
+
+  listenForCommand(nodecg, "saveScreen", coreMessageSchemas.saveScreen, (screen) => {
+    const current = plain(screens.value ?? []);
+    screens.value = core.saveScreen(current, screen);
+  });
+  listenForCommand(nodecg, "deleteScreen", coreMessageSchemas.deleteScreen, ({ id }) => {
+    screens.value = core.deleteScreen(plain(screens.value ?? []), id);
   });
 
   listenForCommand(nodecg, "refreshSource", coreMessageSchemas.refreshSource, ({ eventId }) => {

@@ -12,8 +12,8 @@ describe("contrastRatio", () => {
 });
 
 describe("validateTheme", () => {
-  it("flags the default theme's out-of-range accent only as a warning", () => {
-    const issues = validateTheme(base);
+  it("flags an out-of-range accent only as a warning", () => {
+    const issues = validateTheme({ ...base, accentColor: "#ffd700" });
     expect(issues.filter((i) => i.level === "error")).toEqual([]);
     expect(issues.map((i) => i.field)).toContain("accentColor");
   });
@@ -31,7 +31,13 @@ describe("validateTheme", () => {
   });
 
   it("passes a broadcast-safe, high-contrast theme", () => {
-    const safe = { ...base, accentColor: "#ebc314", secondaryColor: "#4dd0e1", backgroundFrom: "#181c2a", backgroundTo: "#23284a" };
+    const safe = {
+      ...base,
+      accentColor: "#ebc314",
+      secondaryColor: "#4dd0e1",
+      backgroundFrom: "#181c2a",
+      backgroundTo: "#23284a",
+    };
     expect(validateTheme(safe)).toEqual([]);
   });
 });

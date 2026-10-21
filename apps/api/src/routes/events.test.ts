@@ -43,7 +43,7 @@ describe("events CRUD", () => {
     expect(res.body.slug).toBe("spring-2026");
     expect(res.body.isActive).toBe(false);
     expect(res.body.incentives).toEqual([]);
-    expect(res.body.theme.accentColor).toBe("#ffd700");
+    expect(res.body.theme.accentColor).toBe("#ebc81e");
     expect(res.body.scraperSource.orgId).toBe("org123");
   });
 

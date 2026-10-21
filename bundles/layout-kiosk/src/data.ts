@@ -6,9 +6,7 @@ export type CelebrationMoment = Extract<DonationMoment, { kind: "milestone" | "i
 
 /** What info bar shows right now. */
 export type InfoBarDisplay =
-  | { type: "segment"; segment: Segment }
-  | { type: "celebration"; moment: CelebrationMoment }
-  | { type: "empty" };
+  { type: "segment"; segment: Segment } | { type: "celebration"; moment: CelebrationMoment } | { type: "empty" };
 
 /** Everything kiosk layouts select their components' props from. */
 export interface KioskData {

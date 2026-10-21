@@ -32,7 +32,7 @@ describe("createEvent", () => {
     const { state, eventId } = core.createEvent(empty, { name: "Spring Gala" }, makeDeps());
     expect(state.events).toHaveLength(1);
     expect(state.events[0]).toMatchObject({ id: eventId, name: "Spring Gala", adjustment: 0, filters: [] });
-    expect(state.events[0]?.theme.accentColor).toBe("#ffd700");
+    expect(state.events[0]?.theme.accentColor).toBe("#ebc81e");
     expect(state.activeEventId).toBeNull();
   });
 });
@@ -96,7 +96,12 @@ describe("duplicateEvent", () => {
     expect(copy?.filters).toEqual(["raffle"]);
     expect(copy?.source.adapterId).toBe("fake");
     expect(copy?.askMe).toMatchObject({ enabled: false, total: 0 });
-    expect(copy?.incentives[0]).toMatchObject({ name: "Match", active: false, displayNow: false, displayUntilMet: true });
+    expect(copy?.incentives[0]).toMatchObject({
+      name: "Match",
+      active: false,
+      displayNow: false,
+      displayUntilMet: true,
+    });
     expect(copy?.incentives[0]?.id).not.toBe("11111111-1111-4111-8111-111111111111");
     expect(next.activeEventId).toBeNull();
   });
@@ -131,6 +136,17 @@ describe("adjustment", () => {
     next = core.nudgeAdjustment(next, eventId, 0.1, deps);
     next = core.nudgeAdjustment(next, eventId, 0.2, deps);
     expect(next.events[0]?.adjustment).toBe(100.31);
+  });
+});
+
+describe("nudgeAskMe", () => {
+  it("adds to the Ask Me total, rounding to cents and never going below zero", () => {
+    const { state, eventId, deps } = withEvent();
+    let next = core.nudgeAskMe(state, eventId, 100, deps);
+    next = core.nudgeAskMe(next, eventId, 0.105, deps);
+    expect(next.events[0]?.askMe.total).toBe(100.11);
+    next = core.nudgeAskMe(next, eventId, -500, deps);
+    expect(next.events[0]?.askMe.total).toBe(0);
   });
 });
 
@@ -194,7 +210,13 @@ describe("computeLiveState", () => {
     state = core.recordSourceResult(state, { ...result(eventId, 1000), items: [item("Raffle"), item("Wine")] }).state;
 
     const live = core.computeLiveState(state);
-    expect(live).toMatchObject({ rawTotal: 1000, adjustment: 250.5, total: 1250.5, hiddenItemCount: 1, sourceId: "fake" });
+    expect(live).toMatchObject({
+      rawTotal: 1000,
+      adjustment: 250.5,
+      total: 1250.5,
+      hiddenItemCount: 1,
+      sourceId: "fake",
+    });
     expect(live.items.map((i) => i.title)).toEqual(["Wine"]);
     expect(live.event?.id).toBe(eventId);
   });
@@ -225,7 +247,12 @@ describe("detectMoments", () => {
   it("reports more bids or a higher bid on visible items only", () => {
     const previous = {
       ...result(eventId, 100),
-      items: [bid("a", "Guitar", 50, 1), bid("b", "Raffle", 5, 1), bid("c", "Wine", 20, 2), bid("d", "Hat", null, null)],
+      items: [
+        bid("a", "Guitar", 50, 1),
+        bid("b", "Raffle", 5, 1),
+        bid("c", "Wine", 20, 2),
+        bid("d", "Hat", null, null),
+      ],
     };
     const next = {
       ...result(eventId, 100),
@@ -252,7 +279,13 @@ describe("detectMoments", () => {
 describe("nudgeBidWar", () => {
   it("adds to one option and refuses to go negative", () => {
     const { state: base, eventId, deps } = withEvent();
-    const war = { id: deps.newId(), name: "Puppy name", description: "", active: true, options: [{ id: deps.newId(), name: "Biscuit", total: 0 }] };
+    const war = {
+      id: deps.newId(),
+      name: "Puppy name",
+      description: "",
+      active: true,
+      options: [{ id: deps.newId(), name: "Biscuit", total: 0 }],
+    };
     const optionId = war.options[0]!.id;
     let state = core.updateEvent(base, { eventId, patch: { bidWars: [war] } }, deps);
     state = core.nudgeBidWar(state, { eventId, bidWarId: war.id, optionId, delta: 25 }, deps);
@@ -265,7 +298,13 @@ describe("nudgeBidWar", () => {
 
   it("duplicating an event resets bid war totals", () => {
     const { state: base, eventId, deps } = withEvent();
-    const war = { id: deps.newId(), name: "Puppy name", description: "", active: true, options: [{ id: deps.newId(), name: "Biscuit", total: 40 }] };
+    const war = {
+      id: deps.newId(),
+      name: "Puppy name",
+      description: "",
+      active: true,
+      options: [{ id: deps.newId(), name: "Biscuit", total: 40 }],
+    };
     const state = core.updateEvent(base, { eventId, patch: { bidWars: [war] } }, deps);
     const { state: next, eventId: copyId } = core.duplicateEvent(state, { eventId }, deps);
     const copy = next.events.find((e) => e.id === copyId);

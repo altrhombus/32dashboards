@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { errorText, useReplicant } from "@32dashboards/nodecg-react";
+import { ConfirmButton, errorText, useReplicant } from "@32dashboards/nodecg-react";
 import type {
   ActiveEventIdReplicant,
   BidWar,
@@ -13,7 +13,11 @@ import type {
   RegisteredSourcesReplicant,
   SceneId,
   SceneReplicant,
+  Screen,
+  ScreensReplicant,
+  ScreenView,
 } from "@32dashboards/schema/core";
+import { screenPresence } from "@32dashboards/schema/core";
 import { formatAmount, formatTotal } from "@32dashboards/ui";
 import "@32dashboards/nodecg-react/panel.css";
 import "./live.css";
@@ -24,9 +28,6 @@ import { send } from "./send.js";
  * always marked with the red tally; every action is one tap and says what
  * it changed; actions that end the show take a second tap.
  */
-
-const TV_STALE_MS = 30_000;
-const ARM_MS = 4_000;
 
 /** Re-renders every `ms` so relative times stay fresh. */
 function useNow(ms = 5_000): number {
@@ -49,39 +50,6 @@ function ago(iso: string | null, now: number): string {
 
 const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-/** A button that needs a second tap within a few seconds, for actions that end or replace what's on TV. */
-function ConfirmButton(props: {
-  label: ReactNode;
-  confirmLabel: string;
-  onConfirm: () => void;
-  className?: string;
-  disabled?: boolean;
-}) {
-  const [armed, setArmed] = useState(false);
-  useEffect(() => {
-    if (!armed) return;
-    const timer = setTimeout(() => setArmed(false), ARM_MS);
-    return () => clearTimeout(timer);
-  }, [armed]);
-  return (
-    <button
-      type="button"
-      className={`${props.className ?? ""}${armed ? " is-armed" : ""}`}
-      disabled={props.disabled}
-      onClick={() => {
-        if (armed) {
-          setArmed(false);
-          props.onConfirm();
-        } else {
-          setArmed(true);
-        }
-      }}
-    >
-      {armed ? props.confirmLabel : props.label}
-    </button>
-  );
-}
-
 interface Feedback {
   text: string;
   error?: boolean;
@@ -92,28 +60,49 @@ type Act = (promise: Promise<unknown>, done: string, undo?: () => void) => void;
 
 // --- Status strip ---------------------------------------------------------
 
-function TvStatus({ outputs, now }: { outputs: OutputsReplicant; now: number }) {
-  const tvs = outputs.filter((o) => o.output === "kiosk" && now - Date.parse(o.lastSeenAt) < TV_STALE_MS);
-  if (tvs.length === 0) {
+function TvStatus({ screens, outputs, now }: { screens: ScreensReplicant; outputs: OutputsReplicant; now: number }) {
+  const { named, unnamed } = screenPresence(screens, outputs, now);
+  const missing = named.filter((n) => !n.connected);
+  const connected = named.length - missing.length + unnamed.length;
+  const extra = unnamed.length > 0 && named.length > 0 ? `, plus ${unnamed.length} unnamed` : "";
+
+  if (connected === 0 || missing.length > 0) {
+    const what =
+      named.length === 0
+        ? "TV not connected"
+        : missing.length === 1
+          ? `${missing[0]!.screen.name} not connected`
+          : `${missing.length} screens not connected`;
     return (
       <div className="status status--caution" role="status">
-        <strong>TV not connected</strong>
-        <span>Open the kiosk on the TV laptop (Event-day runbook, step 3).</span>
+        <strong>{what}</strong>
+        <span>
+          {named.length > 1 ? `${named.length - missing.length} of ${named.length} screens connected${extra}. ` : ""}
+          Open the kiosk on the TV laptop (Event-day runbook, step 3).
+        </span>
       </div>
     );
   }
-  const since = tvs.map((t) => t.firstSeenAt).sort()[0]!;
+  const since = [...named.map((n) => n.since!), ...unnamed.map((u) => u.since)].sort()[0]!;
   return (
     <div className="status status--go" role="status">
-      <strong>TV connected</strong>
-      <span>
-        {tvs.length > 1 ? `${tvs.length} screens, ` : ""}since {clock(since)}
-      </span>
+      <strong>{connected > 1 ? `${connected} screens connected` : "TV connected"}</strong>
+      <span>since {clock(since)}</span>
     </div>
   );
 }
 
-function SourceStatus({ event, sources, now, act }: { event: FundraiserEvent; sources: RegisteredSourcesReplicant; now: number; act: Act }) {
+function SourceStatus({
+  event,
+  sources,
+  now,
+  act,
+}: {
+  event: FundraiserEvent;
+  sources: RegisteredSourcesReplicant;
+  now: number;
+  act: Act;
+}) {
   const adapterId = event.source.adapterId;
   if (!adapterId) {
     return (
@@ -139,7 +128,11 @@ function SourceStatus({ event, sources, now, act }: { event: FundraiserEvent; so
         {source.label}: {failing ? "needs a look" : "receiving data"}
       </strong>
       <span>{failing ? source.status.message : `Last data ${ago(source.lastResultAt, now)}`}</span>
-      <button type="button" className="status__action" onClick={() => act(send("refreshSource", { eventId: event.id }), "Asked the source to fetch now.")}>
+      <button
+        type="button"
+        className="status__action"
+        onClick={() => act(send("refreshSource", { eventId: event.id }), "Asked the source to fetch now.")}
+      >
         Fetch now
       </button>
     </div>
@@ -169,7 +162,10 @@ function EventSwitcher({ events, activeId, act }: { events: EventsReplicant; act
           label={target ? "Put on TV" : "Take off TV"}
           confirmLabel="Tap again to switch the TV"
           onConfirm={() =>
-            act(send("activateEvent", { eventId: choice || null }), target ? `${target.name} is on the TV.` : "The TV shows the standby screen.")
+            act(
+              send("activateEvent", { eventId: choice || null }),
+              target ? `${target.name} is on the TV.` : "The TV shows the standby screen.",
+            )
           }
         />
       )}
@@ -216,11 +212,23 @@ function Scenes({ scene, act }: { scene: SceneReplicant; act: Act }) {
         );
         if (s.id === "celebration" && !onAir) {
           return (
-            <ConfirmButton key={s.id} className="scene" label={content} confirmLabel="Tap again to end with the celebration" onConfirm={() => go(s.id)} />
+            <ConfirmButton
+              key={s.id}
+              className="scene"
+              label={content}
+              confirmLabel="Tap again to end with the celebration"
+              onConfirm={() => go(s.id)}
+            />
           );
         }
         return (
-          <button key={s.id} type="button" className={`scene${onAir ? " scene--on-air" : ""}`} aria-pressed={onAir} onClick={() => go(s.id)}>
+          <button
+            key={s.id}
+            type="button"
+            className={`scene${onAir ? " scene--on-air" : ""}`}
+            aria-pressed={onAir}
+            onClick={() => go(s.id)}
+          >
             {content}
           </button>
         );
@@ -235,7 +243,13 @@ function Scenes({ scene, act }: { scene: SceneReplicant; act: Act }) {
         />
         <div className="chips" role="group" aria-label="Intermission countdown">
           {[null, 5, 10, 15, 30].map((m) => (
-            <button key={m ?? "none"} type="button" aria-pressed={minutes === m} className="chip" onClick={() => setMinutes(m)}>
+            <button
+              key={m ?? "none"}
+              type="button"
+              aria-pressed={minutes === m}
+              className="chip"
+              onClick={() => setMinutes(m)}
+            >
               {m ? `${m} min` : "No countdown"}
             </button>
           ))}
@@ -249,7 +263,87 @@ function Scenes({ scene, act }: { scene: SceneReplicant; act: Act }) {
 
 const VENUE_AMOUNTS = [20, 50, 100, 500];
 
-function Money({ live, event, sourceLabel, act }: { live: LiveStateReplicant; event: FundraiserEvent; sourceLabel: string; act: Act }) {
+// --- Screens ---------------------------------------------------------------
+
+/** What the console needs from layout-kiosk's `layouts` Replicant (read by name, so core doesn't depend on that bundle). */
+interface LayoutSummary {
+  id: string;
+  name: string;
+  view: string;
+}
+
+const PREVIEW_SCREEN_KEY = "32dashboards.live.previewScreen";
+
+/** Mid-show, change which finished layout a screen shows for what's on air. Building layouts happens in the Layouts tab. */
+function ScreenLayouts(props: {
+  screens: ScreensReplicant;
+  layouts: LayoutSummary[];
+  view: ScreenView;
+  connected: Set<string>;
+  act: Act;
+}) {
+  const { screens, layouts, view, act } = props;
+  if (screens.length === 0) return null;
+  const forView = layouts.filter((l) => l.view === view);
+  const others = layouts.filter((l) => l.view !== view);
+  const viewName = view === "standby" ? "standby" : SCENES.find((s) => s.id === view)?.name;
+  const choose = (screen: Screen, ref: string) => {
+    const before = screen.layouts;
+    const layouts = { ...before };
+    if (ref) layouts[view] = ref;
+    else delete layouts[view];
+    const name = ref ? (props.layouts.find((l) => l.id === ref)?.name ?? "the chosen layout") : "the built-in layout";
+    act(
+      send("saveScreen", { ...screen, layouts }),
+      `${screen.name} now shows ${name}.`,
+      () => void send("saveScreen", { ...screen, layouts: before }),
+    );
+  };
+  return (
+    <section className="screen-layouts" aria-label="Layouts on each screen">
+      <h2>On each screen now ({viewName})</h2>
+      {screens.map((screen) => (
+        <label key={screen.id} className="screen-layout">
+          <span className={`dot ${props.connected.has(screen.id) ? "dot--go" : "dot--caution"}`} aria-hidden="true" />
+          <span className="screen-layout__name">{screen.name}</span>
+          <select value={screen.layouts[view] ?? ""} onChange={(e) => choose(screen, e.target.value)}>
+            <option value="">Built-in</option>
+            {forView.length > 0 && (
+              <optgroup label={`Made for ${viewName}`}>
+                {forView.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {others.length > 0 && (
+              <optgroup label="Others">
+                {others.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+        </label>
+      ))}
+    </section>
+  );
+}
+
+function Money({
+  live,
+  event,
+  sourceLabel,
+  act,
+}: {
+  live: LiveStateReplicant;
+  event: FundraiserEvent;
+  sourceLabel: string;
+  act: Act;
+}) {
   const [custom, setCustom] = useState("");
   const [correction, setCorrection] = useState("");
   const amount = Number(custom);
@@ -290,7 +384,13 @@ function Money({ live, event, sourceLabel, act }: { live: LiveStateReplicant; ev
             setCustom("");
           }}
         >
-          <input inputMode="decimal" aria-label="Other amount" placeholder="Other amount" value={custom} onChange={(e) => setCustom(e.target.value)} />
+          <input
+            inputMode="decimal"
+            aria-label="Other amount"
+            placeholder="Other amount"
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+          />
           <button type="submit" className="primary" disabled={!customValid}>
             Add
           </button>
@@ -312,7 +412,13 @@ function Money({ live, event, sourceLabel, act }: { live: LiveStateReplicant; ev
             setCorrection("");
           }}
         >
-          <input inputMode="decimal" aria-label="Venue total" placeholder={formatAmount(live.adjustment)} value={correction} onChange={(e) => setCorrection(e.target.value)} />
+          <input
+            inputMode="decimal"
+            aria-label="Venue total"
+            placeholder={formatAmount(live.adjustment)}
+            value={correction}
+            onChange={(e) => setCorrection(e.target.value)}
+          />
           <button type="submit" disabled={!correctionValid}>
             Set venue total
           </button>
@@ -324,14 +430,12 @@ function Money({ live, event, sourceLabel, act }: { live: LiveStateReplicant; ev
 }
 
 function AskMeTotal({ event, act }: { event: FundraiserEvent; act: Act }) {
-  const add = (delta: number) => {
-    const before = event.askMe.total;
+  const add = (delta: number) =>
     act(
-      send("updateEvent", { eventId: event.id, patch: { askMe: { total: Math.max(0, before + delta) } } }),
-      `Ask Me total is ${formatAmount(before + delta)}.`,
-      () => void send("updateEvent", { eventId: event.id, patch: { askMe: { total: before } } }),
+      send("nudgeAskMe", { eventId: event.id, delta }),
+      `Added ${formatAmount(delta)} to Ask Me.`,
+      () => void send("nudgeAskMe", { eventId: event.id, delta: -delta }),
     );
-  };
   return (
     <section className="block" aria-label="Ask Me total">
       <h2>Ask Me total: {formatAmount(event.askMe.total)}</h2>
@@ -386,7 +490,10 @@ function Incentives({ event, total, act }: { event: FundraiserEvent; total: numb
   const pin = (id: string | null) => {
     const incentives = event.incentives.map((i) => ({ ...i, displayNow: i.id === id }));
     const name = active.find((i) => i.id === id)?.name;
-    act(send("updateEvent", { eventId: event.id, patch: { incentives } }), name ? `${name} is pinned to the info bar.` : "Info bar is rotating again.");
+    act(
+      send("updateEvent", { eventId: event.id, patch: { incentives } }),
+      name ? `${name} is pinned to the info bar.` : "Info bar is rotating again.",
+    );
   };
   return (
     <section className="block" aria-label="Incentives">
@@ -401,7 +508,12 @@ function Incentives({ event, total, act }: { event: FundraiserEvent; total: numb
                 {formatTotal(total)} of {formatAmount(i.target)} ({pct}%)
               </span>
             </div>
-            <button type="button" aria-pressed={i.displayNow} className="chip" onClick={() => pin(i.displayNow ? null : i.id)}>
+            <button
+              type="button"
+              aria-pressed={i.displayNow}
+              className="chip"
+              onClick={() => pin(i.displayNow ? null : i.id)}
+            >
               {i.displayNow ? "Unpin" : "Pin to info bar"}
             </button>
           </div>
@@ -453,8 +565,17 @@ function Console() {
   const scene = useReplicant<SceneReplicant>("scene");
   const sources = useReplicant<RegisteredSourcesReplicant>("sources") ?? [];
   const outputs = useReplicant<OutputsReplicant>("outputs") ?? [];
+  const screens = useReplicant<ScreensReplicant>("screens") ?? [];
   const moments = useReplicant<MomentsReplicant>("moments") ?? [];
+  const layouts = useReplicant<LayoutSummary[]>("layouts", "layout-kiosk") ?? [];
   const now = useNow();
+  const [previewScreen, setPreviewScreen] = useState(() => {
+    try {
+      return localStorage.getItem(PREVIEW_SCREEN_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -471,25 +592,60 @@ function Console() {
 
   if (!events || !live || !scene) return <p className="console-loading">Connecting to NodeCG…</p>;
   const event = live.event;
+  const view: ScreenView = event ? scene.id : "standby";
+  const shownScreen = screens.find((s) => s.id === previewScreen);
+  const connected = new Set(
+    screenPresence(screens, outputs, now)
+      .named.filter((n) => n.connected)
+      .map((n) => n.screen.id),
+  );
+  const pickPreview = (id: string) => {
+    setPreviewScreen(id);
+    try {
+      localStorage.setItem(PREVIEW_SCREEN_KEY, id);
+    } catch {
+      // Without storage the choice lasts until reload.
+    }
+  };
 
   return (
     <div className="console">
       <header className="strip">
         <EventSwitcher events={events} activeId={activeId} act={act} />
-        <TvStatus outputs={outputs} now={now} />
+        <TvStatus screens={screens} outputs={outputs} now={now} />
         {event && <SourceStatus event={event} sources={sources} now={now} act={act} />}
       </header>
 
       <div className="stage">
         <figure className="preview">
           <div className="preview__frame">
-            <iframe title="What the TV shows" src="/bundles/layout-kiosk/graphics/kiosk.html?preview" tabIndex={-1} />
+            <iframe
+              title="What the TV shows"
+              src={`/bundles/layout-kiosk/graphics/kiosk.html?preview${shownScreen ? `&screen=${shownScreen.id}` : ""}`}
+              tabIndex={-1}
+            />
           </div>
           <figcaption>
             <span className="badge">On TV</span> {event ? event.name : "Standby screen (no event)"}
+            {screens.length > 0 && (
+              <label className="preview__screen">
+                <span className="muted">Preview shows</span>
+                <select value={shownScreen?.id ?? ""} onChange={(e) => pickPreview(e.target.value)}>
+                  <option value="">Built-in layouts</option>
+                  {screens.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </figcaption>
         </figure>
-        <Scenes scene={scene} act={act} />
+        <div className="stage__side">
+          <Scenes scene={scene} act={act} />
+          <ScreenLayouts screens={screens} layouts={layouts} view={view} connected={connected} act={act} />
+        </div>
       </div>
 
       {event ? (
@@ -511,7 +667,11 @@ function Console() {
         <p className="empty">Pick an event above and put it on the TV to start taking donations.</p>
       )}
 
-      <div className={`feedback${feedback ? " feedback--shown" : ""}${feedback?.error ? " feedback--error" : ""}`} role="status" aria-live="polite">
+      <div
+        className={`feedback${feedback ? " feedback--shown" : ""}${feedback?.error ? " feedback--error" : ""}`}
+        role="status"
+        aria-live="polite"
+      >
         {feedback && (
           <>
             <span>{feedback.text}</span>

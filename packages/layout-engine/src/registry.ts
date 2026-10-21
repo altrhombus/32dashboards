@@ -42,13 +42,16 @@ export function validateLayout<D>(layout: unknown, registry: Registry<D>): strin
   if (widths.size > 1) problems.push("grid.areas: every row needs the same number of cells");
 
   for (const area of areas) if (!(area in def.slots)) problems.push(`Area "${area}" has no slot`);
-  for (const area of Object.keys(def.slots)) if (!areas.includes(area)) problems.push(`Slot "${area}" isn't in the grid`);
+  for (const area of Object.keys(def.slots))
+    if (!areas.includes(area)) problems.push(`Slot "${area}" isn't in the grid`);
 
   const checkSlot = (where: string, slot: Slot) => {
     const entry = registry[slot.component];
     if (!entry) return problems.push(`${where}: unknown component "${slot.component}"`);
     if (slot.variant && !entry.variants.includes(slot.variant)) {
-      problems.push(`${where}: "${slot.component}" has no variant "${slot.variant}" (has ${entry.variants.join(", ")})`);
+      problems.push(
+        `${where}: "${slot.component}" has no variant "${slot.variant}" (has ${entry.variants.join(", ")})`,
+      );
     }
   };
   for (const [area, slot] of Object.entries(def.slots)) checkSlot(`Slot "${area}"`, slot);

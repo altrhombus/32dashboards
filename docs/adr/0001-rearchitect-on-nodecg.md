@@ -12,7 +12,7 @@ current monorepo: React display + admin apps, a Node/Express/SQLite API with
 SSE push, and a Python scraper service, deployed as three containers behind
 nginx.
 
-That rewrite made the system robust, but not yet *flexible*:
+That rewrite made the system robust, but not yet _flexible_:
 
 - **Data source is hard-coded to 32auctions.** `ScraperSourceSchema` is
   32auctions-specific (org/auction ID, session cookie), the item wire format
@@ -24,7 +24,7 @@ That rewrite made the system robust, but not yet *flexible*:
   (`apps/scraper/scraper/worker.py` pushes the raw total; the API never
   adds the adjustment).
 - **Results aren't attributed to a source.** `/internal/scrape-result`
-  assigns incoming data to whichever event is active *when it arrives*, so a
+  assigns incoming data to whichever event is active _when it arrives_, so a
   scrape in flight during an event switch lands on the wrong event.
 - **One fixed layout.** The display is a single hand-built React page.
   Adding a new look, a break/intermission screen, or (eventually) a stream
@@ -118,8 +118,8 @@ packages/
   and change detection (new bids and total jumps, for donation moments)
   run in the core, not the adapter. This fixes the current adjustment bug.
 - **Schema-driven layouts.** Components declare their data dependencies and
-  size variants. A *layout* is data that maps slots to components. A
-  *scene* (main, intermission/countdown, Ask Me, celebration) is a layout
+  size variants. A _layout_ is data that maps slots to components. A
+  _scene_ (main, intermission/countdown, Ask Me, celebration) is a layout
   the operator switches to. New looks are mostly configuration, and a
   future `layout-stream` bundle is just more layouts at 1920x1080.
 - **Info bar.** The bottom marquee becomes a rotation of pluggable segments
@@ -160,7 +160,7 @@ packages/
     doesn't run inside WSLg, to avoid an extra rendering layer.
   - **Optional hardening:** disable `automount` and `interop` in the
     distro's `/etc/wsl.conf` so it can't see Windows drives or launch
-    Windows programs. WSL is a clean *separation*, not a security sandbox.
+    Windows programs. WSL is a clean _separation_, not a security sandbox.
   - Replicant persistence means a reboot resumes in place. A plain native
     Node install (no WSL) and Docker remain documented fallbacks, not the
     default.
@@ -169,12 +169,12 @@ packages/
 
 ### Option A: Rebuild on NodeCG (chosen)
 
-| Dimension | Assessment |
-|-----------|------------|
-| Complexity | Medium. A new framework to learn, but it deletes our custom server, auth, sync, and persistence. |
-| Cost | Free/open source. One process on existing hardware. |
-| Scalability | Built for one production machine driving many graphics, which is our deployment model exactly. |
-| Team familiarity | React/TS carries over. NodeCG concepts (bundles, Replicants, Messages) are new but small. |
+| Dimension        | Assessment                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| Complexity       | Medium. A new framework to learn, but it deletes our custom server, auth, sync, and persistence. |
+| Cost             | Free/open source. One process on existing hardware.                                              |
+| Scalability      | Built for one production machine driving many graphics, which is our deployment model exactly.   |
+| Team familiarity | React/TS carries over. NodeCG concepts (bundles, Replicants, Messages) are new but small.        |
 
 **Pros:** Purpose-built for live event graphics. Live-synced, persisted,
 schema-validated state for free. Built-in dashboard, login, and asset
@@ -189,12 +189,12 @@ validating. Testing extensions needs a NodeCG API test double.
 
 ### Option B: Evolve the current custom stack
 
-| Dimension | Assessment |
-|-----------|------------|
-| Complexity | Low to start, grows over time as we re-implement framework features. |
-| Cost | Free. Three containers or processes on the laptop. |
-| Scalability | Adequate. |
-| Team familiarity | Highest. It's our code. |
+| Dimension        | Assessment                                                           |
+| ---------------- | -------------------------------------------------------------------- |
+| Complexity       | Low to start, grows over time as we re-implement framework features. |
+| Cost             | Free. Three containers or processes on the laptop.                   |
+| Scalability      | Adequate.                                                            |
+| Team familiarity | Highest. It's our code.                                              |
 
 **Pros:** No migration. Strong existing tests. argon2 auth already in
 place. We could add adapters and layouts to it.
@@ -206,12 +206,12 @@ designed from scratch, without the conventions a framework would supply.
 
 ### Option C: Keep Python as a separate scraper service under NodeCG
 
-| Dimension | Assessment |
-|-----------|------------|
-| Complexity | Medium. Two runtimes and an HTTP boundary to secure. |
-| Cost | Same hardware. Extra process to supervise. |
-| Scalability | n/a |
-| Team familiarity | Keeps the existing Python as-is. |
+| Dimension        | Assessment                                           |
+| ---------------- | ---------------------------------------------------- |
+| Complexity       | Medium. Two runtimes and an HTTP boundary to secure. |
+| Cost             | Same hardware. Extra process to supervise.           |
+| Scalability      | n/a                                                  |
+| Team familiarity | Keeps the existing Python as-is.                     |
 
 **Pros:** No port of the scraper.
 **Cons:** The scraper's logic is about 150 lines, and each piece
@@ -232,13 +232,14 @@ deployment with nothing internet-facing, that's an acceptable trade, and
 it's documented so we revisit it if exposure changes.
 
 The flexibility goals (pluggable sources, many layouts, future stream
-output) are mostly *our* design: the adapter contract, core-owned state,
+output) are mostly _our_ design: the adapter contract, core-owned state,
 and schema-driven layouts. NodeCG makes them cheaper by giving us bundle
 boundaries, synced state, and a dashboard host. It doesn't do them for us.
 
 ## Consequences
 
 **Easier**
+
 - Adding a data source: a new adapter bundle, with no core or layout
   changes.
 - Adding a look or scene: layout data plus, at most, new components.
@@ -251,6 +252,7 @@ boundaries, synced state, and a dashboard host. It doesn't do them for us.
 - A future stream/OBS output, which is another layout bundle.
 
 **Harder**
+
 - Contributors must learn NodeCG conventions.
 - Testing extensions needs a NodeCG API double, plus fixture-driven
   adapter tests.
@@ -261,6 +263,7 @@ boundaries, synced state, and a dashboard host. It doesn't do them for us.
   more moving parts to document and verify than a single native service.
 
 **Revisit**
+
 - Auth strength if the admin ever becomes internet-facing (move to an
   OAuth provider or an authenticating proxy).
 - Rive as an optional renderer for designer-authored animations
@@ -278,8 +281,8 @@ boundaries, synced state, and a dashboard host. It doesn't do them for us.
    `bundles.paths`, and symlinked deps resolve correctly.
 3. **Vite + React** graphics and dashboard panels build and hot-reload
    inside NodeCG, from the WSL filesystem.
-4. **Mirrored networking:** the dashboard is reachable from a *second
-   device* on the LAN at the laptop's IP, with the firewall rules in
+4. **Mirrored networking:** the dashboard is reachable from a _second
+   device_ on the LAN at the laptop's IP, with the firewall rules in
    place.
 5. **Stays up:** after opening WSL once, NodeCG keeps running (under
    systemd) after every WSL terminal is closed, and is still answering
@@ -294,17 +297,17 @@ source registry + dashboard panel), `bundles/spike-source` (fake source),
 `bundles/spike-kiosk` (graphic), `packages/nodecg-react`, and a shared
 `scripts/build-bundle.mjs`.
 
-| Risk | Result |
-|------|--------|
-| 1. Native module on linux-arm64 | **Retired.** NodeCG 2.8.0's `better-sqlite3@12` installs as a native aarch64 binary on Node 24.21. (The legacy `apps/api`'s `better-sqlite3@11` compiles from source, so `build-essential` stays a documented prerequisite.) |
-| 2. pnpm + NodeCG | **Retired, with a caveat.** NodeCG runs as a dependency with the repo root as its runtime root (it prints "experimental"). It loads `bundles/*` automatically, without needing `bundles.paths`. Cross-bundle extension APIs (`nodecg.extensions[...]`), `bundleDependencies` ordering, and cross-namespace Replicant reads all work. pnpm 11 blocks native install scripts by default, so `allowBuilds` must list `better-sqlite3` and `msgpackr-extract`. |
-| 3. Vite + React | **Partially retired.** Graphics and panels build with Vite into `graphics/` and `dashboard/`, and extensions with esbuild into CJS. zod schemas generate the Replicant JSON Schemas NodeCG validates against. `--watch` rebuilds, but NodeCG has no HMR, so this needs a browser refresh, or an extension restart for extension changes. True HMR (e.g. a Vite dev-server plugin) is a follow-up. |
-| 4. Mirrored networking | **Open.** It's blocked by the Hyper-V firewall (`DefaultInboundAction: Block` for the WSL VM). The Wi-Fi profile is Public, too. `infra/windows/setup-firewall.ps1` (admin) adds the rules. Verify from a second device. |
-| 5. Stays up | **Open, and the risk is confirmed.** Processes started from a `wsl.exe` session die when it exits, so NodeCG must run under systemd (`infra/wsl/install-service.sh`). Still to verify: whether it survives all WSL terminals closing. If not, fix the idle timeout in `.wslconfig`. |
-| 6. Kiosk browser | **Open.** It's opened by hand. Verify the keyed URL full-screen in Edge. |
+| Risk                            | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Native module on linux-arm64 | **Retired.** NodeCG 2.8.0's `better-sqlite3@12` installs as a native aarch64 binary on Node 24.21. (The legacy `apps/api`'s `better-sqlite3@11` compiles from source, so `build-essential` stays a documented prerequisite.)                                                                                                                                                                                                                               |
+| 2. pnpm + NodeCG                | **Retired, with a caveat.** NodeCG runs as a dependency with the repo root as its runtime root (it prints "experimental"). It loads `bundles/*` automatically, without needing `bundles.paths`. Cross-bundle extension APIs (`nodecg.extensions[...]`), `bundleDependencies` ordering, and cross-namespace Replicant reads all work. pnpm 11 blocks native install scripts by default, so `allowBuilds` must list `better-sqlite3` and `msgpackr-extract`. |
+| 3. Vite + React                 | **Partially retired.** Graphics and panels build with Vite into `graphics/` and `dashboard/`, and extensions with esbuild into CJS. zod schemas generate the Replicant JSON Schemas NodeCG validates against. `--watch` rebuilds, but NodeCG has no HMR, so this needs a browser refresh, or an extension restart for extension changes. True HMR (e.g. a Vite dev-server plugin) is a follow-up.                                                          |
+| 4. Mirrored networking          | **Open.** It's blocked by the Hyper-V firewall (`DefaultInboundAction: Block` for the WSL VM). The Wi-Fi profile is Public, too. `infra/windows/setup-firewall.ps1` (admin) adds the rules. Verify from a second device.                                                                                                                                                                                                                                   |
+| 5. Stays up                     | **Open, and the risk is confirmed.** Processes started from a `wsl.exe` session die when it exits, so NodeCG must run under systemd (`infra/wsl/install-service.sh`). Still to verify: whether it survives all WSL terminals closing. If not, fix the idle timeout in `.wslconfig`.                                                                                                                                                                        |
+| 6. Kiosk browser                | **Open.** It's opened by hand. Verify the keyed URL full-screen in Edge.                                                                                                                                                                                                                                                                                                                                                                                   |
 
 **New finding: one failed local login demotes the user.** NodeCG's local
-strategy upserts the user on *every* attempt, and a wrong password saves it
+strategy upserts the user on _every_ attempt, and a wrong password saves it
 with an empty role list. One wrong password for `admin` removes superuser,
 until the next correct login. The keyed kiosk URL is tied to that user, so
 anyone who can reach `/login` can blank the venue TV. Verified: the keyed
@@ -320,11 +323,12 @@ reported upstream. Keeping `/login` reachable only from the LAN or tailnet
 still limits who can try.
 
 **Smaller notes:**
+
 - Under mirrored networking, a connection to a closed loopback port can
   hang instead of being refused, so health checks need timeouts.
 - NodeCG binds IPv4 only (`0.0.0.0`), and Windows resolves `localhost` to
   `::1` first, which hangs. Kiosk URLs use `127.0.0.1`. Windows can't
-  reach WSL through its *own* LAN IP without `hostAddressLoopback`; that
+  reach WSL through its _own_ LAN IP without `hostAddressLoopback`; that
   doesn't affect other devices.
 - `setup-firewall.ps1`'s Hyper-V rule landed with `VMCreatorId: Any`
   rather than WSL's ID. It works, but is broader than intended. Revisit.
@@ -410,6 +414,7 @@ still limits who can try.
 
   `cfg/source-32auctions.json` `baseUrl` points it at a local copy for
   testing.
+
 - **`source-manual`:** totals and items entered by hand. Each edit is
   reported as a normal result, so adjustment, filters, and moments behave
   the same as for scraped data. Entries aren't copied on duplicate,
@@ -436,7 +441,7 @@ still limits who can try.
   Duplicating an event resets bid war totals. Events stored by earlier
   versions are upgraded with defaults at startup.
 - **Threshold moments:** `milestone` and `incentive-met` moments are
-  detected in the core whenever the *displayed* total crosses a threshold
+  detected in the core whenever the _displayed_ total crosses a threshold
   on the same event. So adjustments count, and a restart, a kiosk reload,
   or an event switch never re-celebrates.
 - **`packages/layout-engine`:**
@@ -528,7 +533,7 @@ still limits who can try.
     restore, rotating secrets, fallbacks.
   - The README now describes the NodeCG stack.
 - **Spike risks still open:**
-  - (4) reaching the dashboard from a *second* device: the firewall
+  - (4) reaching the dashboard from a _second_ device: the firewall
     rules are in place and the LAN address answers from inside WSL;
   - (5) NodeCG staying up after every WSL window closes: the venue setup
     runbook includes the check and the `.wslconfig` fix;
@@ -536,6 +541,7 @@ still limits who can try.
     rendered every scene in Phase 4, but not kiosk mode on the real TV.
 
   All three need someone at the laptop.
+
 - `setup-firewall.ps1`'s Hyper-V rule scope (`VMCreatorId: Any`) is still
   to revisit.
 

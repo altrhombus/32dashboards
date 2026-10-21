@@ -24,6 +24,7 @@ removing the distro removes the whole stack. The background is in
    - Run `wsl --shutdown` in PowerShell, then reopen Ubuntu.
 
 3. **Install the toolchain inside WSL** (never on Windows):
+
    ```sh
    sudo apt update && sudo apt install -y git sqlite3 jq build-essential
    curl -fsSL https://fnm.vercel.app/install | bash   # then reopen the terminal
@@ -33,6 +34,7 @@ removing the distro removes the whole stack. The background is in
 
 4. **Get the code and build it.** Keep it in the WSL filesystem, not
    under `/mnt/c`:
+
    ```sh
    git clone https://github.com/altrhombus/32dashboards ~/32dashboards
    cd ~/32dashboards
@@ -43,14 +45,17 @@ removing the distro removes the whole stack. The background is in
 
 5. **Run NodeCG as a service**, so it starts with WSL and restarts if it
    crashes:
+
    ```sh
    bash infra/wsl/install-service.sh
    ```
 
 6. **Let other devices reach the dashboard.** In an elevated PowerShell:
+
    ```powershell
    & '\\wsl.localhost\Ubuntu\home\<you>\32dashboards\infra\windows\setup-firewall.ps1'
    ```
+
    This allows the NodeCG port through both the Windows Defender and the
    Hyper-V firewall. Then open `http://<laptop-ip>:9090` from a phone on
    the same network to confirm.
@@ -60,14 +65,22 @@ removing the distro removes the whole stack. The background is in
    needs. Then run `infra/windows/open-kiosk.ps1` as in the
    [event-day runbook](event-day.md), step 3.
 
-8. **Check it.** `pnpm check-env` should pass. Then close every WSL
+8. **Name the screens.** In the dashboard's **Screens and layouts**
+   panel, add each TV (e.g. "Main room left", id `main-left`). For each
+   scene you can keep the built-in layout or choose another one. To make
+   your own, use the **Layouts** tab: start a new layout or copy a
+   built-in one, arrange it, and publish it. Then open each TV's kiosk
+   with `open-kiosk.ps1 -Screen <id>`. With one TV, you can skip this
+   step.
+
+9. **Check it.** `pnpm check-env` should pass. Then close every WSL
    window, wait five minutes, and reload the dashboard from another
    device. If it no longer answers, WSL stopped the distro when idle: add
    `vmIdleTimeout=-1` under `[wsl2]` in `.wslconfig`, run
    `wsl --shutdown`, and check again.
 
-9. **Take a first backup:** `pnpm backup`. See
-   [backup and restore](backup-and-restore.md).
+10. **Take a first backup:** `pnpm backup`. See
+    [backup and restore](backup-and-restore.md).
 
 ## Optional hardening
 

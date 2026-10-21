@@ -1,4 +1,4 @@
-import { Component, useEffect, useState, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
+import { Component, useEffect, useRef, useState, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
 import type { LayoutDefinition, Slot } from "./definition.js";
 import { variantOf, type Registry } from "./registry.js";
 
@@ -42,6 +42,55 @@ export interface LayoutRendererProps<D> {
   data: D;
   /** Scale the stage to fit the window (default) or render it at design size. */
   fit?: "window" | "none";
+  /**
+   * How much to scale a slot's content for the slot's measured size (design
+   * px), e.g. bigger text in a bigger block. Applied with CSS `zoom`, so the
+   * content still lays out to fill the slot. Overlays aren't scaled.
+   */
+  slotScale?: (slot: Slot, size: { width: number; height: number }) => number;
+}
+
+/** A grid slot that measures itself, so its content can scale with it. */
+function SlotFrame({
+  area,
+  slot,
+  slotScale,
+  children,
+}: {
+  area: string;
+  slot: Slot;
+  slotScale?: LayoutRendererProps<unknown>["slotScale"];
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const element = ref.current;
+    if (!slotScale || !element || typeof ResizeObserver === "undefined") return setScale(1);
+    // offsetWidth/Height are layout sizes, unaffected by the stage's transform.
+    const measure = () => setScale(slotScale(slot, { width: element.offsetWidth, height: element.offsetHeight }));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [slot, slotScale]);
+
+  return (
+    <div
+      ref={ref}
+      className={`layout-slot layout-slot--${area}`}
+      data-component={slot.component}
+      style={{ gridArea: area, minWidth: 0, minHeight: 0 }}
+    >
+      <div
+        className="layout-slot__content"
+        data-scale={scale}
+        style={{ height: "100%", minHeight: 0, ...(scale !== 1 && { zoom: scale }) }}
+      >
+        {children}
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -49,7 +98,7 @@ export interface LayoutRendererProps<D> {
  * the window and centered, so one layout works on any screen with the same
  * aspect ratio.
  */
-export function LayoutRenderer<D>({ layout, registry, data, fit = "window" }: LayoutRendererProps<D>) {
+export function LayoutRenderer<D>({ layout, registry, data, fit = "window", slotScale }: LayoutRendererProps<D>) {
   const scale = useFitScale(layout.width, layout.height, fit === "window");
   const { grid } = layout;
 
@@ -74,15 +123,18 @@ export function LayoutRenderer<D>({ layout, registry, data, fit = "window" }: La
   };
 
   return (
-    <div className="layout-viewport" style={{ width: layout.width * scale, height: layout.height * scale, margin: "0 auto" }}>
+    <div
+      className="layout-viewport"
+      style={{ width: layout.width * scale, height: layout.height * scale, margin: "0 auto" }}
+    >
       <div className="layout-stage" data-layout={layout.id} style={stage}>
         <div className="layout-grid" style={gridStyle}>
           {Object.entries(layout.slots).map(([area, slot]) => (
-            <div key={area} className={`layout-slot layout-slot--${area}`} style={{ gridArea: area, minWidth: 0, minHeight: 0 }}>
+            <SlotFrame key={area} area={area} slot={slot} slotScale={slotScale}>
               <SlotBoundary name={area}>
                 <RenderSlot name={area} slot={slot} registry={registry} data={data} />
               </SlotBoundary>
-            </div>
+            </SlotFrame>
           ))}
         </div>
         {layout.overlays.map((slot, i) => (

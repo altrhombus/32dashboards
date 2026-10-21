@@ -81,7 +81,10 @@ export function SourceStatusLine({ sourceId }: { sourceId: string }) {
 /** Recent log lines from one adapter, newest first. */
 export function SourceLog({ sourceId, limit = 30 }: { sourceId: string; limit?: number }) {
   const log = useReplicant<SourceLogReplicant>("sourceLog", CORE) ?? [];
-  const lines = log.filter((l) => l.sourceId === sourceId).slice(-limit).reverse();
+  const lines = log
+    .filter((l) => l.sourceId === sourceId)
+    .slice(-limit)
+    .reverse();
   if (lines.length === 0) return <p className="muted">No log entries yet.</p>;
   return (
     <pre className="log">

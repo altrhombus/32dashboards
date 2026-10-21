@@ -60,7 +60,14 @@ describe("worst-case strings and numbers", () => {
   });
 
   it("IncentiveTracker: long name clamped", () => {
-    const incentive = { id: ID, name: LONG_TITLE, target: HUGE_TOTAL, active: true, displayNow: false, displayUntilMet: false };
+    const incentive = {
+      id: ID,
+      name: LONG_TITLE,
+      target: HUGE_TOTAL,
+      active: true,
+      displayNow: false,
+      displayUntilMet: false,
+    };
     const { container } = render(<IncentiveTracker incentive={incentive} totalRaised={HUGE_TOTAL / 2} />);
     expectClamped(LONG_TITLE);
     expectAmountsTabularAndWhole(container);
@@ -72,7 +79,11 @@ describe("worst-case strings and numbers", () => {
       name: LONG_TITLE.slice(0, 120),
       description: LONG_DESCRIPTION,
       active: true,
-      options: Array.from({ length: 12 }, (_, i) => ({ id: `${ID.slice(0, -2)}${String(i).padStart(2, "0")}`, name: LONG_NAME, total: i * 1000.75 })),
+      options: Array.from({ length: 12 }, (_, i) => ({
+        id: `${ID.slice(0, -2)}${String(i).padStart(2, "0")}`,
+        name: LONG_NAME,
+        total: i * 1000.75,
+      })),
     };
     const { container } = render(<BidWarCard bidWar={bidWar} />);
     expect(container.querySelectorAll(".bid-war-card__option--leader")).toHaveLength(1);
@@ -98,7 +109,13 @@ describe("worst-case strings and numbers", () => {
   });
 
   it("PrizeCard: long name and description clamped", () => {
-    const prize: Prize = { id: ID, name: LONG_TITLE.slice(0, 120), description: LONG_DESCRIPTION, minimumDonation: 25.5, active: true };
+    const prize: Prize = {
+      id: ID,
+      name: LONG_TITLE.slice(0, 120),
+      description: LONG_DESCRIPTION,
+      minimumDonation: 25.5,
+      active: true,
+    };
     const { container } = render(<PrizeCard prize={prize} />);
     expectClamped(LONG_TITLE.slice(0, 120));
     expectClamped(LONG_DESCRIPTION);
@@ -117,7 +134,18 @@ describe("worst-case strings and numbers", () => {
     const at = "2026-10-10T12:00:00.000Z";
     const { container } = render(
       <>
-        <MomentToast moment={{ kind: "new-bid", id: ID, eventId: ID, at, itemId: "x", itemTitle: LONG_TITLE, amount: 9_999_999.5, bidCount: 1 }} />
+        <MomentToast
+          moment={{
+            kind: "new-bid",
+            id: ID,
+            eventId: ID,
+            at,
+            itemId: "x",
+            itemTitle: LONG_TITLE,
+            amount: 9_999_999.5,
+            bidCount: 1,
+          }}
+        />
         <MomentToast moment={{ kind: "total-increase", id: ID, eventId: ID, at, delta: 25.25, total: HUGE_TOTAL }} />
         <MilestoneCelebration heading="Milestone reached!" amount={HUGE_TOTAL} detail={LONG_DESCRIPTION} />
       </>,

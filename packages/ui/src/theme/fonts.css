@@ -1,0 +1,20 @@
+/* Fonts bundled with the kiosk; see fonts.ts for the list people choose from. */
+@import "@fontsource/montserrat/latin-400.css";
+@import "@fontsource/montserrat/latin-600.css";
+@import "@fontsource/montserrat/latin-700.css";
+@import "@fontsource/atkinson-hyperlegible/latin-400.css";
+@import "@fontsource/atkinson-hyperlegible/latin-700.css";
+@import "@fontsource/lexend/latin-400.css";
+@import "@fontsource/lexend/latin-600.css";
+@import "@fontsource/lexend/latin-700.css";
+@import "@fontsource/bitter/latin-400.css";
+@import "@fontsource/bitter/latin-600.css";
+@import "@fontsource/bitter/latin-700.css";
+@import "@fontsource/oswald/latin-400.css";
+@import "@fontsource/oswald/latin-600.css";
+@import "@fontsource/oswald/latin-700.css";
+@import "@fontsource/share-tech-mono/latin-400.css";
+@import "@fontsource/jetbrains-mono/latin-400.css";
+@import "@fontsource/jetbrains-mono/latin-700.css";
+@import "@fontsource/roboto-mono/latin-400.css";
+@import "@fontsource/roboto-mono/latin-700.css";

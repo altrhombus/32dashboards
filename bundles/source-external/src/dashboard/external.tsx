@@ -20,7 +20,10 @@ function Panel() {
   -d '{"eventId": "${events[0]?.id ?? "<event id>"}", "total": 1234.5, "items": []}'`;
 
   const rotate = () => {
-    if (endpoint.tokenCreatedAt && !window.confirm("Replace the token? Anything using the old one will stop working.")) {
+    if (
+      endpoint.tokenCreatedAt &&
+      !window.confirm("Replace the token? Anything using the old one will stop working.")
+    ) {
       return;
     }
     setError(null);
@@ -51,7 +54,9 @@ function Panel() {
       <div className="row">
         <span>
           Token:{" "}
-          {endpoint.tokenCreatedAt ? `created ${new Date(endpoint.tokenCreatedAt).toLocaleString()}` : "none (pushes are refused)"}
+          {endpoint.tokenCreatedAt
+            ? `created ${new Date(endpoint.tokenCreatedAt).toLocaleString()}`
+            : "none (pushes are refused)"}
         </span>
         <button type="button" onClick={rotate}>
           {endpoint.tokenCreatedAt ? "Replace token" : "Create token"}
@@ -71,10 +76,13 @@ function Panel() {
       </div>
       {token && (
         <p>
-          New token, shown only now. Copy it to the pushing process: <code style={{ wordBreak: "break-all" }}>{token}</code>
+          New token, shown only now. Copy it to the pushing process:{" "}
+          <code style={{ wordBreak: "break-all" }}>{token}</code>
         </p>
       )}
-      {endpoint.lastPushAt && <p className="muted">Last accepted push {new Date(endpoint.lastPushAt).toLocaleString()}</p>}
+      {endpoint.lastPushAt && (
+        <p className="muted">Last accepted push {new Date(endpoint.lastPushAt).toLocaleString()}</p>
+      )}
 
       <pre className="log">{example}</pre>
       {error && <p className="error">{error}</p>}

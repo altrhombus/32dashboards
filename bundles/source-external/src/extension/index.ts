@@ -70,7 +70,11 @@ export default function sourceExternal(
     } else if (response.status === 401) {
       handle.log("warn", `Refused a push from ${req.ip}: bad token`);
     } else {
-      handle.log("warn", `Rejected a push (${response.status}): ${response.body.error ?? response.body.outcome}`, eventId);
+      handle.log(
+        "warn",
+        `Rejected a push (${response.status}): ${response.body.error ?? response.body.outcome}`,
+        eventId,
+      );
     }
     res.status(response.status).json(response.body);
   });

@@ -21,7 +21,23 @@ export const LONG_DESCRIPTION = "Lorem ipsum dolor sit amet ".repeat(11).trim();
 export const HUGE_TOTAL = 99_999_999.99;
 
 export const worstCaseItems: SourceItem[] = [
-  { id: "long", title: LONG_TITLE, imageUrl: null, currentBid: 9_999_999, value: 12_000_000, bidCount: 9_999, remaining: "29 days 23 hours" },
-  { id: "name", title: LONG_NAME, imageUrl: "https://example.test/missing.jpg", currentBid: null, value: null, bidCount: null, remaining: null },
+  {
+    id: "long",
+    title: LONG_TITLE,
+    imageUrl: null,
+    currentBid: 9_999_999,
+    value: 12_000_000,
+    bidCount: 9_999,
+    remaining: "29 days 23 hours",
+  },
+  {
+    id: "name",
+    title: LONG_NAME,
+    imageUrl: "https://example.test/missing.jpg",
+    currentBid: null,
+    value: null,
+    bidCount: null,
+    remaining: null,
+  },
   { id: "empty", title: "", imageUrl: null, currentBid: 0, value: 0, bidCount: 0, remaining: "" },
 ];

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { FundraiserEventSchema, timestamp } from "./event.js";
 import { SourceItemSchema, SourceResultSchema } from "./source.js";
-import { SceneIdSchema } from "./show.js";
+import { SceneIdSchema, ScreenViewSchema } from "./show.js";
 
 /*
  * fundraiser-core's Replicants. bundles/fundraiser-core/src/schemas re-exports
@@ -153,8 +153,31 @@ export const OutputsReplicantSchema = z.array(
   z.object({
     instanceId: z.string().min(1).max(100),
     output: z.string().min(1).max(60),
+    /** The named screen it was opened as (`?screen=`), if any. */
+    screenId: z.string().nullable().default(null),
     lastSeenAt: timestamp(),
     firstSeenAt: timestamp(),
   }),
 );
 export type OutputsReplicant = z.infer<typeof OutputsReplicantSchema>;
+
+/** A screen's id appears in its kiosk URL (`?screen=main-left`). */
+export const ScreenIdSchema = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9-]{0,39}$/, "Screen ids are lowercase letters, digits and -, up to 40 characters");
+
+/**
+ * A named screen, such as one TV in the room, and the layout it shows for
+ * each scene. Layout ids belong to the output (layout-kiosk); one that's
+ * missing or unset shows that output's built-in layout.
+ */
+export const ScreenSchema = z.object({
+  id: ScreenIdSchema,
+  name: z.string().trim().min(1).max(60),
+  layouts: z.record(ScreenViewSchema, z.string().min(1).max(100)).default({}),
+});
+export type Screen = z.infer<typeof ScreenSchema>;
+
+/** Replicant `screens` (persisted): the screens operators expect to be on. */
+export const ScreensReplicantSchema = z.array(ScreenSchema).max(12);
+export type ScreensReplicant = z.infer<typeof ScreensReplicantSchema>;

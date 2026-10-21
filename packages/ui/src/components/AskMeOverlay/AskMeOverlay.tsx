@@ -50,10 +50,7 @@ export function AskMeOverlay({ askMe, visible = askMe.enabled }: AskMeOverlayPro
     <div className="ask-me-overlay">
       <ConfettiBurst active={burst} />
       <div className="ask-me-overlay__title">{askMe.title}</div>
-      <div
-        className="ask-me-overlay__message"
-        dangerouslySetInnerHTML={{ __html: renderMarkdown(askMe.message) }}
-      />
+      <div className="ask-me-overlay__message" dangerouslySetInnerHTML={{ __html: renderMarkdown(askMe.message) }} />
       <div className="ask-me-overlay__total-wrapper">
         <span className="ask-me-overlay__total-label">Ask Me Total</span>
         <span className="ask-me-overlay__total-amount num">{formatAmount(askMe.total)}</span>

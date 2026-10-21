@@ -1,0 +1,22 @@
+# Generated or not ours
+node_modules/
+dist/
+.turbo/
+pnpm-lock.yaml
+patches/
+
+# NodeCG runtime state and bundle build outputs (sources live in bundles/*/src)
+cfg/
+db/
+assets/
+logs/
+bundles/*/extension/
+bundles/*/graphics/
+bundles/*/dashboard/
+bundles/*/schemas/
+.pre-restore-*/
+
+# The pre-NodeCG apps and their reference copies, due to be retired
+# (ADR-0001 action item 6); not worth reformatting.
+apps/
+legacy/

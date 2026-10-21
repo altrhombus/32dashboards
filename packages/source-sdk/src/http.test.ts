@@ -24,7 +24,11 @@ describe("fetchText", () => {
   });
 
   it("retries network errors, then succeeds", async () => {
-    const { impl, calls } = fakeFetch([new TypeError("fetch failed"), new TypeError("fetch failed"), new Response("ok")]);
+    const { impl, calls } = fakeFetch([
+      new TypeError("fetch failed"),
+      new TypeError("fetch failed"),
+      new Response("ok"),
+    ]);
     await expect(fetchText("https://x.test/", { fetchImpl: impl, sleep: noSleep })).resolves.toBe("ok");
     expect(calls).toHaveLength(3);
   });

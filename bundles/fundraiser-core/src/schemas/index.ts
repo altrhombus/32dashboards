@@ -10,5 +10,6 @@ export {
   SourceLogReplicantSchema as sourceLog,
   MomentsReplicantSchema as moments,
   SceneReplicantSchema as scene,
+  ScreensReplicantSchema as screens,
   OutputsReplicantSchema as outputs,
 } from "@32dashboards/schema/core";

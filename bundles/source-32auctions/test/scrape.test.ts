@@ -8,7 +8,12 @@ import { itemsUrl, summaryUrl, type Config } from "../src/config.js";
 // Same fixtures (and assertions) as the legacy Python parser tests.
 const fixture = (name: string) => readFileSync(path.join(import.meta.dirname, "fixtures", name), "utf8");
 const BASE = "https://example.test";
-const config: Config = { orgId: "org1", auctionId: "auc1", friendlyAuctionPath: "spring-gala", refreshIntervalSeconds: 10 };
+const config: Config = {
+  orgId: "org1",
+  auctionId: "auc1",
+  friendlyAuctionPath: "spring-gala",
+  refreshIntervalSeconds: 10,
+};
 
 /** Serves canned pages and records requests, like the Python FakeSession. */
 function fakeSite(pages: Record<string, string>) {

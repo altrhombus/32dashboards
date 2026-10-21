@@ -135,9 +135,7 @@ export const infoBarMachine = setup({
 export type InfoBarSnapshot = SnapshotFrom<typeof infoBarMachine>;
 
 export type InfoBarView =
-  | { type: "celebration"; key: string }
-  | { type: "segment"; key: string; pinned: boolean }
-  | { type: "empty" };
+  { type: "celebration"; key: string } | { type: "segment"; key: string; pinned: boolean } | { type: "empty" };
 
 /** What the info bar should show for a snapshot. */
 export function selectInfoBarView(snapshot: InfoBarSnapshot): InfoBarView {

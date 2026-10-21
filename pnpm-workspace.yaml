@@ -4,9 +4,9 @@ packages:
   - "bundles/*"
 allowBuilds:
   # Ships prebuilt binaries; its install script is only a from-source fallback.
-  '@parcel/watcher': false
+  "@parcel/watcher": false
   # Usage telemetry pulled in by NodeCG's dashboard; keep it off.
-  '@vaadin/vaadin-usage-statistics': false
+  "@vaadin/vaadin-usage-statistics": false
   argon2: true
   better-sqlite3: true
   esbuild: true

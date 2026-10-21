@@ -5,6 +5,7 @@ import {
   type DonationMoment,
   type FundraiserEvent,
   type LiveStateReplicant,
+  type Screen,
   type SourceItem,
   type SourceResult,
   type UpdateEventMessage,
@@ -146,6 +147,13 @@ export function setAdjustment(state: CoreState, eventId: string, amount: number,
 
 export function nudgeAdjustment(state: CoreState, eventId: string, delta: number, deps: Deps): CoreState {
   return editEvent(state, eventId, deps, (event) => ({ adjustment: roundCents(event.adjustment + delta) }));
+}
+
+/** Adds to the Ask Me total, never below zero. */
+export function nudgeAskMe(state: CoreState, eventId: string, delta: number, deps: Deps): CoreState {
+  return editEvent(state, eventId, deps, (event) => ({
+    askMe: { ...event.askMe, total: Math.max(0, roundCents(event.askMe.total + delta)) },
+  }));
 }
 
 export function nudgeBidWar(
@@ -323,4 +331,18 @@ export function computeLiveState(state: CoreState): LiveStateReplicant {
 
 function roundCents(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+export const MAX_SCREENS = 12;
+
+/** Adds a screen, or replaces the one with the same id in place. */
+export function saveScreen(screens: Screen[], screen: Screen): Screen[] {
+  if (screens.some((s) => s.id === screen.id)) return screens.map((s) => (s.id === screen.id ? screen : s));
+  if (screens.length >= MAX_SCREENS) throw new CommandError(`There can be at most ${MAX_SCREENS} screens.`);
+  return [...screens, screen];
+}
+
+export function deleteScreen(screens: Screen[], id: string): Screen[] {
+  if (!screens.some((s) => s.id === id)) throw new CommandError(`No screen with id ${id}`);
+  return screens.filter((s) => s.id !== id);
 }

@@ -28,12 +28,12 @@ bundles/
   source-32auctions/  Scrapes a 32auctions auction (TypeScript + cheerio).
   source-manual/      Totals and items entered by hand.
   source-external/    Bearer-token HTTP endpoint, so any program can push results.
-  layout-kiosk/       The venue-TV graphic: one data-defined layout per scene.
+  layout-kiosk/       The venue-TV graphic: each named screen's layout per scene, and saved layouts.
 packages/
   schema/             zod schemas; `@32dashboards/schema/core` generates the
                       Replicant JSON Schemas NodeCG validates against.
   source-sdk/         The adapter contract, polling runner, secret store.
-  layout-engine/      Renders layouts defined as data (grid areas -> components).
+  layout-engine/      Renders layouts defined as data; block layouts on a 24x24 snap grid.
   incentive-machine/  XState sequencing for the info bar and celebrations.
   ui/                 Presentational components and display rules.
   nodecg-react/       React hooks and shared styling for panels and graphics.

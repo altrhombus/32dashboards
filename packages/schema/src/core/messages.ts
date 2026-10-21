@@ -3,7 +3,7 @@ import { FundraiserEventSchema } from "./event.js";
 import { EventThemeSchema } from "./event.js";
 import { AskMeConfigSchema } from "../askme.js";
 import { InfoBarConfigSchema, SceneIdSchema } from "./show.js";
-import { SceneReplicantSchema } from "./replicants.js";
+import { SceneReplicantSchema, ScreenIdSchema, ScreenSchema } from "./replicants.js";
 
 /*
  * Operator Messages fundraiser-core listens for. Each payload is validated
@@ -68,9 +68,14 @@ export type SetAdjustmentMessage = z.infer<typeof SetAdjustmentMessageSchema>;
 export const NudgeAdjustmentMessageSchema = z.object({ eventId, delta: z.number().finite() }).strict();
 export type NudgeAdjustmentMessage = z.infer<typeof NudgeAdjustmentMessageSchema>;
 
-export const SetFiltersMessageSchema = z
-  .object({ eventId, filters: FundraiserEventSchema.shape.filters })
-  .strict();
+/**
+ * Adds `delta` to the Ask Me total. The server does the adding, so quick
+ * taps from a phone that hasn't seen the last one yet all count.
+ */
+export const NudgeAskMeMessageSchema = z.object({ eventId, delta: z.number().finite() }).strict();
+export type NudgeAskMeMessage = z.infer<typeof NudgeAskMeMessageSchema>;
+
+export const SetFiltersMessageSchema = z.object({ eventId, filters: FundraiserEventSchema.shape.filters }).strict();
 export type SetFiltersMessage = z.infer<typeof SetFiltersMessageSchema>;
 
 /** Asks the event's adapter to fetch now instead of waiting for its next cycle. */
@@ -95,9 +100,20 @@ export type SwitchSceneMessage = z.infer<typeof SwitchSceneMessageSchema>;
 
 /** Sent every few seconds by an output (e.g. the venue-TV kiosk) so operators know it's live. */
 export const OutputHeartbeatMessageSchema = z
-  .object({ instanceId: z.string().min(1).max(100), output: z.string().min(1).max(60) })
+  .object({
+    instanceId: z.string().min(1).max(100),
+    output: z.string().min(1).max(60),
+    screenId: ScreenIdSchema.nullable().optional(),
+  })
   .strict();
 export type OutputHeartbeatMessage = z.infer<typeof OutputHeartbeatMessageSchema>;
+
+/** Adds a screen, or replaces the one with the same id. */
+export const SaveScreenMessageSchema = ScreenSchema.strict();
+export type SaveScreenMessage = z.infer<typeof SaveScreenMessageSchema>;
+
+export const DeleteScreenMessageSchema = z.object({ id: ScreenIdSchema }).strict();
+export type DeleteScreenMessage = z.infer<typeof DeleteScreenMessageSchema>;
 
 /** Message name -> payload schema. */
 export const coreMessageSchemas = {
@@ -108,11 +124,14 @@ export const coreMessageSchemas = {
   activateEvent: ActivateEventMessageSchema,
   setAdjustment: SetAdjustmentMessageSchema,
   nudgeAdjustment: NudgeAdjustmentMessageSchema,
+  nudgeAskMe: NudgeAskMeMessageSchema,
   setFilters: SetFiltersMessageSchema,
   refreshSource: RefreshSourceMessageSchema,
   nudgeBidWar: NudgeBidWarMessageSchema,
   switchScene: SwitchSceneMessageSchema,
   outputHeartbeat: OutputHeartbeatMessageSchema,
+  saveScreen: SaveScreenMessageSchema,
+  deleteScreen: DeleteScreenMessageSchema,
 } as const;
 export type CoreMessageName = keyof typeof coreMessageSchemas;
 export type CoreMessagePayload<N extends CoreMessageName> = z.input<(typeof coreMessageSchemas)[N]>;

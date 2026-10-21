@@ -2,7 +2,7 @@
   "name": "layout-kiosk",
   "version": "0.0.0",
   "private": true,
-  "description": "Venue-TV graphics: renders the active scene from layout data, with the info bar and donation moments.",
+  "description": "Venue-TV graphics: renders each screen's chosen layout for the current scene, and keeps operator-saved layouts.",
   "scripts": {
     "build": "node ../../scripts/build-bundle.mjs",
     "dev": "node ../../scripts/build-bundle.mjs --watch",
@@ -20,6 +20,20 @@
         "width": 1920,
         "height": 1080
       }
+    ],
+    "dashboardPanels": [
+      {
+        "name": "builder",
+        "title": "Layouts",
+        "fullbleed": true,
+        "file": "builder.html"
+      },
+      {
+        "name": "screens",
+        "title": "Screens and layouts",
+        "width": 5,
+        "file": "screens.html"
+      }
     ]
   },
   "dependencies": {
@@ -27,14 +41,18 @@
     "@32dashboards/layout-engine": "workspace:*",
     "@32dashboards/nodecg-react": "workspace:*",
     "@32dashboards/schema": "workspace:*",
+    "@32dashboards/source-sdk": "workspace:*",
     "@32dashboards/ui": "workspace:*",
     "@xstate/react": "^5.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "xstate": "^5.19.0"
+    "react-grid-layout": "2.2.4",
+    "xstate": "^5.19.0",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@32dashboards/config": "workspace:*",
+    "@32dashboards/nodecg-testing": "workspace:*",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
     "@types/react": "^19.0.0",

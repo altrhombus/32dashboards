@@ -1,11 +1,11 @@
 # Runbook: Rotating secrets
 
-| Secret | Where it lives | When to rotate |
-|---|---|---|
-| Dashboard `admin` password | `cfg/nodecg.json` (as a salted hash) | When someone who knew it leaves, or it may have leaked |
-| Kiosk key | NodeCG's database, tied to the `admin` user | When a kiosk URL may have been shared |
-| 32auctions session cookie and auth token | `db/source-secrets/32auctions.json` | When the source reports HTTP 401/403, or after the event |
-| External push token | `db/source-secrets/external.json` (hash only) | When the pushing program changes hands |
+| Secret                                   | Where it lives                                | When to rotate                                           |
+| ---------------------------------------- | --------------------------------------------- | -------------------------------------------------------- |
+| Dashboard `admin` password               | `cfg/nodecg.json` (as a salted hash)          | When someone who knew it leaves, or it may have leaked   |
+| Kiosk key                                | NodeCG's database, tied to the `admin` user   | When a kiosk URL may have been shared                    |
+| 32auctions session cookie and auth token | `db/source-secrets/32auctions.json`           | When the source reports HTTP 401/403, or after the event |
+| External push token                      | `db/source-secrets/external.json` (hash only) | When the pushing program changes hands                   |
 
 Take a backup first (`pnpm backup`): it's how you undo a rotation that goes
 wrong.
