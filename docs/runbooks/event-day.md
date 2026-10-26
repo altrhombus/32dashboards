@@ -18,9 +18,15 @@ network.
    Every line should say `ok`. A `warn` about backups is fine before the
    first event. You can close the terminal; NodeCG keeps running.
 
-2. **Open the dashboard on the operator's device.** Browse to
-   `http://<laptop-ip>:9090` (`pnpm check-env` prints the address under
-   "reachable at") and log in as `admin`. Open the **Live** tab.
+2. **Open the console on the operator's phone.** On the laptop, open the
+   **Live** tab and tap **Open on your phone**: a phone on the same Wi-Fi
+   scans the code and gets the console, signed in. On a phone the console
+   has tabs at the bottom (Money, Ask Me, Scenes, More); the Ask Me tab
+   opens by itself when Ask Me goes on the TV. Show the code only to
+   volunteers: anyone who scans it can run the show (to shut everyone out
+   afterwards, use **Reset Key** in the dashboard's **Settings**). Without
+   the code, browse to `http://<laptop-ip>:9090` (`pnpm check-env` prints
+   the address under "reachable at") and log in as `admin`.
 
 3. **Open the kiosk on the TV.** On the presentation laptop, with the TV
    connected as its display, run in PowerShell:

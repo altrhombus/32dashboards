@@ -25,6 +25,7 @@ import {
 import { CommandError, formatZodError, listenForCommand } from "@32dashboards/source-sdk";
 import type { FundraiserCoreApi } from "./api.js";
 import { importAsset } from "./importAsset.js";
+import { lanAddresses } from "./network.js";
 import * as core from "./state.js";
 
 export type { FundraiserCoreApi, ReportOutcome, SourceHandle } from "./api.js";
@@ -239,6 +240,12 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   listenForCommand(nodecg, "importAsset", coreMessageSchemas.importAsset, ({ category, url, name }) =>
     importAsset({ assetsRoot, namespace: nodecg.bundleName, category, url, name }),
   );
+
+  // Where a phone on the venue network can open the dashboard (the console's "Open on your phone").
+  listenForCommand(nodecg, "connectionInfo", coreMessageSchemas.connectionInfo, () => ({
+    port: (nodecg.config as { port?: number }).port ?? 9090,
+    addresses: lanAddresses(),
+  }));
 
   listenForCommand(nodecg, "refreshSource", coreMessageSchemas.refreshSource, ({ eventId }) => {
     const event = events.value?.find((e) => e.id === eventId);

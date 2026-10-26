@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { renderSVG } from "uqr";
 import { createRoot } from "react-dom/client";
 import { ConfirmButton, errorText, useReplicant } from "@32dashboards/nodecg-react";
 import type {
@@ -57,7 +58,34 @@ interface Feedback {
   undo?: () => void;
 }
 
-type Act = (promise: Promise<unknown>, done: string, undo?: () => void) => void;
+/** Something this device did, kept so any recent action can be undone, not just the last one. */
+interface Action {
+  id: number;
+  text: string;
+  at: number;
+  /** Groups actions for a view, e.g. "askMe" for the Ask Me pad's recent taps. */
+  tag?: string;
+  undo?: () => void;
+  undone?: boolean;
+}
+
+type Act = (promise: Promise<unknown>, done: string, undo?: () => void, tag?: string) => void;
+
+const HISTORY_LIMIT = 30;
+
+/** True while the viewport is phone-sized. */
+function useNarrow(maxWidth = 760): boolean {
+  const query = `(max-width: ${maxWidth}px)`;
+  const [narrow, setNarrow] = useState(() => window.matchMedia?.(query).matches ?? false);
+  useEffect(() => {
+    const list = window.matchMedia?.(query);
+    if (!list) return;
+    const onChange = () => setNarrow(list.matches);
+    list.addEventListener("change", onChange);
+    return () => list.removeEventListener("change", onChange);
+  }, [query]);
+  return narrow;
+}
 
 // --- Status strip ---------------------------------------------------------
 
@@ -437,24 +465,56 @@ function Money({
   );
 }
 
-function AskMeTotal({ event, act }: { event: FundraiserEvent; act: Act }) {
+const ASK_ME_AMOUNTS = [10, 25, 50, 100, 250, 500];
+
+/** Ask Me: big buttons for the amounts called out, the running total, and the last few taps to undo. */
+function AskMePad(props: {
+  event: FundraiserEvent;
+  onAir: boolean;
+  history: Action[];
+  onUndo: (a: Action) => void;
+  act: Act;
+}) {
+  const { event, act } = props;
   const add = (delta: number) =>
     act(
       send("nudgeAskMe", { eventId: event.id, delta }),
       `Added ${formatAmount(delta)} to Ask Me.`,
       () => void send("nudgeAskMe", { eventId: event.id, delta: -delta }),
+      "askMe",
     );
+  const taps = props.history.filter((a) => a.tag === "askMe").slice(0, 5);
   return (
-    <section className="block" aria-label="Ask Me total">
-      <h2>Ask Me total: {formatAmount(event.askMe.total)}</h2>
-      <div className="chips">
-        {[10, 25, 50, 100, 250].map((d) => (
-          <button key={d} type="button" className="chip chip--money" onClick={() => add(d)}>
+    <section className="block askme" aria-label="Ask Me">
+      <div className="askme__head">
+        <h2>Ask Me</h2>
+        {props.onAir ? (
+          <span className="badge">On TV</span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => act(send("switchScene", { id: "askMe" }), "Ask Me is on the TV.", undefined, "scene")}
+          >
+            Put Ask Me on the TV
+          </button>
+        )}
+      </div>
+      <span className="askme__total num">{formatAmount(event.askMe.total)}</span>
+      <div className="askme__pad">
+        {ASK_ME_AMOUNTS.map((d) => (
+          <button key={d} type="button" className="askme__amount" onClick={() => add(d)}>
             +{formatAmount(d)}
           </button>
         ))}
       </div>
       <AmountForm label="Other Ask Me amount" onAdd={add} />
+      {taps.length > 0 && (
+        <ol className="recent recent--compact" aria-label="Recent Ask Me taps">
+          {taps.map((a) => (
+            <RecentRow key={a.id} action={a} onUndo={props.onUndo} />
+          ))}
+        </ol>
+      )}
     </section>
   );
 }
@@ -566,6 +626,160 @@ function Moments({ moments }: { moments: MomentsReplicant }) {
   );
 }
 
+// --- Recent actions -----------------------------------------------------------
+
+function RecentRow({ action, onUndo }: { action: Action; onUndo: (a: Action) => void }) {
+  return (
+    <li className={`recent__row${action.undone ? " recent__row--undone" : ""}`}>
+      <time dateTime={new Date(action.at).toISOString()}>{clock(new Date(action.at).toISOString())}</time>
+      <span>{action.text}</span>
+      {action.undo && !action.undone && (
+        <button type="button" className="chip" onClick={() => onUndo(action)}>
+          Undo
+        </button>
+      )}
+      {action.undone && <span className="muted">Undone</span>}
+    </li>
+  );
+}
+
+/** What this device did recently, each with its own Undo. */
+function RecentActions({ history, onUndo }: { history: Action[]; onUndo: (a: Action) => void }) {
+  return (
+    <section className="block" aria-label="Recent actions">
+      <h2>Your recent actions</h2>
+      {history.length === 0 ? (
+        <p className="muted">Anything you do here shows up with an Undo.</p>
+      ) : (
+        <ol className="recent">
+          {history.slice(0, 12).map((a) => (
+            <RecentRow key={a.id} action={a} onUndo={onUndo} />
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+// --- Open on your phone --------------------------------------------------------
+
+/** The socketToken cookie NodeCG sets after sign-in; `?key=` with it signs another device in. */
+function signInKey(): string | null {
+  const match = /(?:^|;\s*)socketToken=([^;]+)/.exec(document.cookie);
+  return match ? decodeURIComponent(match[1]!) : null;
+}
+
+/** A QR code that opens this console, signed in, on a phone on the same network. */
+function OpenOnPhone() {
+  const [open, setOpen] = useState(false);
+  const [info, setInfo] = useState<{ port: number; addresses: string[] } | null>(null);
+  const [address, setAddress] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!open || info) return;
+    send("connectionInfo", undefined).then(
+      (reply) => {
+        const r = reply as { port: number; addresses: string[] };
+        setInfo(r);
+        setAddress(r.addresses[0] ?? "");
+      },
+      (err) => setError(errorText(err)),
+    );
+  }, [open, info]);
+  const key = signInKey();
+  // The console on its own page (NodeCG's pop-out), without the dashboard's header, signed in by `key`.
+  const url =
+    info && address && key
+      ? `http://${address}:${info.port}/bundles/fundraiser-core/dashboard/live.html?standalone=true&key=${encodeURIComponent(key)}`
+      : null;
+
+  return (
+    <>
+      <button type="button" className="phone-link" onClick={() => setOpen(true)}>
+        Open on your phone
+      </button>
+      {open && (
+        <div
+          className="sheet"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Open on your phone"
+          onClick={() => setOpen(false)}
+        >
+          <div className="sheet__body" onClick={(e) => e.stopPropagation()}>
+            <h2>Run the show from your phone</h2>
+            <p className="muted">
+              Join the same Wi-Fi as this laptop, then point the phone's camera at the code. It opens this console,
+              signed in.
+            </p>
+            {error && <p className="error">{error}</p>}
+            {!key && <p className="warning">Sign in to the dashboard on this laptop first.</p>}
+            {info && info.addresses.length === 0 && (
+              <p className="warning">This laptop isn't on a network other devices can reach. Check its Wi-Fi.</p>
+            )}
+            {url && <div className="qr" dangerouslySetInnerHTML={{ __html: renderSVG(url, { border: 2 }) }} />}
+            {info && info.addresses.length > 1 && (
+              <label className="field">
+                <span className="muted">Network address</span>
+                <select value={address} onChange={(e) => setAddress(e.target.value)}>
+                  {info.addresses.map((a) => (
+                    <option key={a}>{a}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <p className="warning">
+              Anyone who scans this can run the show, so show it only to your volunteers. To shut everyone out later,
+              use Reset Key in the dashboard's Settings.
+            </p>
+            <button type="button" className="primary" onClick={() => setOpen(false)}>
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// --- Phone layout ---------------------------------------------------------------
+
+type PhoneTab = "money" | "askMe" | "scenes" | "more";
+
+const PHONE_TABS: { id: PhoneTab; label: string }[] = [
+  { id: "money", label: "Money" },
+  { id: "askMe", label: "Ask Me" },
+  { id: "scenes", label: "Scenes" },
+  { id: "more", label: "More" },
+];
+
+/** Phone header: what's on the TV and whether everything's connected; tap for details and to switch events. */
+function PhoneHeader(props: {
+  title: string;
+  sceneName: string | null;
+  ok: { tvs: boolean; data: boolean };
+  details: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <header className="phone-head">
+      <button type="button" className="phone-head__bar" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <span className="phone-head__title clamp-1">{props.title}</span>
+        {props.sceneName && <span className="badge">{props.sceneName}</span>}
+        <span
+          className={`dot ${props.ok.tvs ? "dot--go" : "dot--caution"}`}
+          aria-label={props.ok.tvs ? "TVs connected" : "A TV isn't connected"}
+        />
+        <span
+          className={`dot ${props.ok.data ? "dot--go" : "dot--caution"}`}
+          aria-label={props.ok.data ? "Data coming in" : "Data needs a look"}
+        />
+      </button>
+      {open && <div className="phone-head__details">{props.details}</div>}
+    </header>
+  );
+}
+
 // --- Console ------------------------------------------------------------------
 
 function Console() {
@@ -579,6 +793,8 @@ function Console() {
   const moments = useReplicant<MomentsReplicant>("moments") ?? [];
   const layouts = useReplicant<LayoutSummary[]>("layouts", "layout-kiosk") ?? [];
   const now = useNow();
+  const narrow = useNarrow();
+  const [tab, setTab] = useState<PhoneTab>("money");
   const [previewScreen, setPreviewScreen] = useState(() => {
     try {
       return localStorage.getItem(PREVIEW_SCREEN_KEY) ?? "";
@@ -587,28 +803,41 @@ function Console() {
     }
   });
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [history, setHistory] = useState<Action[]>([]);
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const nextId = useRef(1);
 
-  const act: Act = (promise, done, undo) => {
+  const act: Act = (promise, done, undo, tag) => {
     clearTimeout(feedbackTimer.current);
     promise.then(
       () => {
-        setFeedback({ text: done, undo });
+        const action: Action = { id: nextId.current++, text: done, at: Date.now(), tag, undo };
+        setHistory((h) => [action, ...h].slice(0, HISTORY_LIMIT));
+        setFeedback({ text: done, undo: undo && (() => undoAction(action)) });
         feedbackTimer.current = setTimeout(() => setFeedback(null), 10_000);
       },
       (err) => setFeedback({ text: errorText(err), error: true }),
     );
   };
+  const undoAction = (action: Action) => {
+    if (!action.undo) return;
+    action.undo();
+    setHistory((h) => h.map((a) => (a.id === action.id ? { ...a, undone: true } : a)));
+    setFeedback({ text: `Undone: ${action.text}` });
+  };
+
+  // When Ask Me goes on air, the phone jumps to the Ask Me pad.
+  const sceneId = scene?.id;
+  useEffect(() => {
+    if (sceneId === "askMe") setTab("askMe");
+  }, [sceneId]);
 
   if (!events || !live || !scene) return <p className="console-loading">Connecting to NodeCG…</p>;
   const event = live.event;
   const view: ScreenView = event ? scene.id : "standby";
   const shownScreen = screens.find((s) => s.id === previewScreen);
-  const connected = new Set(
-    screenPresence(screens, outputs, now)
-      .named.filter((n) => n.connected)
-      .map((n) => n.screen.id),
-  );
+  const presence = screenPresence(screens, outputs, now);
+  const connected = new Set(presence.named.filter((n) => n.connected).map((n) => n.screen.id));
   const pickPreview = (id: string) => {
     setPreviewScreen(id);
     try {
@@ -617,41 +846,139 @@ function Console() {
       // Without storage the choice lasts until reload.
     }
   };
+  const sourceLabel = sources.find((s) => s.id === live.sourceId)?.label ?? live.sourceId ?? "the source";
+  const status = (
+    <>
+      <EventSwitcher events={events} activeId={activeId} act={act} />
+      <TvStatus screens={screens} outputs={outputs} now={now} />
+      {event && <SourceStatus event={event} sources={sources} now={now} act={act} />}
+    </>
+  );
+  const preview = (
+    <figure className="preview">
+      <div className="preview__frame">
+        <iframe
+          title="What the TV shows"
+          src={`/bundles/layout-kiosk/graphics/kiosk.html?preview${shownScreen ? `&screen=${shownScreen.id}` : ""}`}
+          tabIndex={-1}
+        />
+      </div>
+      <figcaption>
+        <span className="badge">On TV</span> {event ? event.name : "Standby screen (no event)"}
+        {screens.length > 0 && (
+          <label className="preview__screen">
+            <span className="muted">Preview shows</span>
+            <select value={shownScreen?.id ?? ""} onChange={(e) => pickPreview(e.target.value)}>
+              <option value="">Built-in layouts</option>
+              {screens.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </figcaption>
+    </figure>
+  );
+  const noEvent = (
+    <p className="empty">
+      Pick an event and put it on the TV to start taking donations, or{" "}
+      <a
+        href="#"
+        onClick={(e) => {
+          e.preventDefault();
+          window.top!.location.hash = "fullbleed/setup";
+        }}
+      >
+        set up a new event
+      </a>
+      .
+    </p>
+  );
+  const feedbackBar = (
+    <div
+      className={`feedback${feedback ? " feedback--shown" : ""}${feedback?.error ? " feedback--error" : ""}`}
+      role="status"
+      aria-live="polite"
+    >
+      {feedback && (
+        <>
+          <span>{feedback.text}</span>
+          {feedback.undo && (
+            <button type="button" onClick={feedback.undo}>
+              Undo
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  if (narrow) {
+    const adapterId = event?.source.adapterId;
+    const source = sources.find((s) => s.id === adapterId);
+    const tvsOk = presence.named.every((n) => n.connected) && presence.named.length + presence.unnamed.length > 0;
+    const dataOk = !event || adapterId === "manual" || (source !== undefined && source.status.state !== "error");
+    return (
+      <div className="console console--phone">
+        <PhoneHeader
+          title={event ? event.name : "No event on the TV"}
+          sceneName={event ? (SCENES.find((s) => s.id === scene.id)?.name ?? null) : null}
+          ok={{ tvs: tvsOk, data: dataOk }}
+          details={<div className="phone-status">{status}</div>}
+        />
+        <main className="phone-main">
+          {!event && tab !== "scenes" ? (
+            noEvent
+          ) : tab === "money" ? (
+            <>
+              <Money live={live} event={event!} sourceLabel={sourceLabel} act={act} />
+              <BidWars event={event!} act={act} />
+            </>
+          ) : tab === "askMe" ? (
+            <AskMePad event={event!} onAir={scene.id === "askMe"} history={history} onUndo={undoAction} act={act} />
+          ) : tab === "scenes" ? (
+            <>
+              {preview}
+              <Scenes scene={scene} act={act} />
+              <ScreenLayouts screens={screens} layouts={layouts} view={view} connected={connected} act={act} />
+            </>
+          ) : (
+            <>
+              <RecentActions history={history} onUndo={undoAction} />
+              <Incentives event={event!} total={live.total} act={act} />
+              <Moments moments={moments} />
+            </>
+          )}
+        </main>
+        {feedbackBar}
+        <nav className="phone-tabs" aria-label="Console sections">
+          {PHONE_TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              aria-current={tab === t.id ? "page" : undefined}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+              {t.id === "askMe" && scene.id === "askMe" && <span className="phone-tabs__live" aria-label="on the TV" />}
+            </button>
+          ))}
+        </nav>
+      </div>
+    );
+  }
 
   return (
     <div className="console">
-      <header className="strip">
-        <EventSwitcher events={events} activeId={activeId} act={act} />
-        <TvStatus screens={screens} outputs={outputs} now={now} />
-        {event && <SourceStatus event={event} sources={sources} now={now} act={act} />}
-      </header>
+      <header className="strip">{status}</header>
+      <div className="strip__tools">
+        <OpenOnPhone />
+      </div>
 
       <div className="stage">
-        <figure className="preview">
-          <div className="preview__frame">
-            <iframe
-              title="What the TV shows"
-              src={`/bundles/layout-kiosk/graphics/kiosk.html?preview${shownScreen ? `&screen=${shownScreen.id}` : ""}`}
-              tabIndex={-1}
-            />
-          </div>
-          <figcaption>
-            <span className="badge">On TV</span> {event ? event.name : "Standby screen (no event)"}
-            {screens.length > 0 && (
-              <label className="preview__screen">
-                <span className="muted">Preview shows</span>
-                <select value={shownScreen?.id ?? ""} onChange={(e) => pickPreview(e.target.value)}>
-                  <option value="">Built-in layouts</option>
-                  {screens.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-          </figcaption>
-        </figure>
+        {preview}
         <div className="stage__side">
           <Scenes scene={scene} act={act} />
           <ScreenLayouts screens={screens} layouts={layouts} view={view} connected={connected} act={act} />
@@ -661,56 +988,21 @@ function Console() {
       {event ? (
         <div className="desk">
           <div className="desk__main">
-            {scene.id === "askMe" && <AskMeTotal event={event} act={act} />}
-            <Money
-              live={live}
-              event={event}
-              sourceLabel={sources.find((s) => s.id === live.sourceId)?.label ?? live.sourceId ?? "the source"}
-              act={act}
-            />
+            {scene.id === "askMe" && <AskMePad event={event} onAir history={history} onUndo={undoAction} act={act} />}
+            <Money live={live} event={event} sourceLabel={sourceLabel} act={act} />
             <BidWars event={event} act={act} />
             <Incentives event={event} total={live.total} act={act} />
           </div>
-          <Moments moments={moments} />
+          <div className="desk__side">
+            <RecentActions history={history} onUndo={undoAction} />
+            <Moments moments={moments} />
+          </div>
         </div>
       ) : (
-        <p className="empty">
-          Pick an event above and put it on the TV to start taking donations, or{" "}
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              window.top!.location.hash = "fullbleed/setup";
-            }}
-          >
-            set up a new event
-          </a>
-          .
-        </p>
+        noEvent
       )}
 
-      <div
-        className={`feedback${feedback ? " feedback--shown" : ""}${feedback?.error ? " feedback--error" : ""}`}
-        role="status"
-        aria-live="polite"
-      >
-        {feedback && (
-          <>
-            <span>{feedback.text}</span>
-            {feedback.undo && (
-              <button
-                type="button"
-                onClick={() => {
-                  feedback.undo?.();
-                  setFeedback({ text: "Undone." });
-                }}
-              >
-                Undo
-              </button>
-            )}
-          </>
-        )}
-      </div>
+      {feedbackBar}
     </div>
   );
 }
