@@ -541,6 +541,9 @@ importers:
       '@32dashboards/schema':
         specifier: workspace:*
         version: link:../schema
+      '@32dashboards/ui':
+        specifier: workspace:*
+        version: link:../ui
     devDependencies:
       '@32dashboards/config':
         specifier: workspace:*

@@ -115,6 +115,20 @@ export type SaveScreenMessage = z.infer<typeof SaveScreenMessageSchema>;
 export const DeleteScreenMessageSchema = z.object({ id: ScreenIdSchema }).strict();
 export type DeleteScreenMessage = z.infer<typeof DeleteScreenMessageSchema>;
 
+/**
+ * Copies an image from the auction site into an asset category (e.g. the
+ * organization's logo while setting up an event). Acks its asset URL.
+ */
+export const ImportAssetMessageSchema = z
+  .object({
+    category: z.enum(["event-logos", "sponsor-logos"]),
+    url: z.string().url().max(2000),
+    /** Becomes the file name. */
+    name: z.string().trim().min(1).max(120),
+  })
+  .strict();
+export type ImportAssetMessage = z.infer<typeof ImportAssetMessageSchema>;
+
 /** Message name -> payload schema. */
 export const coreMessageSchemas = {
   createEvent: CreateEventMessageSchema,
@@ -132,6 +146,7 @@ export const coreMessageSchemas = {
   outputHeartbeat: OutputHeartbeatMessageSchema,
   saveScreen: SaveScreenMessageSchema,
   deleteScreen: DeleteScreenMessageSchema,
+  importAsset: ImportAssetMessageSchema,
 } as const;
 export type CoreMessageName = keyof typeof coreMessageSchemas;
 export type CoreMessagePayload<N extends CoreMessageName> = z.input<(typeof coreMessageSchemas)[N]>;

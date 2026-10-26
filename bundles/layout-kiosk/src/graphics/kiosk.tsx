@@ -7,9 +7,12 @@ import {
   ScreenIdSchema,
   ScreenViewSchema,
   ThemeSchema,
+  liveStateFor,
+  type EventsReplicant,
   type LiveStateReplicant,
   type SceneReplicant,
   type ScreensReplicant,
+  type SourceResultsReplicant,
 } from "@32dashboards/schema/core";
 import { ThemeProvider } from "@32dashboards/ui";
 import "@32dashboards/ui/tokens.css";
@@ -47,6 +50,7 @@ const screenId = (() => {
  *   draft              show its unpublished draft, if it has one
  *   view=<scene>       show this scene (or standby) whatever is on air
  *   sample=demo|worst  made-up show data, wearing the on-screen event's look
+ *   event=<id>         that event's own content and look, on screen or not (for setting one up)
  */
 const preview = isPreview
   ? {
@@ -54,6 +58,7 @@ const preview = isPreview
       draft: params.has("draft"),
       view: ScreenViewSchema.safeParse(params.get("view")).data ?? null,
       sample: (["demo", "worst"] as const).find((k) => k === params.get("sample")) ?? null,
+      event: params.get("event"),
     }
   : null;
 
@@ -111,7 +116,16 @@ function Kiosk() {
   const realScene = useReplicant<SceneReplicant>("scene", CORE);
   const screens = useReplicant<ScreensReplicant>("screens", CORE);
   const saved = useReplicant<LayoutsReplicant>("layouts");
-  const live = useMemo(() => realLive && withSample(realLive, preview?.sample), [realLive]);
+  // A preview of one event reads its own content; anything else shows what's on air.
+  const events = useReplicant<EventsReplicant>("events", CORE);
+  const results = useReplicant<SourceResultsReplicant>("sourceResults", CORE);
+  const previewed = preview?.event ? (events?.find((e) => e.id === preview.event) ?? null) : undefined;
+  const onAir = useMemo(
+    () =>
+      previewed !== undefined ? liveStateFor(previewed, previewed ? results?.[previewed.id] : undefined) : realLive,
+    [previewed, results, realLive],
+  );
+  const live = useMemo(() => onAir && withSample(onAir, preview?.sample), [onAir]);
   const scene = useMemo<SceneReplicant | undefined>(() => {
     const forced = preview?.view && preview.view !== "standby" ? preview.view : null;
     if (!realScene || !forced || forced === realScene.id) return realScene;

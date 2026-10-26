@@ -45,11 +45,29 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe("createPollingSource", () => {
+  it("runs once on demand for an event that isn't on screen, and stores the result for it", async () => {
+    const t = setup(async () => ({ total: 50, items: [{ id: "1", title: "Quilt" }] }));
+    await expect(t.source.runOnce(B)).rejects.toThrow(/settings aren't saved/);
+    await t.configure(B);
+    const { result, outcome } = await t.source.runOnce(B);
+    expect(result.total).toBe(50);
+    expect(outcome).toBe("stored");
+    expect(t.core.reports).toEqual([expect.objectContaining({ eventId: B, total: 50 })]);
+    // Regular polling is untouched: nothing is on screen.
+    expect(t.lastStatus()).toMatchObject({ state: "idle" });
+  });
+
   it("idles until the active event uses this source", async () => {
     const t = setup(async () => ({ total: 1 }));
     await vi.advanceTimersByTimeAsync(0);
     expect(t.lastStatus()).toMatchObject({ state: "idle" });
     expect(t.calls).toHaveLength(0);
+  });
+
+  it("says what's missing when run on demand", async () => {
+    const t = setup(async () => ({ total: 1 }));
+    await t.fake.send("setConfig", { eventId: A, config: { url: "u", intervalSeconds: 10 } });
+    await expect(t.source.runOnce(A)).rejects.toThrow("Missing token");
   });
 
   it("reports what's missing instead of polling", async () => {

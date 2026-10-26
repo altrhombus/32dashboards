@@ -4,7 +4,32 @@ One install serves any number of events. A new event is set up in the
 dashboard; no code changes, no restart. Past events stay around, so the
 quickest start is often to duplicate last year's.
 
-## Steps
+## The guided way
+
+Open the dashboard's **New event** tab (or tap **Set up a new event** in the
+Events panel). It walks through the steps below, one question at a time,
+beside a live preview of the TV that fills in as you answer:
+
+1. **Start:** paste the auction's public link (the one bidders get). It finds
+   the auction's ids, its title, and the organization's name and picture,
+   and fills them in. You can also copy an earlier event's look, goals and
+   sponsors, or set up an event without an auction.
+2. **Name:** the name, the cause, and when bidding closes.
+3. **Money:** where the total comes from, the organizer sign-in, and
+   **Connect and check**, which fetches the auction once and shows what it
+   found (never the total itself).
+4. **Look:** the logo (upload a better one if the auction's picture is a
+   photo), colors picked from it, and fonts.
+5. **Celebrations:** every $1,000 (or any step) up to a limit, plus one big
+   goal.
+6. **Extras:** how to give, and announcements.
+7. **Ready:** what's set, then **Put it on the TVs**.
+
+Every step can be skipped and changed later. If you leave partway, the
+guide picks up where you left off. The rest of this runbook is the same
+setup done by hand, panel by panel, which is quicker once you know it.
+
+## Steps by hand
 
 1. **Create the event.** On the dashboard's **Event** tab, in the **Events** panel, either type
    a name and tap **Create**, or tap **Duplicate** on a past event.

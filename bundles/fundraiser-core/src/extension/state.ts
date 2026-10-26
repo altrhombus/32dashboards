@@ -1,12 +1,13 @@
 import { CommandError, type ReportOutcome } from "@32dashboards/source-sdk";
 import {
   FundraiserEventSchema,
+  applyFilters,
+  liveStateFor,
   type CreateEventMessage,
   type DonationMoment,
   type FundraiserEvent,
   type LiveStateReplicant,
   type Screen,
-  type SourceItem,
   type SourceResult,
   type UpdateEventMessage,
 } from "@32dashboards/schema/core";
@@ -300,33 +301,12 @@ export function detectThresholdMoments(
 }
 
 /** Hides items whose title contains any filter, case-insensitively. */
-export function applyFilters(items: SourceItem[], filters: string[]): { items: SourceItem[]; hidden: number } {
-  const terms = filters.map((f) => f.toLowerCase()).filter(Boolean);
-  if (terms.length === 0) return { items, hidden: 0 };
-  const kept = items.filter((item) => {
-    const title = item.title.toLowerCase();
-    return !terms.some((term) => title.includes(term));
-  });
-  return { items: kept, hidden: items.length - kept.length };
-}
+export { applyFilters };
 
 /** What graphics render: the active event, its adjusted total, filtered items. */
 export function computeLiveState(state: CoreState): LiveStateReplicant {
   const event = state.activeEventId ? (state.events.find((e) => e.id === state.activeEventId) ?? null) : null;
-  const result = event ? state.sourceResults[event.id] : undefined;
-  const rawTotal = result?.total ?? 0;
-  const adjustment = event?.adjustment ?? 0;
-  const { items, hidden } = applyFilters(result?.items ?? [], event?.filters ?? []);
-  return {
-    event,
-    rawTotal,
-    adjustment,
-    total: roundCents(rawTotal + adjustment),
-    items,
-    hiddenItemCount: hidden,
-    sourceId: result?.sourceId ?? null,
-    observedAt: result?.observedAt ?? null,
-  };
+  return liveStateFor(event, event ? state.sourceResults[event.id] : undefined);
 }
 
 function roundCents(value: number): number {

@@ -201,6 +201,12 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* The way into the New event guide. */
+.guide-button {
+  min-height: var(--target);
+  font-size: 1.05rem;
+}
+
 /* A small color sample. */
 .swatch {
   display: inline-block;
