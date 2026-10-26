@@ -129,6 +129,9 @@ export const ImportAssetMessageSchema = z
   .strict();
 export type ImportAssetMessage = z.infer<typeof ImportAssetMessageSchema>;
 
+/** Asks for the laptop's network addresses and port, for opening the dashboard on a phone. */
+export const ConnectionInfoMessageSchema = z.object({}).strict().optional();
+
 /** Message name -> payload schema. */
 export const coreMessageSchemas = {
   createEvent: CreateEventMessageSchema,
@@ -147,6 +150,7 @@ export const coreMessageSchemas = {
   saveScreen: SaveScreenMessageSchema,
   deleteScreen: DeleteScreenMessageSchema,
   importAsset: ImportAssetMessageSchema,
+  connectionInfo: ConnectionInfoMessageSchema,
 } as const;
 export type CoreMessageName = keyof typeof coreMessageSchemas;
 export type CoreMessagePayload<N extends CoreMessageName> = z.input<(typeof coreMessageSchemas)[N]>;
