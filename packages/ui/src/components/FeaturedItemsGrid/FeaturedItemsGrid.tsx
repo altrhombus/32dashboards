@@ -48,14 +48,18 @@ export function FeaturedItemsGrid({
       {visible.map((item, i) => (
         <div className="featured-items-grid__card" key={`${rotationIndex}-${i}`}>
           {item.imageUrl && (
-            <img
-              className="featured-items-grid__image"
-              src={item.imageUrl}
-              alt=""
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
-            />
+            // The whole picture (many are scanned flyers), over a blurred copy that fills the frame.
+            <div className="featured-items-grid__media">
+              <img className="featured-items-grid__backdrop" src={item.imageUrl} alt="" aria-hidden="true" />
+              <img
+                className="featured-items-grid__image"
+                src={item.imageUrl}
+                alt=""
+                onError={(e) => {
+                  (e.currentTarget.parentElement as HTMLElement).style.display = "none";
+                }}
+              />
+            </div>
           )}
           <div className="featured-items-grid__title clamp-2" title={item.title}>
             {item.title || "Untitled item"}

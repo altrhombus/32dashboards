@@ -89,7 +89,7 @@ describe("kiosk layouts", () => {
     errors.mockRestore();
   });
 
-  it("shows a milestone celebration in the info bar", () => {
+  it("shows a milestone in the info bar and as a full-screen spotlight", () => {
     const data: KioskData = {
       live,
       scene: scene("main"),
@@ -107,9 +107,12 @@ describe("kiosk layouts", () => {
       },
       toasts: [],
     };
-    render(<LayoutRenderer layout={builtInLayouts.main.layout} registry={kioskRegistry} data={data} fit="none" />);
+    const { container } = render(
+      <LayoutRenderer layout={builtInLayouts.main.layout} registry={kioskRegistry} data={data} fit="none" />,
+    );
     expect(screen.getByText("Milestone reached!")).toBeInTheDocument();
-    expect(screen.getByText("First grand")).toBeInTheDocument();
+    expect(container.querySelector(".milestone-spotlight")?.textContent).toContain("First grand");
+    expect(screen.getAllByText("First grand")).toHaveLength(2);
   });
 });
 
@@ -157,8 +160,24 @@ describe("buildSegments", () => {
 });
 
 describe("selectFeaturedItems", () => {
-  it("prefers valued items with few bids, falling back to all", () => {
-    expect(selectFeaturedItems(worstCaseItems).map((i) => i.id)).toEqual(["empty"]);
-    expect(selectFeaturedItems(worstCaseItems.filter((i) => i.id === "name")).map((i) => i.id)).toEqual(["name"]);
+  const item = (id: string, value: number | null, bidCount: number) => ({
+    id,
+    title: id,
+    imageUrl: null,
+    currentBid: 10,
+    value,
+    bidCount,
+    remaining: null,
+  });
+
+  it("features the deals when there are enough to fill the grid", () => {
+    const items = [item("a", 100, 0), item("b", 100, 1), item("c", 100, 9), item("d", 100, 2)];
+    expect(selectFeaturedItems(items, 3).map((i) => i.id)).toEqual(["a", "b", "d"]);
+  });
+
+  it("tops up a short list of deals with the most-bid items, so no slot is empty", () => {
+    const items = [item("deal", 100, 1), item("quiet", null, 0), item("busy", null, 12), item("warm", 50, 5)];
+    expect(selectFeaturedItems(items, 3).map((i) => i.id)).toEqual(["deal", "busy", "warm"]);
+    expect(selectFeaturedItems(worstCaseItems).map((i) => i.id)).toEqual(["empty", "long", "name"]);
   });
 });

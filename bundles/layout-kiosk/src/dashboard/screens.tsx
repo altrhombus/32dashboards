@@ -17,6 +17,7 @@ import type { LayoutsReplicant, SavedLayout } from "../library.js";
 import "@32dashboards/nodecg-react/panel.css";
 import "./screens.css";
 import { SELECTED_LAYOUT_KEY, readStored, writeStored } from "./shared.js";
+import { VIEW_NAMES } from "../views.js";
 
 /*
  * Screens: name the TVs, choose what each shows for every scene,
@@ -28,14 +29,6 @@ const CORE = "fundraiser-core";
 
 const sendCore = <N extends CoreMessageName>(name: N, payload: CoreMessagePayload<N>) =>
   nodecg.sendMessageToBundle(name, CORE, payload);
-
-const VIEW_NAMES: Record<ScreenView, string> = {
-  main: "Main",
-  intermission: "Intermission",
-  askMe: "Ask Me",
-  celebration: "Celebration",
-  standby: "Standby",
-};
 
 /** Opens a layout in the Layouts tab (the builder). */
 function openInBuilder(layoutId: string) {

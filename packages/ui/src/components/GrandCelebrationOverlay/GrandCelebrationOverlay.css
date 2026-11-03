@@ -35,3 +35,11 @@
     transform: scale(1);
   }
 }
+
+.grand-celebration-overlay__logo {
+  display: block;
+  max-height: 4rem;
+  max-width: 40%;
+  margin: 0 auto var(--spacing-md);
+  object-fit: contain;
+}

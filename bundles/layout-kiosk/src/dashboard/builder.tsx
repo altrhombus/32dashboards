@@ -19,6 +19,7 @@ import "@32dashboards/ui/fonts.css";
 import "./builder.css";
 import { LookEditor } from "./look.js";
 import { BUILDER_MODE_KEY, SELECTED_LAYOUT_KEY as SELECTED_KEY, readStored, writeStored } from "./shared.js";
+import { VIEW_NAMES } from "../views.js";
 
 /*
  * The layout builder: arrange the kiosk's components on the 24x24 grid over a
@@ -34,14 +35,6 @@ const HISTORY_LIMIT = 50;
 
 const sendKiosk = <N extends KioskMessageName>(name: N, payload: KioskMessagePayload<N>) =>
   nodecg.sendMessage(name, payload);
-
-const VIEW_NAMES: Record<ScreenView, string> = {
-  main: "Main",
-  intermission: "Intermission",
-  askMe: "Ask Me",
-  celebration: "Celebration",
-  standby: "Standby",
-};
 
 const CATEGORY_NAMES = { money: "Money", items: "Items", show: "Show", brand: "Brand", scene: "Whole scenes" } as const;
 
@@ -839,7 +832,6 @@ function LayoutInspector(props: {
   onChange: (next: (current: BlockLayout) => BlockLayout) => void;
 }) {
   const { layout } = props;
-  const toastsOn = layout.overlays.some((o) => o.component === "toasts");
   const number = (key: "gap" | "padding", label: string, max: number) => (
     <label className="field">
       <span>
@@ -862,15 +854,19 @@ function LayoutInspector(props: {
       <p className="muted">Select a block on the screen to change it.</p>
       {number("gap", "Space between blocks", 80)}
       {number("padding", "Space around the edge", 160)}
-      <label className="row toggle">
-        <input
-          type="checkbox"
-          checked={toastsOn}
-          disabled={props.readOnly}
-          onChange={(e) => props.onChange((l) => edit.setOverlay(l, "toasts", e.target.checked))}
-        />
-        Thank-you pop-ups when donations and bids come in
-      </label>
+      {Object.entries(kioskCatalog)
+        .filter(([, entry]) => entry.placement === "overlay")
+        .map(([component, entry]) => (
+          <label key={component} className="row toggle" title={entry.description}>
+            <input
+              type="checkbox"
+              checked={layout.overlays.some((o) => o.component === component)}
+              disabled={props.readOnly}
+              onChange={(e) => props.onChange((l) => edit.setOverlay(l, component, e.target.checked))}
+            />
+            {entry.name}: <span className="muted">{entry.description}</span>
+          </label>
+        ))}
     </section>
   );
 }

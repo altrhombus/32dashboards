@@ -85,13 +85,14 @@ body,
   text-align: center;
 }
 
+/* Bottom left, above the info bar: clear of the total and the sponsors' logos. */
 .kiosk-toasts {
   position: absolute;
-  right: 40px;
+  left: 40px;
   bottom: 170px;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: var(--spacing-sm);
   font-size: 1.3rem;
 }
@@ -121,6 +122,58 @@ body,
   font-size: 6rem;
 }
 
+/* Welcome: what arriving guests see. */
+.kiosk-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  height: 100%;
+  text-align: center;
+}
+
+.kiosk-welcome__logo {
+  max-height: 220px;
+  max-width: 50%;
+  object-fit: contain;
+}
+
+.kiosk-welcome__name {
+  max-width: 1600px;
+  font-size: 5rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--color-accent);
+}
+
+.kiosk-welcome__cause {
+  max-width: 1500px;
+  font-size: 2.4rem;
+}
+
+.kiosk-welcome__cta {
+  max-width: 1500px;
+  padding: 0.3em 0.9em;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-secondary) 18%, transparent);
+  color: var(--color-secondary);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.kiosk-welcome__closes {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  font-size: 1.8rem;
+  opacity: 0.9;
+}
+
+.kiosk-welcome__closes .countdown-clock {
+  max-width: none;
+}
+
 .kiosk-standby {
   display: flex;
   align-items: center;
@@ -142,6 +195,11 @@ body,
 }
 
 /* Full-screen scenes reuse components sized for a browser window; scale them for a TV. */
+[data-component="askMe"] .ask-me-overlay__logo,
+[data-component="grandCelebration"] .grand-celebration-overlay__logo {
+  max-height: 160px;
+}
+
 [data-component="askMe"] .ask-me-overlay__title {
   font-size: 5rem;
 }

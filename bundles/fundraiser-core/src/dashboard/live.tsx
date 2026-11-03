@@ -205,6 +205,7 @@ function EventSwitcher({ events, activeId, act }: { events: EventsReplicant; act
 // --- Preview and scenes -----------------------------------------------------
 
 const SCENES: { id: SceneId; name: string; what: string }[] = [
+  { id: "welcome", name: "Welcome", what: "For arrivals: logo, cause, how to give" },
   { id: "main", name: "Main", what: "Total, featured items, info bar" },
   { id: "intermission", name: "Intermission", what: "Your message and a countdown" },
   { id: "askMe", name: "Ask Me", what: "The Ask Me spotlight, full screen" },
@@ -403,8 +404,9 @@ function Money({
   act: Act;
 }) {
   const [correction, setCorrection] = useState("");
-  const corrected = Number(correction);
-  const correctionValid = correction.trim() !== "" && Number.isFinite(corrected);
+  // "$1,250" works here too; zero is allowed (nothing taken at the venue after all).
+  const corrected = Number(correction.replace(/[$,\s]/g, ""));
+  const correctionValid = correction.trim() !== "" && Number.isFinite(corrected) && corrected >= 0;
 
   const add = (delta: number) =>
     act(
@@ -422,7 +424,8 @@ function Money({
         </span>
       </div>
       <div className="money__add">
-        <span className="money__label">Add cash or checks taken at the venue</span>
+        <span className="money__label">Cash and checks at the venue: {formatAmount(live.adjustment)} so far</span>
+        <span className="muted">Each one you add is added to that, and thanked on the TV.</span>
         <div className="chips">
           {VENUE_AMOUNTS.map((a) => (
             <button key={a} type="button" className="chip chip--money" onClick={() => add(a)}>
@@ -433,7 +436,11 @@ function Money({
         <AmountForm label="Other venue amount" onAdd={add} />
       </div>
       <details>
-        <summary className="muted">Correct the venue total</summary>
+        <summary className="muted">Counted the cash box? Set the exact venue total</summary>
+        <p className="muted">
+          This replaces the {formatAmount(live.adjustment)} with the number you counted. It doesn't thank anyone on the
+          TV. To add a donation, use the buttons above.
+        </p>
         <form
           className="row"
           onSubmit={(e) => {
@@ -442,7 +449,7 @@ function Money({
             const previous = live.adjustment;
             act(
               send("setAdjustment", { eventId: event.id, amount: corrected }),
-              `Venue total set to ${formatAmount(corrected)}.`,
+              `Venue total changed from ${formatAmount(previous)} to ${formatAmount(corrected)}.`,
               () => void send("setAdjustment", { eventId: event.id, amount: previous }),
             );
             setCorrection("");
@@ -450,16 +457,15 @@ function Money({
         >
           <input
             inputMode="decimal"
-            aria-label="Venue total"
-            placeholder={formatAmount(live.adjustment)}
+            aria-label="Exact venue total"
+            placeholder="Counted total"
             value={correction}
             onChange={(e) => setCorrection(e.target.value)}
           />
           <button type="submit" disabled={!correctionValid}>
-            Set venue total
+            Set exact total
           </button>
         </form>
-        <p className="muted">Corrections don't show a thank-you on the TV.</p>
       </details>
     </section>
   );
@@ -508,6 +514,23 @@ function AskMePad(props: {
         ))}
       </div>
       <AmountForm label="Other Ask Me amount" onAdd={add} />
+      <div className="row askme__round">
+        <span className="muted">The Ask Me total runs all night.</span>
+        <ConfirmButton
+          label="Start a new round"
+          confirmLabel={`Tap again: back to $0 from ${formatAmount(event.askMe.total)}`}
+          disabled={event.askMe.total === 0}
+          onConfirm={() => {
+            const previous = event.askMe.total;
+            act(
+              send("updateEvent", { eventId: event.id, patch: { askMe: { total: 0 } } }),
+              `New Ask Me round: $0 (was ${formatAmount(previous)}).`,
+              () => void send("nudgeAskMe", { eventId: event.id, delta: previous }),
+              "askMe",
+            );
+          }}
+        />
+      </div>
       {taps.length > 0 && (
         <ol className="recent recent--compact" aria-label="Recent Ask Me taps">
           {taps.map((a) => (
@@ -657,6 +680,10 @@ function RecentActions({ history, onUndo }: { history: Action[]; onUndo: (a: Act
           ))}
         </ol>
       )}
+      <p className="muted">
+        Undo works for this device's last {HISTORY_LIMIT} actions until the page reloads. Another phone can't undo
+        yours.
+      </p>
     </section>
   );
 }

@@ -82,9 +82,14 @@ export function buildSegments(live: LiveStateReplicant): SegmentPlan {
 
 /**
  * Items worth featuring: valued items with few bids (the best deals),
- * falling back to every item when none qualify.
+ * topped up with the most-bid items when there are fewer deals than `size`
+ * slots, so the grid never shows gaps.
  */
-export function selectFeaturedItems(items: SourceItem[]): SourceItem[] {
+export function selectFeaturedItems(items: SourceItem[], size = 6): SourceItem[] {
   const deals = items.filter((item) => item.value !== null && (item.bidCount ?? 0) <= 2);
-  return deals.length > 0 ? deals : items;
+  if (deals.length >= size) return deals;
+  // Too few bargains to fill the grid: top it up with the most-bid items, so no slot sits empty.
+  const dealIds = new Set(deals.map((item) => item.id));
+  const popular = items.filter((item) => !dealIds.has(item.id)).sort((a, b) => (b.bidCount ?? 0) - (a.bidCount ?? 0));
+  return [...deals, ...popular.slice(0, size - deals.length)];
 }

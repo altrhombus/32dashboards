@@ -56,17 +56,25 @@ network.
 
 5. **Run the show.** Everything during the event happens in the Live tab:
    - **Scenes.** The scene with the red outline is on the TV. Tap another
-     to switch. For Intermission, type a message and pick a countdown
-     first. Celebration (the end-of-night thank-you) needs a second tap.
-   - **Money taken at the venue.** Tap +$20, +$50, +$100, or +$500, or
-     type another amount. The TV shows a thank-you. Use **Undo** in the
-     message at the bottom if you tapped the wrong amount. To fix the
-     venue total without a thank-you, use **Correct the venue total**.
-   - **Bid wars.** Tap +5, +25, or +100 next to an option.
+     to switch. **Welcome** is for arrivals (logo, cause, how to give,
+     when bidding closes). For Intermission, type a message and pick a
+     countdown first. Celebration (the end-of-night thank-you) needs a
+     second tap.
+   - **Cash and checks at the venue.** Tap +$20, +$50, +$100, or +$500, or
+     type another amount: each is added to the venue total and thanked on
+     the TV. After counting the cash box, use **Set the exact venue
+     total** to replace the sum with the counted number (no thank-you).
+   - **Undo.** The message at the bottom offers Undo for a few seconds;
+     **Your recent actions** keeps an Undo for each of this device's last
+     30 actions until the page reloads. Another device can't undo yours.
+   - **Bid wars.** Tap +5, +25, or +100 next to an option, or type an amount.
    - **Incentives.** **Pin to info bar** keeps one on the TV until you
      unpin it.
-   - **Ask Me.** While the Ask Me scene is on, quick buttons add to the
-     Ask Me total on the TV.
+   - **Ask Me.** Big buttons and **Other** add to the Ask Me total on the
+     TV; on a phone, the Ask Me tab opens when Ask Me goes on the TV. The
+     total runs all night: **Start a new round** sets it back to $0.
+   - **Milestones** fill the TVs for a few seconds (the milestone
+     spotlight), then the show carries on by itself.
    - **What the TV celebrated** lists every donation, bid, and milestone
      the TV showed.
 
