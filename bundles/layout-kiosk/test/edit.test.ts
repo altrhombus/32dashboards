@@ -78,8 +78,11 @@ describe("nudgeBlock", () => {
 describe("setOverlay", () => {
   it("turns an overlay on and off", () => {
     const off = edit.setOverlay(main(), "toasts", false);
-    expect(off.overlays).toEqual([]);
-    expect(edit.setOverlay(off, "toasts", true).overlays).toEqual([{ component: "toasts", settings: {} }]);
+    expect(off.overlays.map((o) => o.component)).toEqual(["milestoneSpotlight"]);
+    expect(edit.setOverlay(off, "toasts", true).overlays.map((o) => o.component)).toEqual([
+      "milestoneSpotlight",
+      "toasts",
+    ]);
     expect(edit.setOverlay(off, "toasts", false)).toBe(off);
   });
 });

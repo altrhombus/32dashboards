@@ -20,6 +20,7 @@ import {
 import { validateTheme } from "@32dashboards/ui";
 import { builtInLayouts } from "../layouts.js";
 import { readStored, writeStored, LOOK_EVENT_KEY } from "./shared.js";
+import { VIEW_NAMES } from "../views.js";
 
 /*
  * An event's look (colors, logo, fonts) beside a live preview of the kiosk.
@@ -29,14 +30,6 @@ import { readStored, writeStored, LOOK_EVENT_KEY } from "./shared.js";
  */
 
 const CORE = "fundraiser-core";
-
-const VIEW_NAMES: Record<ScreenView, string> = {
-  main: "Main",
-  intermission: "Intermission",
-  askMe: "Ask Me",
-  celebration: "Celebration",
-  standby: "Standby",
-};
 
 interface Asset {
   base: string;

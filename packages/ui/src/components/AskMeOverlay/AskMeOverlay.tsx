@@ -10,6 +10,8 @@ export interface AskMeOverlayProps {
   askMe: AskMeConfig;
   /** Shows the overlay regardless of `askMe.enabled`, e.g. when a scene selects it. */
   visible?: boolean;
+  /** The event's logo, shown above the title. */
+  logoUrl?: string | null;
 }
 
 const ALLOWED_TAGS = ["p", "strong", "em", "ul", "ol", "li", "br", "a", "h1", "h2", "h3", "blockquote", "code"];
@@ -25,7 +27,7 @@ function renderMarkdown(message: string): string {
   return DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR: ["href"] });
 }
 
-export function AskMeOverlay({ askMe, visible = askMe.enabled }: AskMeOverlayProps) {
+export function AskMeOverlay({ askMe, visible = askMe.enabled, logoUrl }: AskMeOverlayProps) {
   // What's been added recently: quick taps add up ("+$200") instead of replacing each other.
   const [delta, setDelta] = useState<{ amount: number; key: number } | null>(null);
   const [burst, setBurst] = useState(false);
@@ -52,6 +54,7 @@ export function AskMeOverlay({ askMe, visible = askMe.enabled }: AskMeOverlayPro
   return (
     <div className="ask-me-overlay">
       <ConfettiBurst active={burst} />
+      {logoUrl && <img className="ask-me-overlay__logo" src={logoUrl} alt="" />}
       <div className="ask-me-overlay__title">{askMe.title}</div>
       <div className="ask-me-overlay__message" dangerouslySetInnerHTML={{ __html: renderMarkdown(askMe.message) }} />
       <div className="ask-me-overlay__total-wrapper">

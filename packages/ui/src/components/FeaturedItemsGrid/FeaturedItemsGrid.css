@@ -1,8 +1,10 @@
 .featured-items-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: var(--spacing-md);
+  height: 100%;
+  min-height: 0;
 }
 
 .featured-items-grid--empty {
@@ -19,15 +21,38 @@
   padding: var(--spacing-sm);
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   gap: var(--spacing-xs);
+  min-height: 0;
+  overflow: hidden;
   animation: featured-fade-in 0.4s var(--ease-standard);
 }
 
-.featured-items-grid__image {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
+/* The picture takes whatever height the text leaves, so cards never outgrow their row. */
+.featured-items-grid__media {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
   border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.featured-items-grid__backdrop {
+  position: absolute;
+  inset: -12%;
+  width: 124%;
+  height: 124%;
+  object-fit: cover;
+  filter: blur(18px) brightness(0.55) saturate(1.2);
+}
+
+.featured-items-grid__image {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .featured-items-grid__title {

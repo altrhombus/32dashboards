@@ -26,3 +26,4 @@ export * from "./components/PrizeCard/PrizeCard.js";
 export * from "./components/CallToActionBanner/CallToActionBanner.js";
 export * from "./components/MomentToast/MomentToast.js";
 export * from "./components/MilestoneCelebration/MilestoneCelebration.js";
+export * from "./components/MilestoneSpotlight/MilestoneSpotlight.js";

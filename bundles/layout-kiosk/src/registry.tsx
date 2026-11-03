@@ -12,6 +12,7 @@ import {
   IncentiveTracker,
   KioskHeader,
   MilestoneCelebration,
+  MilestoneSpotlight,
   MomentToast,
   PrizeCard,
   SponsorCarousel,
@@ -91,6 +92,39 @@ function Toasts({ toasts }: { toasts: ToastMoment[] }) {
   );
 }
 
+function Welcome(props: {
+  name: string;
+  causeName: string;
+  logoUrl: string | null;
+  callToAction: string;
+  endDateTime: string | null;
+}) {
+  return (
+    <div className="kiosk-welcome">
+      {props.logoUrl && <img className="kiosk-welcome__logo" src={props.logoUrl} alt="" />}
+      <div className="kiosk-welcome__name clamp-2" title={props.name}>
+        {props.name}
+      </div>
+      {props.causeName && (
+        <div className="kiosk-welcome__cause clamp-2" title={props.causeName}>
+          Raising money for {props.causeName}
+        </div>
+      )}
+      {props.callToAction && (
+        <div className="kiosk-welcome__cta clamp-2" title={props.callToAction}>
+          {props.callToAction}
+        </div>
+      )}
+      {props.endDateTime && (
+        <div className="kiosk-welcome__closes">
+          <span>Bidding closes in</span>
+          <CountdownClock endDateTime={props.endDateTime} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Intermission({ message, countdownTo }: { message: string | null; countdownTo: string | null }) {
   return (
     <div className="kiosk-intermission">
@@ -125,11 +159,10 @@ export const kioskRegistry: Registry<KioskData> = {
 
   featuredItems: defineComponent<KioskData, { items: KioskData["live"]["items"]; size: number; title?: unknown }>({
     variants: ["grid"],
-    select: ({ live }, { options }) => ({
-      items: selectFeaturedItems(live.items),
-      size: typeof options.size === "number" ? options.size : 6,
-      title: options.title,
-    }),
+    select: ({ live }, { options }) => {
+      const size = typeof options.size === "number" ? options.size : 6;
+      return { items: selectFeaturedItems(live.items, size), size, title: options.title };
+    },
     component: ({ items, size, title }) => (
       <Card title={title}>
         <FeaturedItemsGrid items={items} size={size} />
@@ -193,23 +226,58 @@ export const kioskRegistry: Registry<KioskData> = {
     component: Toasts,
   }),
 
+  milestoneSpotlight: defineComponent<KioskData, { heading: string; amount: number; detail?: string }>({
+    variants: ["full"],
+    // Shown while the info bar celebrates, so both start and end together.
+    select: ({ infoBar }) => {
+      if (infoBar.type !== "celebration") return null;
+      const m = infoBar.moment;
+      return m.kind === "milestone"
+        ? { heading: "Milestone reached", amount: m.amount, detail: m.label || undefined }
+        : { heading: "Goal met", amount: m.target, detail: m.name };
+    },
+    component: MilestoneSpotlight,
+  }),
+
+  welcome: defineComponent<KioskData, Parameters<typeof Welcome>[0]>({
+    variants: ["hero"],
+    select: ({ live }) =>
+      live.event
+        ? {
+            name: live.event.name,
+            causeName: live.event.causeName,
+            logoUrl: live.event.theme.logoUrl,
+            callToAction: live.event.callToAction,
+            endDateTime: live.event.endDateTime,
+          }
+        : null,
+    component: Welcome,
+  }),
+
   intermission: defineComponent<KioskData, { message: string | null; countdownTo: string | null }>({
     variants: ["hero"],
     select: ({ scene }) => ({ message: scene.message, countdownTo: scene.countdownTo }),
     component: Intermission,
   }),
 
-  askMe: defineComponent<KioskData, { askMe: NonNullable<KioskData["live"]["event"]>["askMe"] }>({
+  askMe: defineComponent<
+    KioskData,
+    { askMe: NonNullable<KioskData["live"]["event"]>["askMe"]; logoUrl: string | null }
+  >({
     variants: ["full"],
-    select: ({ live }) => (live.event ? { askMe: live.event.askMe } : null),
-    component: ({ askMe }) => <AskMeOverlay askMe={askMe} visible />,
+    select: ({ live }) => (live.event ? { askMe: live.event.askMe, logoUrl: live.event.theme.logoUrl } : null),
+    component: ({ askMe, logoUrl }) => <AskMeOverlay askMe={askMe} logoUrl={logoUrl} visible />,
   }),
 
-  grandCelebration: defineComponent<KioskData, { totalRaised: number; causeName: string }>({
+  grandCelebration: defineComponent<KioskData, { totalRaised: number; causeName: string; logoUrl: string | null }>({
     variants: ["full"],
-    select: ({ live }) => ({ totalRaised: live.total, causeName: live.event?.causeName ?? "" }),
-    component: ({ totalRaised, causeName }) => (
-      <GrandCelebrationOverlay active totalRaised={totalRaised} causeName={causeName} />
+    select: ({ live }) => ({
+      totalRaised: live.total,
+      causeName: live.event?.causeName ?? "",
+      logoUrl: live.event?.theme.logoUrl ?? null,
+    }),
+    component: ({ totalRaised, causeName, logoUrl }) => (
+      <GrandCelebrationOverlay active totalRaised={totalRaised} causeName={causeName} logoUrl={logoUrl} />
     ),
   }),
 

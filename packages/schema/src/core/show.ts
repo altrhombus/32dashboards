@@ -72,7 +72,7 @@ export const InfoBarConfigSchema = z.object({
 export type InfoBarConfig = z.infer<typeof InfoBarConfigSchema>;
 
 /** The show's current state. Every output (venue TV now, stream later) renders its own layout per scene. */
-export const SCENE_IDS = ["main", "intermission", "askMe", "celebration"] as const;
+export const SCENE_IDS = ["welcome", "main", "intermission", "askMe", "celebration"] as const;
 export const SceneIdSchema = z.enum(SCENE_IDS);
 export type SceneId = z.infer<typeof SceneIdSchema>;
 
