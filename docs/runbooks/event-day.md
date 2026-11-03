@@ -62,7 +62,8 @@ network.
      second tap.
    - **Cash and checks at the venue.** Tap +$20, +$50, +$100, or +$500, or
      type another amount: each is added to the venue total and thanked on
-     the TV. After counting the cash box, use **Set the exact venue
+     the TV. **Take off** (beside Add) takes an amount back off, without a
+     thank-you. After counting the cash box, use **Set the exact venue
      total** to replace the sum with the counted number (no thank-you).
    - **Undo.** The message at the bottom offers Undo for a few seconds;
      **Your recent actions** keeps an Undo for each of this device's last
@@ -70,9 +71,20 @@ network.
    - **Bid wars.** Tap +5, +25, or +100 next to an option, or type an amount.
    - **Incentives.** **Pin to info bar** keeps one on the TV until you
      unpin it.
-   - **Ask Me.** Big buttons and **Other** add to the Ask Me total on the
-     TV; on a phone, the Ask Me tab opens when Ask Me goes on the TV. The
-     total runs all night: **Start a new round** sets it back to $0.
+   - **Ask Me.** Big buttons and **Other** add to the round on now; on a
+     phone, the Ask Me tab opens when Ask Me goes on the TV. With Ask Me
+     rounds planned (Event tab, Show content, **Ask Me rounds**), the pad
+     shows where you are (**Ask Me 1 of 3 · Fund a kennel**) and each
+     round's result. **Finish round 1 · next: …** adds the round to the
+     total, plays its wrap-up on the TVs, and puts the next round's title
+     and message up at $0; **Skip** moves on from a round that raised
+     nothing. After the last round, the Ask Me screen thanks the room with
+     tonight's Ask Me total. Switching to another scene finishes the round
+     on now (if it has money in it), so the wrap-up is the transition.
+     Each step has an Undo, which goes back one round. Without a plan, Ask
+     Me is one appeal you can finish and run again. Ask Me money is kept
+     apart from venue cash, so setting the counted venue total doesn't
+     touch it. **Clear this round** drops a round entered by mistake.
    - **Milestones** fill the TVs for a few seconds (the milestone
      spotlight), then the show carries on by itself.
    - **What the TV celebrated** lists every donation, bid, and milestone

@@ -90,6 +90,8 @@ function Setup() {
   const [progress, setProgressState] = useState<Progress>(readProgress);
   const [note, setNote] = useState<{ text: string; error?: boolean } | null>(null);
   const [changed, setChanged] = useState<{ text: string; n: number } | null>(null);
+  // The Ask Me step's round being edited, so the preview shows it.
+  const [editingRound, setEditingRound] = useState(0);
 
   const setProgress = (next: Progress) => {
     setProgressState(next);
@@ -146,6 +148,8 @@ function Setup() {
         return event && <LookStep event={event} update={update} onFail={fail} />;
       case "celebrate":
         return event && <CelebrateStep event={event} update={update} />;
+      case "askme":
+        return event && <AskMeStep event={event} update={update} editing={editingRound} onEditing={setEditingRound} />;
       case "extras":
         return event && <ExtrasStep event={event} update={update} />;
       case "ready":
@@ -196,16 +200,33 @@ function Setup() {
             </footer>
           )}
         </section>
-        <Preview eventId={event?.id ?? null} changed={changed} />
+        <Preview
+          eventId={event?.id ?? null}
+          changed={changed}
+          view={progress.step === "askme" ? "askMe" : "main"}
+          askMeRound={progress.step === "askme" ? editingRound : undefined}
+        />
       </div>
     </div>
   );
 }
 
 /** The TV as it will look, beside every step, with a note about what just changed. */
-function Preview({ eventId, changed }: { eventId: string | null; changed: { text: string; n: number } | null }) {
-  const params = new URLSearchParams({ view: eventId ? "main" : "standby" });
+function Preview({
+  eventId,
+  changed,
+  view = "main",
+  askMeRound,
+}: {
+  eventId: string | null;
+  changed: { text: string; n: number } | null;
+  view?: "main" | "askMe";
+  /** On the Ask Me step: which planned round to show. */
+  askMeRound?: number;
+}) {
+  const params = new URLSearchParams({ view: eventId ? view : "standby" });
   if (eventId) params.set("event", eventId);
+  if (askMeRound !== undefined) params.set("askMeRound", String(askMeRound));
   return (
     <figure className="tv">
       <div key={changed?.n ?? 0} className={`tv__frame${changed ? " tv__frame--changed" : ""}`}>
@@ -771,7 +792,127 @@ function CelebrateStep({ event, update }: { event: FundraiserEvent; update: Upda
   );
 }
 
-// --- 6. Extras -------------------------------------------------------------------
+// --- 6. Ask Me ------------------------------------------------------------------
+
+type DraftRound = FundraiserEvent["askMeRounds"][number];
+
+function AskMeStep(props: {
+  event: FundraiserEvent;
+  update: Update;
+  editing: number;
+  onEditing: (index: number) => void;
+}) {
+  const { event, update } = props;
+  const [rounds, setRounds] = useState<DraftRound[]>(event.askMeRounds);
+  useAutosave(
+    rounds,
+    (v) =>
+      void update(
+        { askMeRounds: v.map((r) => ({ ...r, title: r.title.trim() })) },
+        v.length ? `Ask Me ${Math.min(props.editing, v.length - 1) + 1} of ${v.length}` : "no planned Ask Me rounds",
+      ).catch(() => {}),
+  );
+  const edit = (index: number, patch: Partial<DraftRound>) =>
+    setRounds((rs) => rs.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  const move = (index: number, by: number) => {
+    const to = index + by;
+    if (to < 0 || to >= rounds.length) return;
+    setRounds((rs) => {
+      const next = [...rs];
+      [next[index], next[to]] = [next[to]!, next[index]!];
+      return next;
+    });
+    props.onEditing(to);
+  };
+
+  return (
+    <Question
+      title="Plan the Ask Me appeals"
+      lead="Each appeal gets its own moment on the TV. During the show, the Live tab walks through them in order: Ask Me 1 of 3, 2 of 3…"
+    >
+      {rounds.length === 0 && (
+        <p className="muted">
+          No appeals planned. Ask Me can still run as one appeal (its title and message are on the Event tab).
+        </p>
+      )}
+      <ol className="appeals">
+        {rounds.map((round, i) => (
+          <li
+            key={round.id}
+            className={`appeal${i === props.editing ? " appeal--editing" : ""}`}
+            onFocus={() => props.onEditing(i)}
+            onPointerDown={() => props.onEditing(i)}
+          >
+            <div className="appeal__head">
+              <strong>Ask Me {i + 1}</strong>
+              <span className="grow" />
+              <button
+                type="button"
+                aria-label={`Move Ask Me ${i + 1} up`}
+                disabled={i === 0}
+                onClick={() => move(i, -1)}
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                aria-label={`Move Ask Me ${i + 1} down`}
+                disabled={i === rounds.length - 1}
+                onClick={() => move(i, 1)}
+              >
+                ↓
+              </button>
+              <button
+                type="button"
+                disabled={round.raised !== null}
+                title={round.raised !== null ? "Already run tonight" : undefined}
+                onClick={() => {
+                  setRounds((rs) => rs.filter((_, j) => j !== i));
+                  props.onEditing(Math.max(0, i - 1));
+                }}
+              >
+                Remove
+              </button>
+            </div>
+            <input
+              aria-label={`Ask Me ${i + 1} title`}
+              placeholder="Title, e.g. Fund a kennel"
+              maxLength={120}
+              value={round.title}
+              onChange={(e) => edit(i, { title: e.target.value })}
+            />
+            <textarea
+              aria-label={`Ask Me ${i + 1} message`}
+              rows={4}
+              maxLength={1200}
+              placeholder={
+                "What the room should know, e.g.\nEvery **$250** builds one new kennel.\n- Shelter for a dog in need\n- Built by local volunteers"
+              }
+              value={round.message}
+              onChange={(e) => edit(i, { message: e.target.value })}
+            />
+          </li>
+        ))}
+      </ol>
+      <button
+        type="button"
+        disabled={rounds.length >= 20}
+        onClick={() => {
+          setRounds((rs) => [...rs, { id: id(), title: "", message: "", raised: null }]);
+          props.onEditing(rounds.length);
+        }}
+      >
+        {rounds.length ? "Add another appeal" : "Add an appeal"}
+      </button>
+      <p className="muted">
+        Messages can use **bold**, *italics*, lists (start lines with "- " or "1. "), and # headings. The preview shows
+        the appeal you're editing.
+      </p>
+    </Question>
+  );
+}
+
+// --- 7. Extras -------------------------------------------------------------------
 
 function ExtrasStep({ event, update }: { event: FundraiserEvent; update: Update }) {
   const [cta, setCta] = useState(event.callToAction);
@@ -792,7 +933,7 @@ function ExtrasStep({ event, update }: { event: FundraiserEvent; update: Update 
       ).catch(() => {}),
   );
   return (
-    <Question title="Anything to tell the room?" lead="Both are optional, and both can change during the show.">
+    <Question title="Anything to tell the room?" lead="Both optional, and both can change during the show.">
       <label className="field">
         <span>How to give</span>
         <input
@@ -817,7 +958,7 @@ function ExtrasStep({ event, update }: { event: FundraiserEvent; update: Update 
   );
 }
 
-// --- 7. Ready --------------------------------------------------------------------
+// --- 8. Ready --------------------------------------------------------------------
 
 function ReadyStep(props: {
   event: FundraiserEvent;

@@ -5,6 +5,7 @@ import type { z } from "zod";
 import {
   EventsReplicantSchema,
   MOMENTS_LIMIT,
+  askMeProgress,
   SOURCE_LOG_LIMIT,
   SourceResultSchema,
   coreMessageSchemas,
@@ -193,6 +194,34 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
     }
   });
   command("nudgeAskMe", (state, { eventId, delta }) => ({ state: core.nudgeAskMe(state, eventId, delta, deps) }));
+  listenForCommand(nodecg, "finishAskMeRound", coreMessageSchemas.finishAskMeRound, ({ eventId, amount, roundId }) => {
+    const before = read();
+    const event = before.events.find((e) => e.id === eventId);
+    const progress = event ? askMeProgress(event) : null;
+    const after = core.finishAskMeRound(before, eventId, amount, roundId, deps);
+    write(before, after);
+    // The TV wraps the round up (a round that raised nothing just moves on).
+    const finished = after.events.find((e) => e.id === eventId);
+    if (amount > 0 && progress && finished && after.activeEventId === eventId) {
+      recordMoments([
+        {
+          kind: "askme-round",
+          id: deps.newId(),
+          eventId,
+          at: deps.now(),
+          amount,
+          total: core.computeLiveState(after).total,
+          title: progress.title,
+          number: progress.number,
+          count: progress.count,
+          raisedTonight: finished.askMeRaised,
+        },
+      ]);
+    }
+  });
+  command("reopenAskMeRound", (state, { eventId, amount, roundId }) => ({
+    state: core.reopenAskMeRound(state, eventId, amount, roundId, deps),
+  }));
   command("setFilters", (state, { eventId, filters }) => ({
     state: core.setFilters(state, eventId, filters, deps),
   }));

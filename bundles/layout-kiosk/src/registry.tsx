@@ -13,11 +13,13 @@ import {
   KioskHeader,
   MilestoneCelebration,
   MilestoneSpotlight,
+  AskMeRoundWrap,
   MomentToast,
   PrizeCard,
   SponsorCarousel,
   TotalRaisedCounter,
 } from "@32dashboards/ui";
+import { askMeProgress } from "@32dashboards/schema/core";
 import type { InfoBarDisplay, KioskData, ToastMoment } from "./data.js";
 import { selectFeaturedItems, type SegmentContent } from "./segments.js";
 
@@ -254,6 +256,21 @@ export const kioskRegistry: Registry<KioskData> = {
     component: Welcome,
   }),
 
+  askMeWrap: defineComponent<KioskData, Parameters<typeof AskMeRoundWrap>[0]>({
+    variants: ["full"],
+    select: ({ roundWrap, live }) =>
+      roundWrap
+        ? {
+            title: roundWrap.title || live.event?.askMe.title || "Ask Me",
+            amount: roundWrap.amount,
+            number: roundWrap.number,
+            count: roundWrap.count,
+            raisedTonight: roundWrap.raisedTonight,
+          }
+        : null,
+    component: AskMeRoundWrap,
+  }),
+
   intermission: defineComponent<KioskData, { message: string | null; countdownTo: string | null }>({
     variants: ["hero"],
     select: ({ scene }) => ({ message: scene.message, countdownTo: scene.countdownTo }),
@@ -262,11 +279,29 @@ export const kioskRegistry: Registry<KioskData> = {
 
   askMe: defineComponent<
     KioskData,
-    { askMe: NonNullable<KioskData["live"]["event"]>["askMe"]; logoUrl: string | null }
+    { askMe: NonNullable<KioskData["live"]["event"]>["askMe"]; logoUrl: string | null; kicker?: string }
   >({
     variants: ["full"],
-    select: ({ live }) => (live.event ? { askMe: live.event.askMe, logoUrl: live.event.theme.logoUrl } : null),
-    component: ({ askMe, logoUrl }) => <AskMeOverlay askMe={askMe} logoUrl={logoUrl} visible />,
+    select: ({ live }) => {
+      const event = live.event;
+      if (!event) return null;
+      const progress = askMeProgress(event);
+      // With a plan, the round on now; after the last one, tonight's thanks.
+      const askMe = progress.done
+        ? {
+            ...event.askMe,
+            title: "Thank you!",
+            message: "Every Ask Me round tonight, together:",
+            total: event.askMeRaised,
+          }
+        : { ...event.askMe, title: progress.title, message: progress.message };
+      return {
+        askMe,
+        logoUrl: event.theme.logoUrl,
+        kicker: progress.count && !progress.done ? `Ask Me ${progress.number} of ${progress.count}` : undefined,
+      };
+    },
+    component: ({ askMe, logoUrl, kicker }) => <AskMeOverlay askMe={askMe} logoUrl={logoUrl} kicker={kicker} visible />,
   }),
 
   grandCelebration: defineComponent<KioskData, { totalRaised: number; causeName: string; logoUrl: string | null }>({

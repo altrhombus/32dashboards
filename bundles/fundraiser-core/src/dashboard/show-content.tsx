@@ -501,7 +501,7 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
         <textarea rows={4} {...field("announcements")} />
       </label>
       <label className="field">
-        <span>Ask Me title</span>
+        <span>Ask Me title (when there are no planned rounds)</span>
         <input maxLength={120} {...field("askMeTitle")} />
       </label>
       <label className="field">
@@ -622,6 +622,23 @@ function ShowContent() {
         </Section>
         <Section title={`Bid wars (${event.bidWars.length})`}>
           <BidWars event={event} run={run} />
+        </Section>
+        <Section title={`Ask Me rounds (${event.askMeRounds.length})`}>
+          <p className="muted">
+            Plan each Ask Me appeal of the night, in order. Finishing one adds it to the total and moves the TVs on to
+            the next. With none planned, Ask Me is one appeal (its title and message are in Event details) that you can
+            run as many times as you like.
+          </p>
+          <ListEditor
+            items={event.askMeRounds}
+            fields={[
+              { key: "title", label: "Title, e.g. Fund a kennel", type: "text", width: 220 },
+              { key: "message", label: "Message (Markdown: **bold**)", type: "text", width: 320 },
+            ]}
+            blank={() => ({ id: newId(), title: "", message: "", raised: null })}
+            addLabel="Add an Ask Me round"
+            onSave={(askMeRounds) => save({ askMeRounds })}
+          />
         </Section>
         <Section title={`Prizes (${event.prizes.length})`}>
           <ListEditor

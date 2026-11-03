@@ -85,6 +85,27 @@ describe("fundraiser-core extension", () => {
     ]);
   });
 
+  it("counts finished Ask Me rounds in the total and celebrates each", async () => {
+    const { fake, api, live } = setup();
+    const eventId = await createActiveEvent(fake);
+    api
+      .registerSource("fake", { label: "Fake" })
+      .report({ eventId, total: 1000, observedAt: new Date().toISOString() });
+    await fake.send("nudgeAdjustment", { eventId, delta: 200 });
+    await fake.send("nudgeAskMe", { eventId, delta: 500 });
+    expect(live().total).toBe(1200);
+
+    await fake.send("finishAskMeRound", { eventId, amount: 500 });
+    expect(live()).toMatchObject({ total: 1700, adjustment: 200, askMeRaised: 500 });
+    expect(
+      fake.world.sent.filter((m) => m.messageName === "donationMoment").map((m) => (m.data as { kind: string }).kind),
+    ).toContain("askme-round");
+    await expect(fake.send("finishAskMeRound", { eventId, amount: 500 })).rejects.toThrow(/already added/);
+    // Setting the counted venue total leaves Ask Me money alone.
+    await fake.send("setAdjustment", { eventId, amount: 150 });
+    expect(live()).toMatchObject({ total: 1650, askMeRaised: 500 });
+  });
+
   it("keeps a late result on the event it was fetched for", async () => {
     const { fake, api, live } = setup();
     const first = await createActiveEvent(fake);

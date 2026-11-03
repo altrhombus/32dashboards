@@ -200,6 +200,10 @@ body,
   max-height: 160px;
 }
 
+[data-component="askMe"] .ask-me-overlay__kicker {
+  font-size: 2rem;
+}
+
 [data-component="askMe"] .ask-me-overlay__title {
   font-size: 5rem;
 }

@@ -32,6 +32,15 @@ export type EventSource = z.infer<typeof EventSourceSchema>;
  * ones in prep); `activeEventId` picks the one on screen. The adjustment and
  * filters belong to the event, so they persist and travel with it.
  */
+/** One planned Ask Me appeal. `raised` is set when the round finishes (null while it hasn't). */
+export const AskMeRoundSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().trim().max(120).default(""),
+  message: z.string().max(1200).default(""),
+  raised: z.number().finite().nonnegative().nullable().default(null),
+});
+export type AskMeRound = z.infer<typeof AskMeRoundSchema>;
+
 export const FundraiserEventSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(200),
@@ -51,6 +60,15 @@ export const FundraiserEventSchema = z.object({
   source: EventSourceSchema,
   /** Added to the source's total, e.g. for cash or checks taken at the venue. */
   adjustment: z.number().finite().default(0),
+  /** Money from finished Ask Me rounds, counted in the total (kept apart from venue cash). */
+  askMeRaised: z.number().finite().nonnegative().default(0),
+  /**
+   * Ask Me appeals planned for the night, in order, each with its own title
+   * and message. Empty: one appeal (askMe's title and message) that repeats.
+   */
+  askMeRounds: z.array(AskMeRoundSchema).max(20).default([]),
+  /** Which planned round is on now (an index into askMeRounds); past the end once all are done. */
+  askMeCurrent: z.number().int().nonnegative().default(0),
   /** Case-insensitive title substrings; matching items are hidden from displays. */
   filters: z.array(z.string().min(1).max(100)).max(100).default([]),
   createdAt: timestamp(),

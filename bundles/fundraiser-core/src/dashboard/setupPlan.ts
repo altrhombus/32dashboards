@@ -9,6 +9,7 @@ export const STEPS = [
   { id: "money", label: "Money" },
   { id: "look", label: "Look" },
   { id: "celebrate", label: "Celebrations" },
+  { id: "askme", label: "Ask Me" },
   { id: "extras", label: "Extras" },
   { id: "ready", label: "Ready" },
 ] as const;

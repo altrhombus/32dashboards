@@ -22,8 +22,11 @@ beside a live preview of the TV that fills in as you answer:
    photo), colors picked from it, and fonts.
 5. **Celebrations:** every $1,000 (or any step) up to a limit, plus one big
    goal.
-6. **Extras:** how to give, and announcements.
-7. **Ready:** what's set, then **Put it on the TVs**.
+6. **Ask Me:** each appeal of the night, in order, with a title and a
+   message (bold, italics, lists and headings work). The preview shows the
+   appeal you're editing as the TV will.
+7. **Extras:** how to give, and announcements.
+8. **Ready:** what's set, then **Put it on the TVs**.
 
 Every step can be skipped and changed later. If you leave partway, the
 guide picks up where you left off. The rest of this runbook is the same

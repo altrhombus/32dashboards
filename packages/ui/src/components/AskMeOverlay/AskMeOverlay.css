@@ -19,10 +19,24 @@
   object-fit: contain;
 }
 
+.ask-me-overlay__kicker {
+  color: var(--color-secondary);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 .ask-me-overlay__title {
   font-size: 2rem;
   font-weight: 700;
   color: var(--color-accent);
+  animation: ask-me-title-in 0.6s var(--ease-overshoot) both;
+}
+
+@keyframes ask-me-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em) scale(0.96);
+  }
 }
 
 .ask-me-overlay__message {

@@ -33,7 +33,7 @@ const main: BlockLayoutInput = {
     { id: "sponsors", component: "sponsors", x: 17, y: 16, w: 7, h: 5 },
     { id: "infobar", component: "infoBar", x: 0, y: 21, w: 24, h: 3 },
   ],
-  overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }],
+  overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }, { component: "askMeWrap" }],
 };
 
 const intermission: BlockLayoutInput = {
@@ -43,7 +43,7 @@ const intermission: BlockLayoutInput = {
     { id: "total", component: "total", variant: "hero", x: 0, y: 14, w: 24, h: 7 },
     { id: "infobar", component: "infoBar", x: 0, y: 21, w: 24, h: 3 },
   ],
-  overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }],
+  overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }, { component: "askMeWrap" }],
 };
 
 const welcome: BlockLayoutInput = {
@@ -51,21 +51,23 @@ const welcome: BlockLayoutInput = {
     { id: "welcome", component: "welcome", x: 0, y: 0, w: 24, h: 21 },
     { id: "infobar", component: "infoBar", x: 0, y: 21, w: 24, h: 3 },
   ],
-  overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }],
+  overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }, { component: "askMeWrap" }],
 };
 
 /** One component filling the whole screen, edge to edge. */
-const fullScreen = (component: string): BlockLayoutInput => ({
+const fullScreen = (component: string, overlays: BlockLayoutInput["overlays"] = []): BlockLayoutInput => ({
   gap: 0,
   padding: 0,
   blocks: [{ id: component, component, x: 0, y: 0, w: 24, h: 24 }],
+  overlays,
 });
 
 const builtInInputs: Record<ScreenView, { name: string; blocks: BlockLayoutInput }> = {
   welcome: { name: "Welcome", blocks: welcome },
   main: { name: "Main", blocks: main },
   intermission: { name: "Intermission", blocks: intermission },
-  askMe: { name: "Ask Me", blocks: fullScreen("askMe") },
+  // Between rounds, the wrap-up plays right on the Ask Me screen.
+  askMe: { name: "Ask Me", blocks: fullScreen("askMe", [{ component: "askMeWrap" }]) },
   celebration: { name: "Celebration", blocks: fullScreen("grandCelebration") },
   standby: { name: "Standby", blocks: fullScreen("standby") },
 };
@@ -100,7 +102,10 @@ const templateInputs: Record<string, { name: string; description: string; blocks
   blank: {
     name: "Blank",
     description: "An empty screen.",
-    blocks: { blocks: [], overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }] },
+    blocks: {
+      blocks: [],
+      overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }, { component: "askMeWrap" }],
+    },
   },
   bigTotal: {
     name: "Big total",
@@ -112,7 +117,7 @@ const templateInputs: Record<string, { name: string; description: string; blocks
         { id: "cta", component: "callToAction", x: 0, y: 15, w: 24, h: 6 },
         { id: "infobar", component: "infoBar", x: 0, y: 21, w: 24, h: 3 },
       ],
-      overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }],
+      overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }, { component: "askMeWrap" }],
     },
   },
   totalAndItems: {
@@ -125,7 +130,7 @@ const templateInputs: Record<string, { name: string; description: string; blocks
         { id: "featured", component: "featuredItems", x: 0, y: 8, w: 24, h: 13 },
         { id: "infobar", component: "infoBar", x: 0, y: 21, w: 24, h: 3 },
       ],
-      overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }],
+      overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }, { component: "askMeWrap" }],
     },
   },
 };

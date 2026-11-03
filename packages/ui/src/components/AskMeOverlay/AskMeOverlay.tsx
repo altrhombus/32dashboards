@@ -12,6 +12,8 @@ export interface AskMeOverlayProps {
   visible?: boolean;
   /** The event's logo, shown above the title. */
   logoUrl?: string | null;
+  /** A small line above the title, e.g. "Ask Me 2 of 3". */
+  kicker?: string;
 }
 
 const ALLOWED_TAGS = ["p", "strong", "em", "ul", "ol", "li", "br", "a", "h1", "h2", "h3", "blockquote", "code"];
@@ -27,7 +29,7 @@ function renderMarkdown(message: string): string {
   return DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR: ["href"] });
 }
 
-export function AskMeOverlay({ askMe, visible = askMe.enabled, logoUrl }: AskMeOverlayProps) {
+export function AskMeOverlay({ askMe, visible = askMe.enabled, logoUrl, kicker }: AskMeOverlayProps) {
   // What's been added recently: quick taps add up ("+$200") instead of replacing each other.
   const [delta, setDelta] = useState<{ amount: number; key: number } | null>(null);
   const [burst, setBurst] = useState(false);
@@ -55,7 +57,11 @@ export function AskMeOverlay({ askMe, visible = askMe.enabled, logoUrl }: AskMeO
     <div className="ask-me-overlay">
       <ConfettiBurst active={burst} />
       {logoUrl && <img className="ask-me-overlay__logo" src={logoUrl} alt="" />}
-      <div className="ask-me-overlay__title">{askMe.title}</div>
+      {kicker && <div className="ask-me-overlay__kicker">{kicker}</div>}
+      {/* key: a new round's title arrives with its own entrance */}
+      <div key={askMe.title} className="ask-me-overlay__title">
+        {askMe.title}
+      </div>
       <div className="ask-me-overlay__message" dangerouslySetInnerHTML={{ __html: renderMarkdown(askMe.message) }} />
       <div className="ask-me-overlay__total-wrapper">
         {/* A reserved line above the total, so the pop-up never covers it and the total doesn't move. */}

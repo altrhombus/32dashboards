@@ -65,6 +65,7 @@ describe("kiosk layouts", () => {
       live,
       scene: scene(sceneId),
       infoBar: { type: "segment", segment: plan.segments[0]! },
+      roundWrap: null,
       toasts: [
         {
           kind: "new-bid",
@@ -89,6 +90,62 @@ describe("kiosk layouts", () => {
     errors.mockRestore();
   });
 
+  it("wraps up a finished Ask Me round on the Ask Me screen", () => {
+    const data: KioskData = {
+      live,
+      scene: scene("askMe"),
+      infoBar: { type: "empty" },
+      toasts: [],
+      roundWrap: {
+        kind: "askme-round",
+        id: id(40),
+        eventId: id(1),
+        at: NOW,
+        amount: 800,
+        total: 5000,
+        title: "A transport van",
+        number: 3,
+        count: 3,
+        raisedTonight: 2050,
+      },
+    };
+    const { container } = render(
+      <LayoutRenderer layout={builtInLayouts.askMe.layout} registry={kioskRegistry} data={data} fit="none" />,
+    );
+    const wrap = container.querySelector(".askme-wrap")?.textContent ?? "";
+    expect(wrap).toContain("Ask Me 3 of 3");
+    expect(wrap).toContain("A transport van");
+    expect(wrap).toContain("$800");
+    expect(wrap).toContain("Ask Me raised $2,050 tonight");
+  });
+
+  it("shows the planned round on now, then tonight's thanks once all are done", () => {
+    const rounds = [
+      { id: id(50), title: "Fund a kennel", message: "Kennels", raised: 1250 },
+      { id: id(51), title: "Vet care", message: "Every **$50** pays for a checkup.", raised: null },
+    ];
+    const view = (askMeCurrent: number) => {
+      const event = { ...worstEvent, askMeRounds: rounds, askMeCurrent, askMeRaised: 1250 };
+      const data: KioskData = {
+        live: { ...live, event },
+        scene: scene("askMe"),
+        infoBar: { type: "empty" },
+        toasts: [],
+        roundWrap: null,
+      };
+      const { container, unmount } = render(
+        <LayoutRenderer layout={builtInLayouts.askMe.layout} registry={kioskRegistry} data={data} fit="none" />,
+      );
+      const text = container.textContent ?? "";
+      unmount();
+      return text;
+    };
+    expect(view(1)).toContain("Ask Me 2 of 2");
+    expect(view(1)).toContain("Vet care");
+    expect(view(2)).toContain("Thank you!");
+    expect(view(2)).toContain("$1,250");
+  });
+
   it("shows a milestone in the info bar and as a full-screen spotlight", () => {
     const data: KioskData = {
       live,
@@ -106,6 +163,7 @@ describe("kiosk layouts", () => {
         },
       },
       toasts: [],
+      roundWrap: null,
     };
     const { container } = render(
       <LayoutRenderer layout={builtInLayouts.main.layout} registry={kioskRegistry} data={data} fit="none" />,

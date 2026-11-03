@@ -140,6 +140,68 @@ describe("adjustment", () => {
   });
 });
 
+const round = (id: string, title: string) => ({ id, title, message: "", raised: null });
+
+describe("Ask Me rounds", () => {
+  it("adds a repeating appeal's round to the total, starts again at $0, and won't add it twice", () => {
+    const { state, eventId, deps } = withEvent();
+    let next = core.nudgeAskMe(state, eventId, 1250, deps);
+    next = core.finishAskMeRound(next, eventId, 1250, undefined, deps);
+    expect(next.events[0]).toMatchObject({ askMeRaised: 1250, askMe: { total: 0 } });
+    expect(() => core.finishAskMeRound(next, eventId, 1250, undefined, deps)).toThrow(/already added/);
+
+    next = core.nudgeAskMe(next, eventId, 300, deps);
+    expect(() => core.finishAskMeRound(next, eventId, 250, undefined, deps)).toThrow(/now 300/);
+    next = core.reopenAskMeRound(
+      core.finishAskMeRound(next, eventId, 300, undefined, deps),
+      eventId,
+      300,
+      undefined,
+      deps,
+    );
+    expect(next.events[0]).toMatchObject({ askMeRaised: 1250, askMe: { total: 300 } });
+  });
+
+  it("moves through planned rounds, recording what each raised, and steps back on Undo", () => {
+    const { state, eventId, deps } = withEvent();
+    const [a, b, c] = [deps.newId(), deps.newId(), deps.newId()];
+    let next = core.updateEvent(
+      state,
+      { eventId, patch: { askMeRounds: [round(a, "Kennels"), round(b, "Vet care"), round(c, "Van")] } },
+      deps,
+    );
+    next = core.finishAskMeRound(core.nudgeAskMe(next, eventId, 1250, deps), eventId, 1250, a, deps);
+    expect(next.events[0]).toMatchObject({ askMeCurrent: 1, askMeRaised: 1250, askMe: { total: 0 } });
+    expect(next.events[0]!.askMeRounds.map((r) => r.raised)).toEqual([1250, null, null]);
+    expect(() => core.finishAskMeRound(next, eventId, 0, a, deps)).toThrow(/already finished/);
+
+    // A round that raised nothing can be skipped.
+    next = core.finishAskMeRound(next, eventId, 0, b, deps);
+    next = core.finishAskMeRound(core.nudgeAskMe(next, eventId, 800, deps), eventId, 800, c, deps);
+    expect(next.events[0]).toMatchObject({ askMeCurrent: 3, askMeRaised: 2050 });
+
+    next = core.reopenAskMeRound(next, eventId, 800, c, deps);
+    expect(next.events[0]).toMatchObject({ askMeCurrent: 2, askMeRaised: 1250, askMe: { total: 800 } });
+    expect(() => core.reopenAskMeRound(next, eventId, 1250, a, deps)).toThrow(/most recently finished/);
+  });
+
+  it("starts a copied event's rounds over", () => {
+    const { state, eventId, deps } = withEvent();
+    let next = core.updateEvent(state, { eventId, patch: { askMeRounds: [round(deps.newId(), "Kennels")] } }, deps);
+    next = core.finishAskMeRound(
+      core.nudgeAskMe(next, eventId, 100, deps),
+      eventId,
+      100,
+      next.events[0]!.askMeRounds[0]!.id,
+      deps,
+    );
+    const copy = core.duplicateEvent(next, { eventId }, deps);
+    const copied = copy.state.events.find((e) => e.id === copy.eventId)!;
+    expect(copied).toMatchObject({ askMeCurrent: 0, askMeRaised: 0 });
+    expect(copied.askMeRounds[0]).toMatchObject({ title: "Kennels", raised: null });
+  });
+});
+
 describe("nudgeAskMe", () => {
   it("adds to the Ask Me total, rounding to cents and never going below zero", () => {
     const { state, eventId, deps } = withEvent();

@@ -109,6 +109,15 @@ export const kioskCatalog: Catalog = {
     repeatable: false,
     settings: none,
   },
+  askMeWrap: {
+    name: "Ask Me wrap-up",
+    description: "When an Ask Me round finishes, shows what it raised for a few seconds.",
+    category: "money",
+    placement: "overlay",
+    variants: { full: { minWidth: 0, minHeight: 0 } },
+    repeatable: false,
+    settings: none,
+  },
   welcome: {
     name: "Welcome",
     description: "For arrivals: the logo, the event and its cause, how to give, and when bidding closes.",

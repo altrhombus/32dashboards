@@ -3,12 +3,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMachine } from "@xstate/react";
 import { infoBarMachine, selectInfoBarView } from "@32dashboards/incentive-machine";
 import type { DonationMoment, LiveStateReplicant } from "@32dashboards/schema/core";
-import type { CelebrationMoment, InfoBarDisplay, ToastMoment } from "./data.js";
+import type { CelebrationMoment, InfoBarDisplay, RoundWrapMoment, ToastMoment } from "./data.js";
 import { buildSegments } from "./segments.js";
 
 export const CELEBRATION_MS = 8_000;
 export const TOAST_MS = 6_000;
 export const MAX_TOASTS = 3;
+/** How long an Ask Me round's wrap-up stays on screen. */
+export const ROUND_WRAP_MS = 7_000;
 
 /**
  * Drives the info bar: feeds the current segments to the sequencer and
@@ -56,14 +58,19 @@ export function useInfoBar(live: LiveStateReplicant | undefined) {
 /**
  * Listens for fundraiser-core's donation moments for `eventId`: milestones
  * and met incentives go to `celebrate`; new donations and bids become
- * toasts, a few at a time, each for a few seconds.
+ * toasts, a few at a time, each for a few seconds; a finished Ask Me round
+ * becomes its wrap-up (`roundWrap`) for ROUND_WRAP_MS.
  */
 export function useDonationMoments(eventId: string | null, celebrate: (moment: CelebrationMoment) => void) {
   const [toasts, setToasts] = useState<ToastMoment[]>([]);
+  const [roundWrap, setRoundWrap] = useState<RoundWrapMoment | null>(null);
   const eventRef = useRef(eventId);
   eventRef.current = eventId;
 
-  useEffect(() => setToasts([]), [eventId]);
+  useEffect(() => {
+    setToasts([]);
+    setRoundWrap(null);
+  }, [eventId]);
 
   useEffect(() => {
     const timers = new Set<ReturnType<typeof setTimeout>>();
@@ -71,6 +78,15 @@ export function useDonationMoments(eventId: string | null, celebrate: (moment: C
       if (moment.eventId !== eventRef.current) return;
       if (moment.kind === "milestone" || moment.kind === "incentive-met") {
         celebrate(moment);
+        return;
+      }
+      if (moment.kind === "askme-round") {
+        setRoundWrap(moment);
+        const timer = setTimeout(() => {
+          timers.delete(timer);
+          setRoundWrap((current) => (current?.id === moment.id ? null : current));
+        }, ROUND_WRAP_MS);
+        timers.add(timer);
         return;
       }
       setToasts((current) => [...current, moment].slice(-MAX_TOASTS));
@@ -87,5 +103,5 @@ export function useDonationMoments(eventId: string | null, celebrate: (moment: C
     };
   }, [celebrate]);
 
-  return toasts;
+  return { toasts, roundWrap };
 }
