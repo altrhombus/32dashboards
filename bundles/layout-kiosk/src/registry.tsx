@@ -19,7 +19,7 @@ import {
   SponsorCarousel,
   TotalRaisedCounter,
 } from "@32dashboards/ui";
-import { askMeProgress } from "@32dashboards/schema/core";
+import { SPONSORS_TITLE, askMeProgress } from "@32dashboards/schema/core";
 import type { InfoBarDisplay, KioskData, ToastMoment } from "./data.js";
 import { selectFeaturedItems, type SegmentContent } from "./segments.js";
 
@@ -30,6 +30,9 @@ import { selectFeaturedItems, type SegmentContent } from "./segments.js";
  */
 
 /** Wraps a component in a titled card when the slot's options give a title. */
+/** When the bidding countdown starts calling attention to itself. */
+const URGENT_MS = 10 * 60_000;
+
 function Card({ title, children }: { title?: unknown; children: ReactNode }) {
   if (typeof title !== "string" || !title) return <div className="kiosk-card">{children}</div>;
   return (
@@ -38,6 +41,27 @@ function Card({ title, children }: { title?: unknown; children: ReactNode }) {
       {children}
     </section>
   );
+}
+
+/**
+ * What the TVs say as bidding closes: a last call with the minutes left
+ * (and how to give, if `event` is given), then a thank-you, with confetti.
+ */
+function lastCall(minutesLeft: number, event: KioskData["live"]["event"]) {
+  if (minutesLeft === 0) {
+    return {
+      heading: "Bidding is closed",
+      text: "Thank you!",
+      detail: event?.causeName ? `Every bid tonight helps ${event.causeName}` : undefined,
+      confetti: true,
+    };
+  }
+  return {
+    heading: "Last call",
+    text: `${minutesLeft} minute${minutesLeft === 1 ? "" : "s"} left`,
+    detail: event ? event.callToAction || "Get your bids in!" : undefined,
+    confetti: false,
+  };
 }
 
 function Segment({ content, total }: { content: SegmentContent; total: number }) {
@@ -59,7 +83,12 @@ function Segment({ content, total }: { content: SegmentContent; total: number })
         </div>
       );
     case "sponsor":
-      return <SponsorCarousel sponsors={[content.sponsor]} />;
+      return (
+        <div className="kiosk-info-bar__logo">
+          {content.title && <span className="kiosk-info-bar__logo-title clamp-1">{content.title}</span>}
+          <SponsorCarousel sponsors={[content.sponsor]} />
+        </div>
+      );
   }
 }
 
@@ -71,8 +100,10 @@ function InfoBar({ display, total }: { display: InfoBarDisplay; total: number })
       <div className="kiosk-info-bar kiosk-info-bar--celebrating">
         {m.kind === "milestone" ? (
           <MilestoneCelebration heading="Milestone reached!" amount={m.amount} detail={m.label || undefined} />
-        ) : (
+        ) : m.kind === "incentive-met" ? (
           <MilestoneCelebration heading="Incentive met!" amount={m.target} detail={m.name} />
+        ) : (
+          <MilestoneCelebration {...lastCall(m.minutesLeft, null)} />
         )}
       </div>
     );
@@ -120,7 +151,7 @@ function Welcome(props: {
       {props.endDateTime && (
         <div className="kiosk-welcome__closes">
           <span>Bidding closes in</span>
-          <CountdownClock endDateTime={props.endDateTime} />
+          <CountdownClock endDateTime={props.endDateTime} urgentMs={URGENT_MS} endedLabel="Bidding closed" />
         </div>
       )}
     </div>
@@ -189,7 +220,7 @@ export const kioskRegistry: Registry<KioskData> = {
       live.event?.endDateTime ? { endDateTime: live.event.endDateTime, title: options.title } : null,
     component: ({ endDateTime, title }) => (
       <Card title={title}>
-        <CountdownClock endDateTime={endDateTime} />
+        <CountdownClock endDateTime={endDateTime} urgentMs={URGENT_MS} endedLabel="Bidding closed" />
       </Card>
     ),
   }),
@@ -201,7 +232,11 @@ export const kioskRegistry: Registry<KioskData> = {
     variants: ["carousel"],
     select: ({ live }, { options }) =>
       live.event?.sponsors.length
-        ? { sponsors: [...live.event.sponsors].sort((a, b) => a.sortOrder - b.sortOrder), title: options.title }
+        ? {
+            sponsors: [...live.event.sponsors].sort((a, b) => a.sortOrder - b.sortOrder),
+            // A layout's own heading wins; left at the default, the block uses the event's.
+            title: options.title === SPONSORS_TITLE ? live.event.sponsorsTitle : options.title,
+          }
         : null,
     component: ({ sponsors, title }) => (
       <Card title={title}>
@@ -228,12 +263,13 @@ export const kioskRegistry: Registry<KioskData> = {
     component: Toasts,
   }),
 
-  milestoneSpotlight: defineComponent<KioskData, { heading: string; amount: number; detail?: string }>({
+  milestoneSpotlight: defineComponent<KioskData, Parameters<typeof MilestoneSpotlight>[0]>({
     variants: ["full"],
     // Shown while the info bar celebrates, so both start and end together.
-    select: ({ infoBar }) => {
+    select: ({ infoBar, live }) => {
       if (infoBar.type !== "celebration") return null;
       const m = infoBar.moment;
+      if (m.kind === "last-call") return lastCall(m.minutesLeft, live.event);
       return m.kind === "milestone"
         ? { heading: "Milestone reached", amount: m.amount, detail: m.label || undefined }
         : { heading: "Goal met", amount: m.target, detail: m.name };

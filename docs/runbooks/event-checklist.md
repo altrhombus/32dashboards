@@ -30,8 +30,12 @@ With one TV, skip everything about the second computer.
       Rename the ones there, or add and remove screens. For each scene, keep **Built-in** or
       pick a layout made in the **Layouts** tab.
 - [ ] **Check the rest of the show content** on the **Event** tab, under
-      **Show content**: sponsors, bid wars, prizes, announcements. Each
-      section says what it's for.
+      **Show content**: logos (sponsors, or the causes you help), bid wars,
+      prizes, announcements. Each section says what it's for. Two choices
+      worth a look: under **Ask Me rounds**, whether Ask Me money is added
+      to the total (leave it off if Ask Me gifts also go into the auction);
+      under **Event details**, whether the TVs switch to Celebration on
+      their own when bidding closes.
 - [ ] **Rehearse at home** if you can: plug in the TV, and run through the
       steps for the venue below with the real event. Tap through each scene
       in the **Live** tab and watch the TV.
@@ -106,9 +110,11 @@ tabs at the bottom are **Money**, **Ask Me**, **Scenes** and **More**.
   **Add**. Each one is thanked on the TVs. **Take off** removes a mistake
   quietly. After counting the cash box, **Set the exact venue total**.
 - **Ask Me:** switch to the **Ask Me** scene. Tap amounts as paddles go
-  up. **Finish round** adds the round to the total, celebrates it, and
-  brings up the next appeal. Leaving the Ask Me scene finishes the round on
-  now.
+  up. **Finish round** celebrates the round and brings up the next appeal.
+  After the last one, the TVs go back to the scene before Ask Me and
+  celebrate there. Leaving the Ask Me scene finishes the round on now.
+- **Bidding closing:** the TVs count down the last minutes and announce
+  when bidding closes. Then start the **Celebration** when you're ready.
 - **Bid wars:** tap an amount next to an option.
 - **Mistakes:** every action offers **Undo** for a few seconds, and
   **Your recent actions** keeps an Undo for each of your last 30.

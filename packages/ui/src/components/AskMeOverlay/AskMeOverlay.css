@@ -66,6 +66,7 @@
 }
 
 .ask-me-overlay__delta-slot {
+  position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -74,7 +75,26 @@
   font-size: 1.75rem;
 }
 
+/*
+ * One pop-up per gift. The newest sits in the middle; each older one steps
+ * out to its side (alternating), smaller and fainter, overlapping a little.
+ */
+.ask-me-overlay__gift {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(calc(-50% + var(--side) * var(--age) * 95%)) scale(calc(1 - var(--age) * 0.14));
+  transform-origin: center bottom;
+  opacity: calc(1 - var(--age) * 0.22);
+  z-index: calc(10 - var(--age));
+  transition:
+    transform 0.45s var(--ease-overshoot),
+    opacity 0.45s ease-out;
+}
+
 .ask-me-overlay__delta {
+  display: inline-block;
+  white-space: nowrap;
   padding: 0.05em 0.5em;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-success) 18%, transparent);
@@ -98,5 +118,11 @@
   }
   100% {
     opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-me-overlay__gift {
+    transition: none;
   }
 }

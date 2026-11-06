@@ -5,7 +5,11 @@ import "./MilestoneSpotlight.css";
 export interface MilestoneSpotlightProps {
   /** e.g. "Milestone reached" or "Goal met" */
   heading: string;
-  amount: number;
+  /** The amount, as money; or `text` instead (e.g. "10 minutes left"). */
+  amount?: number;
+  text?: string;
+  /** Default true. */
+  confetti?: boolean;
   /** The milestone's label or the goal's name, if any. */
   detail?: string;
 }
@@ -15,13 +19,13 @@ export interface MilestoneSpotlightProps {
  * seconds, over a dimmed scene, with confetti. Whoever shows it decides how
  * long (the kiosk shows it while the info bar celebrates).
  */
-export function MilestoneSpotlight({ heading, amount, detail }: MilestoneSpotlightProps) {
+export function MilestoneSpotlight({ heading, amount, text, detail, confetti = true }: MilestoneSpotlightProps) {
   return (
     <div className="milestone-spotlight" role="status">
-      <ConfettiBurst active particleCount={200} />
+      {confetti && <ConfettiBurst active particleCount={200} />}
       <div className="milestone-spotlight__card">
         <span className="milestone-spotlight__heading">{heading}</span>
-        <span className="milestone-spotlight__amount num">{formatAmount(amount)}</span>
+        <span className="milestone-spotlight__amount num">{text ?? formatAmount(amount ?? 0)}</span>
         {detail && (
           <span className="milestone-spotlight__detail clamp-2" title={detail}>
             {detail}

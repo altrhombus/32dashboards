@@ -71,22 +71,31 @@ network.
      phone, the Ask Me tab opens when Ask Me goes on the TV. With Ask Me
      rounds planned (Event tab, Show content, **Ask Me rounds**), the pad
      shows where you are (**Ask Me 1 of 3 · Fund a kennel**) and each
-     round's result. **Finish round 1 · next: …** adds the round to the
-     total, plays its wrap-up on the TVs, and puts the next round's title
-     and message up at $0; **Skip** moves on from a round that raised
-     nothing. After the last round, the Ask Me screen thanks the room with
-     tonight's Ask Me total. Switching to another scene finishes the round
-     on now (if it has money in it), so the wrap-up is the transition.
+     round's result. **Finish round 1 · next: …** plays the round's
+     wrap-up on the TVs and puts the next round's title and message up at
+     $0; **Skip** moves on from a round that raised nothing. After the
+     last round, the TVs go back to the scene from before Ask Me, where
+     the wrap-up plays with tonight's Ask Me total (Undo brings Ask Me
+     back). Switching to another scene finishes the round on now (if it
+     has money in it), so the wrap-up is the transition.
+     Whether Ask Me money is added to the total on the TVs is the event's
+     choice (Show content, **Ask Me rounds**). It's off by default: when
+     Ask Me gifts are also entered in the auction, its total already has
+     them.
      Each step has an Undo, which goes back one round. Without a plan, Ask
      Me is one appeal you can finish and run again. Ask Me money is kept
      apart from venue cash, so setting the counted venue total doesn't
      touch it. **Clear this round** drops a round entered by mistake.
    - **Milestones** fill the TVs for a few seconds (the milestone
      spotlight), then the show carries on by itself.
+   - **Bidding closing.** In the last 10 minutes the countdown glows, and
+     pulses in the last minute. The TVs announce 10, 5 and 1 minute left,
+     then that bidding has closed. They switch to Celebration on their own
+     only if the event says so (Event details); otherwise you do.
    - **What the TV celebrated** lists every donation, bid, and milestone
      the TV showed.
 
-   Editing content (bid war options, prizes, sponsors, logos) is in the
+   Editing content (bid war options, prizes, logos) is in the
    **Show content** panel on the **Event** tab. Changes show on the
    TV as soon as you save.
 

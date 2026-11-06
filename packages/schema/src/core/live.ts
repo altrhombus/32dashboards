@@ -15,7 +15,7 @@ export function applyFilters(items: SourceItem[], filters: string[]): { items: S
 
 /**
  * What displays show for an event: its latest source result plus venue cash
- * and finished Ask Me rounds, with hidden items removed. The core uses it for the event on
+ * (and finished Ask Me rounds, if the event adds them), with hidden items removed. The core uses it for the event on
  * screen (liveState); previews use it for an event being set up.
  */
 export function liveStateFor(event: FundraiserEvent | null, result: SourceResult | undefined): LiveStateReplicant {
@@ -28,7 +28,7 @@ export function liveStateFor(event: FundraiserEvent | null, result: SourceResult
     rawTotal,
     adjustment,
     askMeRaised,
-    total: Math.round((rawTotal + adjustment + askMeRaised) * 100) / 100,
+    total: Math.round((rawTotal + adjustment + (event?.askMeInTotal ? askMeRaised : 0)) * 100) / 100,
     items,
     hiddenItemCount: hidden,
     sourceId: result?.sourceId ?? null,

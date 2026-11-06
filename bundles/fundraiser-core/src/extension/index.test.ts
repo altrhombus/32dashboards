@@ -85,7 +85,7 @@ describe("fundraiser-core extension", () => {
     ]);
   });
 
-  it("counts finished Ask Me rounds in the total and celebrates each", async () => {
+  it("celebrates finished Ask Me rounds, adding them to the total only if the event says so", async () => {
     const { fake, api, live } = setup();
     const eventId = await createActiveEvent(fake);
     api
@@ -95,15 +95,69 @@ describe("fundraiser-core extension", () => {
     await fake.send("nudgeAskMe", { eventId, delta: 500 });
     expect(live().total).toBe(1200);
 
+    // By default the auction counts Ask Me gifts, so the total stays the source's plus venue cash.
     await fake.send("finishAskMeRound", { eventId, amount: 500 });
-    expect(live()).toMatchObject({ total: 1700, adjustment: 200, askMeRaised: 500 });
+    expect(live()).toMatchObject({ total: 1200, adjustment: 200, askMeRaised: 500 });
     expect(
       fake.world.sent.filter((m) => m.messageName === "donationMoment").map((m) => (m.data as { kind: string }).kind),
     ).toContain("askme-round");
     await expect(fake.send("finishAskMeRound", { eventId, amount: 500 })).rejects.toThrow(/already added/);
+
+    await fake.send("updateEvent", { eventId, patch: { askMeInTotal: true } });
+    expect(live().total).toBe(1700);
     // Setting the counted venue total leaves Ask Me money alone.
     await fake.send("setAdjustment", { eventId, amount: 150 });
     expect(live()).toMatchObject({ total: 1650, askMeRaised: 500 });
+  });
+
+  it("goes back to the scene from before Ask Me once the last round finishes", async () => {
+    const { fake } = setup();
+    const eventId = await createActiveEvent(fake);
+    const scene = () => fake.replicant<{ id: string; message: string | null }>("scene").value;
+    const round = (title: string) => ({ id: crypto.randomUUID(), title, message: "", raised: null });
+    await fake.send("updateEvent", { eventId, patch: { askMeRounds: [round("One"), round("Two")] } });
+    await fake.send("switchScene", { id: "intermission", message: "Dessert" });
+    await fake.send("switchScene", { id: "askMe" });
+
+    const roundIds = () =>
+      fake
+        .replicant<FundraiserEvent[]>("events")
+        .value.find((e) => e.id === eventId)!
+        .askMeRounds.map((r) => r.id);
+    await fake.send("nudgeAskMe", { eventId, delta: 100 });
+    await fake.send("finishAskMeRound", { eventId, amount: 100, roundId: roundIds()[0] });
+    expect(scene().id).toBe("askMe");
+
+    await fake.send("nudgeAskMe", { eventId, delta: 50 });
+    await fake.send("finishAskMeRound", { eventId, amount: 50, roundId: roundIds()[1] });
+    expect(scene()).toMatchObject({ id: "intermission", message: "Dessert" });
+  });
+
+  it("announces the last minutes before bidding closes, once each", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-05-01T20:00:00Z"));
+      const { fake } = setup();
+      const eventId = await createActiveEvent(fake);
+      await fake.send("updateEvent", {
+        eventId,
+        patch: { endDateTime: "2026-05-01T20:10:02Z", celebrateAtClose: true },
+      });
+      const calls = () =>
+        fake.world.sent
+          .filter((m) => m.messageName === "donationMoment" && (m.data as { kind: string }).kind === "last-call")
+          .map((m) => (m.data as { minutesLeft: number }).minutesLeft);
+
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(calls()).toEqual([10]);
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(calls()).toEqual([10]);
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+      expect(calls()).toEqual([10, 5, 1, 0]);
+      expect(fake.replicant<{ id: string }>("scene").value.id).toBe("celebration");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keeps a late result on the event it was fetched for", async () => {

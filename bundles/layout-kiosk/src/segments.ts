@@ -15,7 +15,7 @@ export type SegmentContent =
   | { kind: "prize"; prize: Prize }
   | { kind: "callToAction"; text: string }
   | { kind: "announcement"; text: string }
-  | { kind: "sponsor"; sponsor: Sponsor };
+  | { kind: "sponsor"; sponsor: Sponsor; title: string };
 
 export type Segment = InfoBarSegment & { content: SegmentContent };
 
@@ -60,7 +60,8 @@ export function buildSegments(live: LiveStateReplicant): SegmentPlan {
         );
         break;
       case "sponsors":
-        for (const sponsor of event.sponsors) add(`sponsor:${sponsor.id}`, { kind: "sponsor", sponsor });
+        for (const sponsor of event.sponsors)
+          add(`sponsor:${sponsor.id}`, { kind: "sponsor", sponsor, title: event.sponsorsTitle });
         break;
     }
   }

@@ -2,7 +2,7 @@ import type { DonationMoment, LiveStateReplicant, SceneReplicant } from "@32dash
 import type { Segment } from "./segments.js";
 
 export type ToastMoment = Extract<DonationMoment, { kind: "total-increase" | "new-bid" }>;
-export type CelebrationMoment = Extract<DonationMoment, { kind: "milestone" | "incentive-met" }>;
+export type CelebrationMoment = Extract<DonationMoment, { kind: "milestone" | "incentive-met" | "last-call" }>;
 export type RoundWrapMoment = Extract<DonationMoment, { kind: "askme-round" }>;
 
 /** What info bar shows right now. */

@@ -454,7 +454,7 @@ function Money({
         <span className="money__amount">{formatTotal(live.total)}</span>
         <span className="muted">
           {formatTotal(live.rawTotal)} from {sourceLabel}, {formatAmount(live.adjustment)} at the venue
-          {live.askMeRaised > 0 && `, ${formatAmount(live.askMeRaised)} from Ask Me`}
+          {live.askMeRaised > 0 && live.event?.askMeInTotal && `, ${formatAmount(live.askMeRaised)} from Ask Me`}
         </span>
       </div>
       <div className="money__add">
@@ -520,20 +520,36 @@ function Money({
 const ASK_ME_AMOUNTS = [10, 25, 50, 100, 250, 500];
 
 /**
- * Finishes the Ask Me round on now: adds it to the total (the TV wraps it
- * up) and moves on to the next planned round, with Undo. A planned round
- * that raised nothing is skipped without a celebration.
+ * Finishes the Ask Me round on now (the TV wraps it up, and adds it to the
+ * total if the event does) and moves on to the next planned round, with
+ * Undo. A planned round that raised nothing is skipped without a
+ * celebration. When that was the last one and Ask Me is on the TVs
+ * (`onAir`), the server puts back the scene from before Ask Me; Undo brings
+ * Ask Me back too.
  */
-function finishRound(event: FundraiserEvent, act: Act) {
+function finishRound(event: FundraiserEvent, act: Act, onAir = false) {
   const progress = askMeProgress(event);
   const amount = event.askMe.total;
   if (progress.done || (amount <= 0 && progress.count === 0)) return;
   const which = progress.count ? `Ask Me ${progress.number} of ${progress.count}` : "the Ask Me round";
-  const then = progress.count ? (progress.next ? ` Next: ${progress.next.title}.` : " That was the last one.") : "";
+  const last = progress.count === 0 || !progress.next;
+  const returning = onAir && last;
+  const then =
+    (progress.count ? (progress.next ? ` Next: ${progress.next.title}.` : " That was the last one.") : "") +
+    (returning ? " The TVs are going back to the scene before Ask Me." : "");
+  const done =
+    amount > 0
+      ? event.askMeInTotal
+        ? `Added ${which} (${formatAmount(amount)}) to the total.`
+        : `Finished ${which} (${formatAmount(amount)}).`
+      : `Skipped ${which}.`;
   act(
     send("finishAskMeRound", { eventId: event.id, amount, roundId: progress.roundId ?? undefined }),
-    amount > 0 ? `Added ${which} (${formatAmount(amount)}) to the total.${then}` : `Skipped ${which}.${then}`,
-    () => void send("reopenAskMeRound", { eventId: event.id, amount, roundId: progress.roundId ?? undefined }),
+    `${done}${then}`,
+    () => {
+      void send("reopenAskMeRound", { eventId: event.id, amount, roundId: progress.roundId ?? undefined });
+      if (returning) void send("switchScene", { id: "askMe" });
+    },
     "askMe",
   );
 }
@@ -600,13 +616,15 @@ function AskMePad(props: {
         type="button"
         className="primary askme__finish"
         disabled={progress.done || (amount === 0 && progress.count === 0)}
-        onClick={() => finishRound(event, act)}
+        onClick={() => finishRound(event, act, props.onAir)}
       >
         {progress.done
           ? "All Ask Me rounds are done"
           : progress.count === 0
             ? amount > 0
-              ? `Finish this round: add ${formatAmount(amount)} to the total`
+              ? event.askMeInTotal
+                ? `Finish this round: add ${formatAmount(amount)} to the total`
+                : `Finish this round (${formatAmount(amount)})`
               : "Finish this round"
             : `${amount > 0 ? `Finish round ${progress.number} (${formatAmount(amount)})` : `Skip round ${progress.number}`}${
                 progress.next ? ` · next: ${progress.next.title}` : " · the last one"
@@ -614,9 +632,11 @@ function AskMePad(props: {
       </button>
       <p className="muted">
         {progress.count === 0
-          ? "Switching to another scene finishes the round too. "
-          : "Switching to another scene finishes this round too (unless it's still at $0). "}
-        So far, Ask Me has added {formatAmount(event.askMeRaised)} to the total.
+          ? "Finishing puts the TVs back on the scene from before Ask Me, where the wrap-up plays. Switching to another scene finishes the round too. "
+          : "After the last round, the TVs go back to the scene from before Ask Me, where the wrap-up plays. Switching to another scene finishes this round too (unless it's still at $0). "}
+        {event.askMeInTotal
+          ? `So far, Ask Me has added ${formatAmount(event.askMeRaised)} to the total.`
+          : `Ask Me so far: ${formatAmount(event.askMeRaised)}. Shown on the TVs, but not added to the total, because the auction counts it (change this on the Event tab, under Ask Me rounds).`}
       </p>
       <details>
         <summary className="muted">Made a mistake? Clear this round without adding it</summary>
@@ -731,7 +751,11 @@ function describeMoment(m: DonationMoment): string {
     case "incentive-met":
       return `Incentive met: ${m.name}`;
     case "askme-round":
-      return `${m.count ? `Ask Me ${m.number} of ${m.count}` : "Ask Me round"}${m.title ? ` (${m.title})` : ""}: ${formatAmount(m.amount)} added to the total`;
+      return `${m.count ? `Ask Me ${m.number} of ${m.count}` : "Ask Me round"}${m.title ? ` (${m.title})` : ""}: ${formatAmount(m.amount)} raised`;
+    case "last-call":
+      return m.minutesLeft === 0
+        ? "Bidding closed"
+        : `Last call: ${m.minutesLeft} minute${m.minutesLeft === 1 ? "" : "s"} left to bid`;
   }
 }
 

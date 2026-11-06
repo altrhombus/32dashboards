@@ -384,7 +384,7 @@ function StartStep(props: {
 
       {recent.length > 0 && (
         <label className="field">
-          <span className="muted">Copy an earlier event's look, goals and sponsors (optional)</span>
+          <span className="muted">Copy an earlier event's look, goals and logos (optional)</span>
           <select value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)}>
             <option value="">Start fresh</option>
             {recent.map((e) => (
@@ -910,6 +910,38 @@ function AskMeStep(props: {
         Messages can use **bold**, *italics*, lists (start lines with "- " or "1. "), and # headings. The preview shows
         the appeal you're editing.
       </p>
+      <fieldset className="choices">
+        <legend className="card__sub">Does Ask Me money also go into the auction?</legend>
+        <label className="choice">
+          <input
+            type="radio"
+            name="askMeInTotal"
+            checked={!event.askMeInTotal}
+            onChange={() => void update({ askMeInTotal: false }, "Ask Me, counted by the auction").catch(() => {})}
+          />
+          <span>
+            <strong>Yes, it's entered in the auction</strong>
+            <br />
+            <span className="muted">
+              For example as an item. The total on the TVs is the auction's, so nothing is counted twice. The TVs still
+              celebrate each round.
+            </span>
+          </span>
+        </label>
+        <label className="choice">
+          <input
+            type="radio"
+            name="askMeInTotal"
+            checked={event.askMeInTotal}
+            onChange={() => void update({ askMeInTotal: true }, "Ask Me, added to the total").catch(() => {})}
+          />
+          <span>
+            <strong>No, it's only counted here</strong>
+            <br />
+            <span className="muted">Each finished round is added to the total on the TVs.</span>
+          </span>
+        </label>
+      </fieldset>
     </Question>
   );
 }
@@ -955,7 +987,9 @@ function ExtrasStep({ event, update }: { event: FundraiserEvent; update: Update 
           onChange={(e) => setAnnouncements(e.target.value)}
         />
       </label>
-      <p className="muted">Sponsors, prizes and bid wars are on the Event tab, under Show content.</p>
+      <p className="muted">
+        Logos (sponsors, or the causes you help), prizes and bid wars are on the Event tab, under Show content.
+      </p>
     </Question>
   );
 }

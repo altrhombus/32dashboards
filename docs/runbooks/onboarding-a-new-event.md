@@ -63,14 +63,17 @@ setup done by hand, panel by panel, which is quicker once you know it.
    - _Event details_: the name and cause shown on the TV, when bidding
      closes (the TV counts down to it), announcements, and the Ask Me
      title and message.
-   - _Look and sponsors_: sponsors with logos. **Edit the look** opens
+   - _Look and logos_: the logos the TVs rotate through, under a heading
+     you choose: sponsors ("Thank you to our sponsors"), or the causes the
+     event helps ("Who we're helping"). **Add logos** uploads one or
+     several images at once and adds each straight away; rename, reorder
+     or remove them, then **Save logos**. **Edit the look** opens
      the event's colors, logo and fonts in the **Layouts** tab, beside a
      live preview of each scene: start from a palette, adjust it to the
      brand (each color warns if it's hard to read or broadcast-unsafe),
      pick a background (gradient, solid, or a soft glow behind the
      total, optionally slowly moving), pick fonts that ship with the
-     kiosk, and save. Light palettes (Paper, Daylight) suit bright rooms. Upload logos first in
-     the dashboard's **Assets** tab.
+     kiosk, and save. Light palettes (Paper, Daylight) suit bright rooms.
    - _Call to action_: how people give, e.g. "Bid at 32auctions.com/gala".
    - _Hidden items_: words that keep matching items (e.g. "raffle") off
      the TV.

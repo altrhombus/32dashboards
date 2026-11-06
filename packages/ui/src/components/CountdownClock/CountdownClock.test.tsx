@@ -39,4 +39,28 @@ describe("CountdownClock", () => {
     });
     expect(onExpire).toHaveBeenCalledTimes(1);
   });
+
+  it("calls attention to itself near the end, and says when it's over", () => {
+    const endDateTime = new Date("2026-01-01T00:09:00.000Z").toISOString();
+    const { container } = render(
+      <CountdownClock endDateTime={endDateTime} urgentMs={10 * 60_000} endedLabel="Bidding closed" />,
+    );
+    expect(container.querySelector(".countdown-clock--soon")).not.toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(8.5 * 60_000);
+    });
+    expect(container.querySelector(".countdown-clock--final")).not.toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(screen.getByText("Bidding closed")).toBeInTheDocument();
+  });
+
+  it("stays calm without urgentMs", () => {
+    const endDateTime = new Date("2026-01-01T00:00:30.000Z").toISOString();
+    const { container } = render(<CountdownClock endDateTime={endDateTime} />);
+    expect(container.querySelector(".countdown-clock--final, .countdown-clock--soon")).toBeNull();
+  });
 });

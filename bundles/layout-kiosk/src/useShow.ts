@@ -56,8 +56,8 @@ export function useInfoBar(live: LiveStateReplicant | undefined) {
 }
 
 /**
- * Listens for fundraiser-core's donation moments for `eventId`: milestones
- * and met incentives go to `celebrate`; new donations and bids become
+ * Listens for fundraiser-core's donation moments for `eventId`: milestones,
+ * met incentives and the last calls before bidding closes go to `celebrate`; new donations and bids become
  * toasts, a few at a time, each for a few seconds; a finished Ask Me round
  * becomes its wrap-up (`roundWrap`) for ROUND_WRAP_MS.
  */
@@ -76,7 +76,7 @@ export function useDonationMoments(eventId: string | null, celebrate: (moment: C
     const timers = new Set<ReturnType<typeof setTimeout>>();
     const handler = (moment: DonationMoment) => {
       if (moment.eventId !== eventRef.current) return;
-      if (moment.kind === "milestone" || moment.kind === "incentive-met") {
+      if (moment.kind === "milestone" || moment.kind === "incentive-met" || moment.kind === "last-call") {
         celebrate(moment);
         return;
       }

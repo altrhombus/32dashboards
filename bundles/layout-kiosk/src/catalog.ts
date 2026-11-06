@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Catalog } from "@32dashboards/layout-engine/data";
+import { SPONSORS_TITLE } from "@32dashboards/schema/core";
 
 /*
  * What kiosk layouts can place, as plain data: names and descriptions for
@@ -65,13 +66,14 @@ export const kioskCatalog: Catalog = {
     settings: z.object({ title: title("Announcements") }).strict(),
   },
   sponsors: {
-    name: "Sponsors",
-    description: "Sponsor logos, one after another.",
+    name: "Logos",
+    description:
+      "The event's logos (sponsors, or the causes it helps), one after another. Unless you set a heading here, it uses the event's.",
     category: "brand",
     placement: "block",
     variants: { carousel: { minWidth: 300, minHeight: 140, reference: { width: 532, height: 199 } } },
     repeatable: true,
-    settings: z.object({ title: title("Thank you to our sponsors") }).strict(),
+    settings: z.object({ title: title(SPONSORS_TITLE) }).strict(),
   },
   infoBar: {
     name: "Info bar",

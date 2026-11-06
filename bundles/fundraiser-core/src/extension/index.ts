@@ -18,6 +18,7 @@ import {
   type OutputsReplicant,
   type RegisteredSource,
   type RegisteredSourcesReplicant,
+  type SceneId,
   type SceneReplicant,
   type ScreensReplicant,
   type SourceLogReplicant,
@@ -200,6 +201,13 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
     const progress = event ? askMeProgress(event) : null;
     const after = core.finishAskMeRound(before, eventId, amount, roundId, deps);
     write(before, after);
+    // Ask Me is done (the last planned round, or the one appeal without a
+    // plan): the TVs go back to the scene before it, where the wrap-up plays.
+    const left = after.events.find((e) => e.id === eventId);
+    const done = left ? askMeProgress(left) : null;
+    if (done && (done.done || done.count === 0) && after.activeEventId === eventId && scene.value?.id === "askMe") {
+      switchTo(beforeAskMe.id, beforeAskMe.countdownTo, beforeAskMe.message);
+    }
     // The TV wraps the round up (a round that raised nothing just moves on).
     const finished = after.events.find((e) => e.id === eventId);
     if (amount > 0 && progress && finished && after.activeEventId === eventId) {
@@ -228,9 +236,50 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
 
   command("nudgeBidWar", (state, input) => ({ state: core.nudgeBidWar(state, input, deps) }));
 
+  // The scene Ask Me was put on over, to go back to once Ask Me is done (in memory; Main after a restart).
+  let beforeAskMe: { id: SceneId; countdownTo: string | null; message: string | null } = {
+    id: "main",
+    countdownTo: null,
+    message: null,
+  };
+  const switchTo = (id: SceneId, countdownTo: string | null = null, message: string | null = null) => {
+    const current = scene.value;
+    if (id === "askMe" && current && current.id !== "askMe") {
+      beforeAskMe = ["welcome", "main", "intermission"].includes(current.id)
+        ? { id: current.id, countdownTo: current.countdownTo, message: current.message }
+        : { id: "main", countdownTo: null, message: null };
+    }
+    scene.value = { id, countdownTo, message, changedAt: deps.now() };
+  };
+
   listenForCommand(nodecg, "switchScene", coreMessageSchemas.switchScene, ({ id, countdownTo, message }) => {
-    scene.value = { id, countdownTo: countdownTo ?? null, message: message ?? null, changedAt: deps.now() };
+    switchTo(id, countdownTo ?? null, message ?? null);
   });
+
+  // As bidding closes, the TVs call attention to it: 10, 5 and 1 minute
+  // left, then closed (and, if the event asks, the Celebration scene). Each
+  // fires once, and only within a short window after its time, so a restart
+  // doesn't replay old ones.
+  const LAST_CALLS = [10, 5, 1, 0];
+  const LAST_CALL_WINDOW_MS = 45_000;
+  const lastCallsSent = new Set<string>();
+  const checkLastCall = () => {
+    const state = read();
+    const event = state.events.find((e) => e.id === state.activeEventId);
+    if (!event?.endDateTime) return;
+    const remaining = Date.parse(event.endDateTime) - Date.now();
+    for (const minutesLeft of LAST_CALLS) {
+      const at = minutesLeft * 60_000;
+      const key = `${event.id}|${event.endDateTime}|${minutesLeft}`;
+      if (remaining > at || remaining <= at - LAST_CALL_WINDOW_MS || lastCallsSent.has(key)) continue;
+      lastCallsSent.add(key);
+      recordMoments([{ kind: "last-call", id: deps.newId(), eventId: event.id, at: deps.now(), minutesLeft }]);
+      if (minutesLeft === 0 && event.celebrateAtClose && !["celebration", "askMe"].includes(scene.value?.id ?? "")) {
+        switchTo("celebration");
+      }
+    }
+  };
+  setInterval(checkLastCall, 5_000).unref();
 
   // Outputs check in every few seconds; ones that stop are dropped.
   const OUTPUT_TIMEOUT_MS = 60_000;

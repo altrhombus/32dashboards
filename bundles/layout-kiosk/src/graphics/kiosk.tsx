@@ -166,12 +166,15 @@ function Kiosk() {
 
   return (
     <ThemeProvider theme={previewTheme ?? live.event?.theme ?? DEFAULT_THEME}>
-      <LayoutRenderer
-        layout={layout}
-        registry={kioskRegistry}
-        data={{ live, scene, infoBar: display, toasts, roundWrap }}
-        slotScale={slotScale}
-      />
+      {/* Keyed by scene, so each switch fades the new scene in. */}
+      <div className="kiosk-scene" key={view}>
+        <LayoutRenderer
+          layout={layout}
+          registry={kioskRegistry}
+          data={{ live, scene, infoBar: display, toasts, roundWrap }}
+          slotScale={slotScale}
+        />
+      </div>
     </ThemeProvider>
   );
 }

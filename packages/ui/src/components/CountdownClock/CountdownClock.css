@@ -10,6 +10,7 @@
 }
 
 .countdown-clock__value {
+  display: inline-block;
   font-family: var(--font-mono);
   font-size: 2rem;
   color: var(--color-accent);
@@ -19,4 +20,52 @@
 .countdown-clock__tenths {
   font-size: 1.25rem;
   opacity: 0.8;
+}
+
+/* The last minutes: a slow glow, then a quicker pulse in the last minute. */
+.countdown-clock--soon {
+  animation: countdown-glow 2.4s ease-in-out infinite;
+}
+
+.countdown-clock--final {
+  animation: countdown-glow 1s ease-in-out infinite;
+}
+
+.countdown-clock--final .countdown-clock__value {
+  animation: countdown-beat 1s ease-in-out infinite;
+}
+
+.countdown-clock--ended .countdown-clock__value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+@keyframes countdown-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 28px 4px color-mix(in srgb, var(--color-accent) 55%, transparent);
+  }
+}
+
+@keyframes countdown-beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .countdown-clock--soon,
+  .countdown-clock--final,
+  .countdown-clock--final .countdown-clock__value {
+    animation: none;
+    box-shadow: 0 0 20px 2px color-mix(in srgb, var(--color-accent) 45%, transparent);
+  }
 }

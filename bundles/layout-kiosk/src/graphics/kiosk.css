@@ -81,6 +81,18 @@ body,
   font-size: 1.8rem;
 }
 
+.kiosk-info-bar__logo {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.kiosk-info-bar__logo-title {
+  font-weight: 700;
+  opacity: 0.85;
+}
+
 .kiosk-info-bar__text {
   text-align: center;
 }
@@ -255,4 +267,33 @@ body,
 .pointer-idle,
 .pointer-idle * {
   cursor: none !important;
+}
+
+/* Switching scenes: the new one fades in over the background (which stays). */
+.kiosk-scene {
+  height: 100%;
+  animation: kiosk-scene-in 0.9s var(--ease-standard, ease-out) both;
+}
+
+@keyframes kiosk-scene-in {
+  from {
+    opacity: 0;
+    transform: scale(1.015);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-scene {
+    animation-name: kiosk-scene-fade;
+  }
+
+  @keyframes kiosk-scene-fade {
+    from {
+      opacity: 0;
+    }
+  }
 }

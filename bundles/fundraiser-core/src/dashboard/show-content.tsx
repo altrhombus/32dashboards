@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { errorText, newId, useReplicant } from "@32dashboards/nodecg-react";
+import { errorText, newId, uploadAsset, useReplicant } from "@32dashboards/nodecg-react";
 import {
   INFO_BAR_SEGMENTS,
+  SPONSORS_TITLE,
   type ActiveEventIdReplicant,
   type BidWar,
   type EventsReplicant,
@@ -28,7 +29,7 @@ const SEGMENT_LABELS: Record<InfoBarSegmentKind, string> = {
   prizes: "Prizes",
   callToAction: "Call to action",
   announcements: "Announcements",
-  sponsors: "Sponsors",
+  sponsors: "Logos",
 };
 
 /** A local copy of `value` that resets whenever the saved value changes. */
@@ -358,9 +359,7 @@ function editLook(eventId: string) {
   window.top!.location.hash = "fullbleed/builder";
 }
 
-function LookAndSponsors({ event, run }: { event: FundraiserEvent; run: Run }) {
-  const sponsorLogos = useAssets("sponsor-logos");
-  const [sponsors, setSponsors, sponsorsDirty] = useDraft(event.sponsors);
+function LookAndLogos({ event, run }: { event: FundraiserEvent; run: Run }) {
   const theme = event.theme;
   const issues = validateTheme(theme);
   const logoName = theme.logoUrl ? decodeURIComponent(theme.logoUrl.split("/").pop() ?? "") : null;
@@ -385,18 +384,101 @@ function LookAndSponsors({ event, run }: { event: FundraiserEvent; run: Run }) {
       </button>
       <p className="muted">Colors, logo and fonts are edited in the Layouts tab, next to a live preview.</p>
 
-      <h4 style={{ margin: "8px 0 0" }}>Sponsors</h4>
+      <h4 style={{ margin: "8px 0 0" }}>Logos on the TV</h4>
+      <Logos event={event} run={run} />
+    </>
+  );
+}
+
+/** Headings people commonly use over the logos. */
+const LOGO_HEADINGS = [SPONSORS_TITLE, "Who we're helping", "Thank you to our supporters", "Our partners"];
+
+/** "riverside-animal_shelter.png" -> "Riverside animal shelter" */
+function nameFromFile(file: string): string {
+  const base = file
+    .replace(/\.[^.]+$/, "")
+    .replace(/[-_]+/g, " ")
+    .trim();
+  return base ? base[0]!.toUpperCase() + base.slice(1) : "Logo";
+}
+
+/**
+ * The logos the TVs rotate through (sponsors, or the causes the event
+ * helps), with the heading over them. Uploading adds a logo straight away.
+ */
+function Logos({ event, run }: { event: FundraiserEvent; run: Run }) {
+  const logoFiles = useAssets("sponsor-logos");
+  const [draft, setDraft, dirty] = useDraft({ title: event.sponsorsTitle, sponsors: event.sponsors });
+  const [uploading, setUploading] = useState(false);
+  const { sponsors } = draft;
+  const setSponsors = (next: typeof sponsors) => setDraft({ ...draft, sponsors: next });
+  const patchFor = (d: typeof draft) => ({
+    sponsorsTitle: d.title.trim(),
+    sponsors: d.sponsors.map((s, i) => ({ ...s, name: s.name.trim() || "Logo", sortOrder: i })),
+  });
+
+  const upload = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploading(true);
+    try {
+      const added = [];
+      for (const file of Array.from(files)) {
+        const logoUrl = await uploadAsset("sponsor-logos", file);
+        added.push({ id: newId(), name: nameFromFile(file.name), logoUrl, sortOrder: 0 });
+      }
+      const next = { ...draft, sponsors: [...sponsors, ...added] };
+      setDraft(next);
+      run(send("updateEvent", { eventId: event.id, patch: patchFor(next) }));
+    } catch (err) {
+      run(Promise.reject(err));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <>
+      <p className="muted" style={{ margin: 0 }}>
+        Logos rotate on the Main screen and in the info bar: your sponsors, or the causes the event helps. The heading
+        goes over them.
+      </p>
+      <label className="field">
+        <span>Heading</span>
+        <input
+          list="logo-headings"
+          maxLength={60}
+          value={draft.title}
+          onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+        />
+        <datalist id="logo-headings">
+          {LOGO_HEADINGS.map((h) => (
+            <option key={h} value={h} />
+          ))}
+        </datalist>
+      </label>
+      <label className="field">
+        <span>Add logos (PNG, JPG or SVG; pick several at once)</span>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          disabled={uploading}
+          onChange={(e) => void upload(e.target.files)}
+        />
+        {uploading && <span className="muted">Uploading…</span>}
+      </label>
       {sponsors.map((sponsor, index) => (
         <div className="list-row" key={sponsor.id}>
+          {sponsor.logoUrl && <img src={sponsor.logoUrl} alt="" className="logo-thumb" />}
           <input
-            aria-label="Sponsor name"
-            placeholder="Sponsor name"
+            aria-label="Name"
+            placeholder="Name (shown if the logo can't load)"
             value={sponsor.name}
             onChange={(e) => setSponsors(sponsors.map((s, i) => (i === index ? { ...s, name: e.target.value } : s)))}
           />
           <AssetSelect
-            label="Sponsor logo"
-            assets={sponsorLogos}
+            label="Logo"
+            assets={logoFiles}
             value={sponsor.logoUrl}
             onChange={(logoUrl) => setSponsors(sponsors.map((s, i) => (i === index ? { ...s, logoUrl } : s)))}
           />
@@ -415,22 +497,15 @@ function LookAndSponsors({ event, run }: { event: FundraiserEvent; run: Run }) {
             setSponsors([...sponsors, { id: newId(), name: "", logoUrl: null, sortOrder: sponsors.length }])
           }
         >
-          Add sponsor
+          Add a name without a logo
         </button>
         <button
           type="button"
           className="primary"
-          disabled={!sponsorsDirty}
-          onClick={() =>
-            run(
-              send("updateEvent", {
-                eventId: event.id,
-                patch: { sponsors: sponsors.map((s, i) => ({ ...s, sortOrder: i })) },
-              }),
-            )
-          }
+          disabled={!dirty}
+          onClick={() => run(send("updateEvent", { eventId: event.id, patch: patchFor(draft) }))}
         >
-          Save sponsors
+          Save logos
         </button>
       </div>
     </>
@@ -501,6 +576,12 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
         <span>Bidding closes (the TV counts down to this)</span>
         <input type="datetime-local" {...field("endDateTime")} />
       </label>
+      <SaveToggle
+        checked={event.celebrateAtClose}
+        label="When bidding closes, switch the TVs to the Celebration"
+        hint="Off: the TVs announce 10, 5 and 1 minute left and that bidding has closed, and you start the Celebration yourself (best if the program goes on after bidding closes). Not while Ask Me is on."
+        onChange={(celebrateAtClose) => run(send("updateEvent", { eventId: event.id, patch: { celebrateAtClose } }))}
+      />
       <label className="field">
         <span>Announcements, one per line</span>
         <textarea rows={4} {...field("announcements")} />
@@ -524,6 +605,20 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
         )}
       </div>
     </>
+  );
+}
+
+/** A setting that saves as soon as it's ticked. */
+function SaveToggle(props: { checked: boolean; label: string; hint: string; onChange: (checked: boolean) => void }) {
+  return (
+    <label className="row toggle" style={{ alignItems: "baseline" }}>
+      <input type="checkbox" checked={props.checked} onChange={(e) => props.onChange(e.target.checked)} />
+      <span>
+        {props.label}
+        <br />
+        <span className="muted">{props.hint}</span>
+      </span>
+    </label>
   );
 }
 
@@ -601,9 +696,10 @@ function ShowContent() {
           <EventDetails event={event} run={run} />
         </Section>
         <Section
-          title={`Look and sponsors (${event.sponsors.length} sponsor${event.sponsors.length === 1 ? "" : "s"})`}
+          title={`Look and logos (${event.sponsors.length} logo${event.sponsors.length === 1 ? "" : "s"})`}
+          hint="The event's colors, logo and fonts, and the logos the TVs rotate through."
         >
-          <LookAndSponsors event={event} run={run} />
+          <LookAndLogos event={event} run={run} />
         </Section>
         <h3 className="group-heading">Goals and extras</h3>
         <Section
@@ -654,10 +750,16 @@ function ShowContent() {
         </Section>
         <Section title={`Ask Me rounds (${event.askMeRounds.length})`}>
           <p className="muted">
-            Plan each Ask Me appeal of the night, in order. Finishing one adds it to the total and moves the TVs on to
-            the next. With none planned, Ask Me is one appeal (its title and message are in Event details) that you can
-            run as many times as you like.
+            Plan each Ask Me appeal of the night, in order. Finishing one celebrates it and moves the TVs on to the
+            next; after the last, the TVs go back to the scene from before Ask Me. With none planned, Ask Me is one
+            appeal (its title and message are in Event details) that you can run as many times as you like.
           </p>
+          <SaveToggle
+            checked={event.askMeInTotal}
+            label="Add Ask Me money to the total on the TVs"
+            hint="Leave this off if Ask Me gifts also go into the auction (for example as an item): its total already has them, and adding them here would count them twice. Turn it on if Ask Me money is only counted here."
+            onChange={(askMeInTotal) => save({ askMeInTotal })}
+          />
           <ListEditor
             items={event.askMeRounds}
             fields={[

@@ -38,6 +38,9 @@ export const UpdateEventMessageSchema = z
       callToAction: true,
       source: true,
       askMeRounds: true,
+      askMeInTotal: true,
+      celebrateAtClose: true,
+      sponsorsTitle: true,
     })
       .extend({
         theme: EventThemeSchema.partial(),

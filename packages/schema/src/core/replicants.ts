@@ -117,7 +117,7 @@ export const DonationMomentSchema = z.discriminatedUnion("kind", [
     target: z.number(),
   }),
   z.object({
-    // An Ask Me round finished and was added to the total.
+    // An Ask Me round finished (added to the total if the event adds Ask Me).
     kind: z.literal("askme-round"),
     id: z.string().uuid(),
     eventId: z.string().uuid(),
@@ -130,6 +130,14 @@ export const DonationMomentSchema = z.discriminatedUnion("kind", [
     count: z.number().int().nonnegative().default(0),
     /** Every Ask Me round so far tonight, this one included. */
     raisedTonight: z.number().default(0),
+  }),
+  z.object({
+    // Bidding is about to close (minutesLeft 10, 5 or 1), or just closed (0).
+    kind: z.literal("last-call"),
+    id: z.string().uuid(),
+    eventId: z.string().uuid(),
+    at: timestamp(),
+    minutesLeft: z.number().int().nonnegative(),
   }),
   z.object({
     kind: z.literal("new-bid"),

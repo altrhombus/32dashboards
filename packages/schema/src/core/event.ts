@@ -5,6 +5,9 @@ import { SponsorSchema } from "../sponsor.js";
 import { AskMeConfigSchema } from "../askme.js";
 import { BidWarSchema, InfoBarConfigSchema, MilestoneSchema, PrizeSchema } from "./show.js";
 
+/** The logos' heading unless an event says otherwise. */
+export const SPONSORS_TITLE = "Thank you to our sponsors";
+
 export const timestamp = () => z.string().datetime({ offset: true });
 
 /**
@@ -46,11 +49,15 @@ export const FundraiserEventSchema = z.object({
   name: z.string().min(1).max(200),
   causeName: z.string().max(200).default(""),
   endDateTime: timestamp().nullable().default(null),
+  /** At endDateTime, switch the TVs to the Celebration scene (otherwise they only announce it). */
+  celebrateAtClose: z.boolean().default(false),
   theme: EventThemeSchema,
   announcements: z.array(z.string().max(200)).max(50).default([]),
   askMe: AskMeConfigSchema,
   incentives: z.array(IncentiveSchema).default([]),
   sponsors: z.array(SponsorSchema).default([]),
+  /** The heading over the logos in `sponsors`: sponsors, or e.g. the causes the event helps. */
+  sponsorsTitle: z.string().trim().max(60).default(SPONSORS_TITLE),
   milestones: z.array(MilestoneSchema).max(50).default([]),
   bidWars: z.array(BidWarSchema).max(20).default([]),
   prizes: z.array(PrizeSchema).max(50).default([]),
@@ -60,8 +67,14 @@ export const FundraiserEventSchema = z.object({
   source: EventSourceSchema,
   /** Added to the source's total, e.g. for cash or checks taken at the venue. */
   adjustment: z.number().finite().default(0),
-  /** Money from finished Ask Me rounds, counted in the total (kept apart from venue cash). */
+  /** Money from finished Ask Me rounds (kept apart from venue cash). In the total only with askMeInTotal. */
   askMeRaised: z.number().finite().nonnegative().default(0),
+  /**
+   * Whether finished Ask Me rounds are added to the total on the TVs. Off by
+   * default: usually Ask Me gifts are entered in the auction too (e.g. as an
+   * item), so the source's total already has them.
+   */
+  askMeInTotal: z.boolean().default(false),
   /**
    * Ask Me appeals planned for the night, in order, each with its own title
    * and message. Empty: one appeal (askMe's title and message) that repeats.
