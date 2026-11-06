@@ -278,54 +278,50 @@ export function recordSourceResult(
 /** Caps new-bid moments per result, so a burst after an outage doesn't flood the screen. */
 export const MAX_BID_MOMENTS_PER_RESULT = 10;
 
+/** What bids added to the total between two snapshots of one item (0 if nothing new). */
+export function bidMoney(old: SourceItem | undefined, item: SourceItem): number {
+  const price = item.currentBid ?? 0;
+  const count = item.bidCount ?? 0;
+  // An item without bids shows its opening price as its current bid, but it's not in the total yet.
+  if (!old || old.bidCount === 0 || old.bidCount === null) return count > 0 ? price : 0;
+  const was = old.currentBid ?? 0;
+  if (price > was) return price - was;
+  // More bids at the same price: an item with several to sell (each adds its price), or a first
+  // bid at the opening price.
+  if (price === was && count > old.bidCount) return (count - old.bidCount) * price;
+  return 0;
+}
+
 /**
- * Compares a newly stored result with the previous one for the same event
- * and returns what's worth celebrating: items with more bids or a higher
- * bid, and a rise in the source total that bids don't explain (e.g. a
- * donation), so one bid is celebrated once, not also as a "thank you". The
- * first result for an event yields nothing (it's a baseline, not a
- * donation), and items hidden by the event's filters are never celebrated.
+ * Compares a newly stored result with the previous one for the same event:
+ * the items with more bids or a higher bid (to celebrate), how much the
+ * source total changed, and how much of that the bids account for (so a
+ * DonationLedger can thank only the rest, a donation, and never a bid
+ * twice). The first result for an event yields nothing (it's a baseline,
+ * not new money), and items hidden by the event's filters are never
+ * celebrated, though their bids still count as bid money.
  */
-export function detectMoments(
+export function compareResults(
   previous: SourceResult | undefined,
   next: SourceResult,
   event: FundraiserEvent,
   deps: Deps,
-): DonationMoment[] {
-  if (!previous) return [];
+): { bids: DonationMoment[]; totalDelta: number; fromBids: number } {
+  if (!previous) return { bids: [], totalDelta: 0, fromBids: 0 };
   const base = { eventId: next.eventId, at: next.observedAt };
-  const moments: DonationMoment[] = [];
-
   const before = new Map(previous.items.map((item) => [item.id, item]));
 
-  // What bids added to the total, hidden items included (their bids aren't donations to thank either).
-  // An item without bids still shows its opening price as its current bid, but it isn't in the
-  // total until someone bids, so a first bid at the opening price adds the whole amount.
-  const inTotal = (item: SourceItem | undefined) => (!item || item.bidCount === 0 ? 0 : (item.currentBid ?? 0));
   let fromBids = 0;
-  for (const item of next.items) {
-    const added = inTotal(item) - inTotal(before.get(item.id));
-    if (added > 0) fromBids += added;
-  }
-  const delta = roundCents(next.total - previous.total - fromBids);
-  if (delta >= 1) {
-    moments.push({
-      kind: "total-increase",
-      id: deps.newId(),
-      ...base,
-      delta,
-      total: roundCents(next.total + event.adjustment),
-    });
-  }
+  for (const item of next.items) fromBids += bidMoney(before.get(item.id), item);
 
-  let bids = 0;
+  const bids: DonationMoment[] = [];
   for (const item of applyFilters(next.items, event.filters).items) {
     const old = before.get(item.id);
     if (!old) continue;
     const moreBids = item.bidCount !== null && old.bidCount !== null && item.bidCount > old.bidCount;
     const higherBid = item.currentBid !== null && old.currentBid !== null && item.currentBid > old.currentBid;
     if (!moreBids && !higherBid) continue;
-    moments.push({
+    bids.push({
       kind: "new-bid",
       id: deps.newId(),
       ...base,
@@ -335,9 +331,9 @@ export function detectMoments(
       bidCount: item.bidCount,
       newBids: moreBids ? item.bidCount! - old.bidCount! : 1,
     });
-    if (++bids >= MAX_BID_MOMENTS_PER_RESULT) break;
+    if (bids.length >= MAX_BID_MOMENTS_PER_RESULT) break;
   }
-  return moments;
+  return { bids, totalDelta: roundCents(next.total - previous.total), fromBids: roundCents(fromBids) };
 }
 
 /**
