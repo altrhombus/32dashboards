@@ -30,6 +30,7 @@
 
 .milestone-spotlight__amount {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   font-size: 3em;
   line-height: 1.05;

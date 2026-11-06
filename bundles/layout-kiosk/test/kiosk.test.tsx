@@ -76,6 +76,7 @@ describe("kiosk layouts", () => {
           itemTitle: LONG_TITLE,
           amount: 99,
           bidCount: 9,
+          newBids: 3,
         },
       ],
     };
@@ -191,8 +192,25 @@ describe("buildSegments", () => {
   });
 
   it("respects a custom segment list", () => {
-    const custom = { ...live, event: { ...worstEvent, infoBar: { segments: ["prizes" as const], segmentSeconds: 5 } } };
+    const custom = {
+      ...live,
+      event: { ...worstEvent, infoBar: { segments: ["prizes" as const], segmentSeconds: 5, seconds: {} } },
+    };
     expect(buildSegments(custom).segments.map((s) => [s.key, s.durationMs])).toEqual([[`prize:${id(11)}`, 5000]]);
+  });
+
+  it("gives each kind its own time when one is set", () => {
+    const timed = {
+      ...live,
+      event: {
+        ...worstEvent,
+        infoBar: { segments: ["items" as const, "prizes" as const], segmentSeconds: 10, seconds: { items: 54 } },
+      },
+    };
+    expect(buildSegments(timed).segments.map((s) => [s.key, s.durationMs])).toEqual([
+      ["items", 54_000],
+      [`prize:${id(11)}`, 10_000],
+    ]);
   });
 
   it("pins an incentive shown now, else one shown until met", () => {

@@ -1,5 +1,6 @@
 export * from "./tokens/tokens.js";
 export * from "./display/format.js";
+export * from "./display/markdown.js";
 export * from "./theme/validateTheme.js";
 export * from "./fixtures/worstCase.js";
 export * from "./theme/ThemeProvider.js";

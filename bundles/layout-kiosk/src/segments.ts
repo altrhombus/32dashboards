@@ -1,5 +1,13 @@
 import type { InfoBarSegment } from "@32dashboards/incentive-machine";
-import type { BidWar, Incentive, LiveStateReplicant, Prize, SourceItem, Sponsor } from "@32dashboards/schema/core";
+import {
+  segmentSecondsFor,
+  type BidWar,
+  type Incentive,
+  type LiveStateReplicant,
+  type Prize,
+  type SourceItem,
+  type Sponsor,
+} from "@32dashboards/schema/core";
 
 /*
  * Turns the active event into info bar segments: one per incentive, bid
@@ -30,13 +38,13 @@ export function buildSegments(live: LiveStateReplicant): SegmentPlan {
   if (!event) return { segments: [], pinned: null };
   const ms = event.infoBar.segmentSeconds * 1000;
   const segments: Segment[] = [];
-  const add = (key: string, content: SegmentContent, durationMs = ms) => segments.push({ key, durationMs, content });
 
   for (const kind of event.infoBar.segments) {
+    const durationMs = segmentSecondsFor(event.infoBar, kind) * 1000;
+    const add = (key: string, content: SegmentContent) => segments.push({ key, durationMs, content });
     switch (kind) {
       case "items":
-        // The marquee needs longer than a card to show a useful stretch of items.
-        if (live.items.length) add("items", { kind: "items", items: live.items }, ms * 2);
+        if (live.items.length) add("items", { kind: "items", items: live.items });
         break;
       case "incentives":
         for (const incentive of event.incentives.filter((i) => i.active)) {

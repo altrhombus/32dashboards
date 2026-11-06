@@ -82,6 +82,10 @@ network.
        by mistake.
      - Without planned rounds, Ask Me is one appeal you can finish and
        run again.
+   - **Pop-ups.** Each new bid on an item pops up on its own ("New bid",
+     or "3 new bids" if several came in between refreshes), and money the
+     bids don't explain (a donation) gets a "Thank you". In a rush they
+     queue up and come in one by one, a few on screen at a time.
    - **Milestones** fill the TVs for a few seconds (the milestone
      spotlight), then the show carries on by itself.
    - **Bidding closing.** In the last 10 minutes the countdown glows, and
@@ -122,6 +126,16 @@ screen, so it shows the built-in layouts.
 screen now** lists the named screens; pick another finished layout for
 one. **Preview shows** picks which screen the preview follows. Build or
 edit layouts beforehand in the **Layouts** tab, not during the show.
+
+**Text looks too small (or too big) on one TV.** On the **Screens**
+tab, move that screen's **Text size on this TV** slider; the TV changes
+when you let go. To change one part of a layout instead, select it in the
+**Layouts** tab and use its **Text size** (copy a built-in layout first).
+
+**A TV shows "Reconnecting…" in the corner.** It has lost the laptop:
+the network dropped, or NodeCG is restarting. It reconnects by itself;
+after a minute or more away it also reloads. If it stays, check the
+network, then see "NodeCG isn't answering" below.
 
 **A screen shows the built-in layout instead of the one chosen for it.**
 The chosen layout was deleted or can't be shown. The screen falls back

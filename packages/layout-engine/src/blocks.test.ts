@@ -12,6 +12,7 @@ import {
   type BlockLayout,
   type Catalog,
 } from "./blocks.js";
+import { BlockSchema } from "./blocks.js";
 import { validateLayout } from "./registry.js";
 
 const catalog: Catalog = {
@@ -209,5 +210,25 @@ describe("cellsFor", () => {
     expect(cellsFor(l, "width", 81)).toBe(2);
     expect(cellsFor(l, "height", 1080)).toBe(24);
     expect(cellsFor(l, "height", 5000)).toBe(24);
+  });
+});
+
+describe("block text size", () => {
+  it("carries a block's text size to its slot, and leaves others alone", () => {
+    const layout = compileBlocks(
+      {
+        blocks: [
+          { id: "big", component: "total", x: 0, y: 0, w: 12, h: 12, textSize: 1.25 },
+          { id: "plain", component: "total", x: 12, y: 0, w: 12, h: 12 },
+        ],
+      },
+      { id: "t", name: "T" },
+    );
+    expect(layout.slots.big?.scale).toBe(1.25);
+    expect(layout.slots.plain?.scale).toBeUndefined();
+  });
+
+  it("refuses text sizes out of range", () => {
+    expect(BlockSchema.safeParse({ id: "a", component: "x", x: 0, y: 0, w: 1, h: 1, textSize: 5 }).success).toBe(false);
   });
 });

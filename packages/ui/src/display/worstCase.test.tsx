@@ -144,6 +144,7 @@ describe("worst-case strings and numbers", () => {
             itemTitle: LONG_TITLE,
             amount: 9_999_999.5,
             bidCount: 1,
+            newBids: 1,
           }}
         />
         <MomentToast moment={{ kind: "total-increase", id: ID, eventId: ID, at, delta: 25.25, total: HUGE_TOTAL }} />

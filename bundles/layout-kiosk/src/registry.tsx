@@ -16,6 +16,7 @@ import {
   AskMeRoundWrap,
   MomentToast,
   PrizeCard,
+  InlineMarkdown,
   SponsorCarousel,
   TotalRaisedCounter,
 } from "@32dashboards/ui";
@@ -30,6 +31,9 @@ import { selectFeaturedItems, type SegmentContent } from "./segments.js";
  */
 
 /** Wraps a component in a titled card when the slot's options give a title. */
+/** How long each announcement stays in the Announcements block. */
+const ANNOUNCEMENT_MS = 7_000;
+
 /** When the bidding countdown starts calling attention to itself. */
 const URGENT_MS = 10 * 60_000;
 
@@ -67,7 +71,8 @@ function lastCall(minutesLeft: number, event: KioskData["live"]["event"]) {
 function Segment({ content, total }: { content: SegmentContent; total: number }) {
   switch (content.kind) {
     case "items":
-      return <BottomMarquee items={content.items} />;
+      // Resumes where it left off, so each turn shows the next stretch of items, not the first ones again.
+      return <BottomMarquee items={content.items} resumeKey="info-bar" />;
     case "incentive":
       return <IncentiveTracker incentive={content.incentive} totalRaised={total} />;
     case "bidWar":
@@ -79,7 +84,7 @@ function Segment({ content, total }: { content: SegmentContent; total: number })
     case "announcement":
       return (
         <div className="kiosk-info-bar__text clamp-1" title={content.text}>
-          {content.text}
+          <InlineMarkdown text={content.text} />
         </div>
       );
     case "sponsor":
@@ -209,7 +214,8 @@ export const kioskRegistry: Registry<KioskData> = {
       live.event?.announcements.length ? { announcements: live.event.announcements, title: options.title } : null,
     component: ({ announcements, title }) => (
       <Card title={title}>
-        <AnnouncementsList announcements={announcements} />
+        {/* One at a time, so each can be as long as it needs at TV size. */}
+        <AnnouncementsList announcements={announcements} rotateMs={ANNOUNCEMENT_MS} />
       </Card>
     ),
   }),
@@ -227,7 +233,7 @@ export const kioskRegistry: Registry<KioskData> = {
 
   sponsors: defineComponent<
     KioskData,
-    { sponsors: NonNullable<KioskData["live"]["event"]>["sponsors"]; title?: unknown }
+    { sponsors: NonNullable<KioskData["live"]["event"]>["sponsors"]; title?: unknown; intervalMs: number }
   >({
     variants: ["carousel"],
     select: ({ live }, { options }) =>
@@ -236,11 +242,13 @@ export const kioskRegistry: Registry<KioskData> = {
             sponsors: [...live.event.sponsors].sort((a, b) => a.sortOrder - b.sortOrder),
             // A layout's own heading wins; left at the default, the block uses the event's.
             title: options.title === SPONSORS_TITLE ? live.event.sponsorsTitle : options.title,
+            // Events stored before this setting existed have none until the server upgrades them.
+            intervalMs: (live.event.sponsorsSeconds || 6) * 1000,
           }
         : null,
-    component: ({ sponsors, title }) => (
+    component: ({ sponsors, title, intervalMs }) => (
       <Card title={title}>
-        <SponsorCarousel sponsors={sponsors} />
+        <SponsorCarousel sponsors={sponsors} intervalMs={intervalMs} />
       </Card>
     ),
   }),

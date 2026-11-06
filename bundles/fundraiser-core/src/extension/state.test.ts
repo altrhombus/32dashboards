@@ -328,7 +328,25 @@ describe("detectMoments", () => {
       ],
     };
     const moments = core.detectMoments(previous, next, event, deps);
-    expect(moments).toEqual([expect.objectContaining({ kind: "new-bid", itemId: "a", amount: 60, bidCount: 2 })]);
+    expect(moments).toEqual([
+      expect.objectContaining({ kind: "new-bid", itemId: "a", amount: 60, bidCount: 2, newBids: 1 }),
+    ]);
+  });
+
+  it("celebrates a bid once: the total's rise from bids isn't also thanked", () => {
+    const previous = { ...result(eventId, 100), items: [bid("a", "Cookies", 50, 1), bid("b", "Raffle", 5, 1)] };
+    // Cookies +30 over 3 bids, the hidden raffle +5, and a $20 donation.
+    const next = { ...result(eventId, 155), items: [bid("a", "Cookies", 80, 4), bid("b", "Raffle", 10, 2)] };
+    const moments = core.detectMoments(previous, next, { ...event, filters: ["raffle"] }, deps);
+    expect(moments).toEqual([
+      expect.objectContaining({ kind: "total-increase", delta: 20 }),
+      expect.objectContaining({ kind: "new-bid", itemId: "a", amount: 80, newBids: 3 }),
+    ]);
+
+    const bidOnly = { ...next, total: 135 };
+    expect(core.detectMoments(previous, bidOnly, { ...event, filters: ["raffle"] }, deps).map((m) => m.kind)).toEqual([
+      "new-bid",
+    ]);
   });
 
   it("caps new-bid moments per result", () => {

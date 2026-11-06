@@ -4,6 +4,7 @@ import { errorText, newId, uploadAsset, useReplicant } from "@32dashboards/nodec
 import {
   INFO_BAR_SEGMENTS,
   SPONSORS_TITLE,
+  segmentSecondsFor,
   type ActiveEventIdReplicant,
   type BidWar,
   type EventsReplicant,
@@ -231,16 +232,52 @@ function BidWars({ event, run }: { event: FundraiserEvent; run: Run }) {
   );
 }
 
+/** How many segments of each kind the event has right now (the item marquee counts as one). */
+function segmentCounts(event: FundraiserEvent): Record<InfoBarSegmentKind, number> {
+  return {
+    items: 1,
+    incentives: event.incentives.filter((i) => i.active).length,
+    bidWars: event.bidWars.filter((w) => w.active && w.options.length >= 2).length,
+    prizes: event.prizes.filter((p) => p.active).length,
+    callToAction: event.callToAction.trim() ? 1 : 0,
+    announcements: event.announcements.filter((a) => a.trim()).length,
+    sponsors: event.sponsors.length,
+  };
+}
+
 function InfoBarEditor({ event, run }: { event: FundraiserEvent; run: Run }) {
   const [draft, setDraft, dirty] = useDraft(event.infoBar);
   const move = (index: number, by: number) => setDraft({ ...draft, segments: moveItem(draft.segments, index, by) });
   const missing = INFO_BAR_SEGMENTS.filter((kind) => !draft.segments.includes(kind));
+  const counts = segmentCounts(event);
+  const turn = draft.segments.reduce((sum, kind) => sum + counts[kind] * segmentSecondsFor(draft, kind), 0);
+  const marquee = draft.segments.includes("items") ? segmentSecondsFor(draft, "items") : 0;
+  const setSeconds = (kind: InfoBarSegmentKind, text: string) => {
+    const seconds = { ...draft.seconds };
+    const n = Number(text);
+    if (text.trim() === "") delete seconds[kind];
+    else if (Number.isInteger(n) && n > 0) seconds[kind] = Math.min(300, n);
+    else return;
+    setDraft({ ...draft, seconds });
+  };
 
   return (
     <>
       {draft.segments.map((kind, index) => (
         <div className="list-row" key={kind}>
-          <span style={{ flex: 1 }}>{SEGMENT_LABELS[kind]}</span>
+          <span style={{ flex: 1 }}>
+            {SEGMENT_LABELS[kind]}
+            {counts[kind] > 1 && <span className="muted"> ({counts[kind]}, each)</span>}
+          </span>
+          <input
+            inputMode="numeric"
+            style={{ width: 64 }}
+            aria-label={`Seconds for ${SEGMENT_LABELS[kind]}`}
+            placeholder={String(kind === "items" ? draft.segmentSeconds * 2 : draft.segmentSeconds)}
+            value={draft.seconds[kind] ?? ""}
+            onChange={(e) => setSeconds(kind, e.target.value)}
+          />
+          <span className="muted">s</span>
           <button type="button" disabled={index === 0} onClick={() => move(index, -1)}>
             ↑
           </button>
@@ -263,7 +300,7 @@ function InfoBarEditor({ event, run }: { event: FundraiserEvent; run: Run }) {
         ))}
       </div>
       <label className="row">
-        Seconds per segment
+        Seconds for the rest
         <input
           inputMode="numeric"
           style={{ width: 60 }}
@@ -274,6 +311,11 @@ function InfoBarEditor({ event, run }: { event: FundraiserEvent; run: Run }) {
           }}
         />
       </label>
+      <p className="muted" style={{ margin: 0 }}>
+        Blank rows use that (the item marquee gets twice as long). One full turn takes about {turn} seconds
+        {marquee > 0 && turn > 0 && `; the item marquee is ${Math.round((marquee / turn) * 100)}% of it`}. The marquee
+        picks up where it left off each time.
+      </p>
       <button
         type="button"
         disabled={!dirty}
@@ -408,12 +450,17 @@ function nameFromFile(file: string): string {
  */
 function Logos({ event, run }: { event: FundraiserEvent; run: Run }) {
   const logoFiles = useAssets("sponsor-logos");
-  const [draft, setDraft, dirty] = useDraft({ title: event.sponsorsTitle, sponsors: event.sponsors });
+  const [draft, setDraft, dirty] = useDraft({
+    title: event.sponsorsTitle,
+    seconds: event.sponsorsSeconds,
+    sponsors: event.sponsors,
+  });
   const [uploading, setUploading] = useState(false);
   const { sponsors } = draft;
   const setSponsors = (next: typeof sponsors) => setDraft({ ...draft, sponsors: next });
   const patchFor = (d: typeof draft) => ({
     sponsorsTitle: d.title.trim(),
+    sponsorsSeconds: Math.min(60, Math.max(2, Math.round(d.seconds) || 6)),
     sponsors: d.sponsors.map((s, i) => ({ ...s, name: s.name.trim() || "Logo", sortOrder: i })),
   });
 
@@ -455,6 +502,20 @@ function Logos({ event, run }: { event: FundraiserEvent; run: Run }) {
             <option key={h} value={h} />
           ))}
         </datalist>
+      </label>
+      <label className="row">
+        Seconds per logo
+        <input
+          inputMode="numeric"
+          style={{ width: 60 }}
+          aria-label="Seconds per logo"
+          value={draft.seconds}
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            if (Number.isInteger(n)) setDraft({ ...draft, seconds: n });
+          }}
+        />
+        <span className="muted">on the Main screen (2–60). In the info bar, set Logos under Info bar rotation.</span>
       </label>
       <label className="field">
         <span>Add logos (PNG, JPG or SVG; pick several at once)</span>
@@ -583,7 +644,7 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
         onChange={(celebrateAtClose) => run(send("updateEvent", { eventId: event.id, patch: { celebrateAtClose } }))}
       />
       <label className="field">
-        <span>Announcements, one per line</span>
+        <span>Announcements, one per line (**bold** and *italics* work)</span>
         <textarea rows={4} {...field("announcements")} />
       </label>
       <label className="field">
@@ -752,7 +813,8 @@ function ShowContent() {
           <p className="muted">
             Plan each Ask Me appeal of the night, in order. Finishing one celebrates it and moves the TVs on to the
             next; after the last, the TVs go back to the scene from before Ask Me. With none planned, Ask Me is one
-            appeal (its title and message are in Event details) that you can run as many times as you like.
+            appeal (its title and message are in Event details) that you can run as many times as you like. Long
+            messages shrink to fit the TV; about 300 characters or fewer reads best from across the room.
           </p>
           <SaveToggle
             checked={event.askMeInTotal}

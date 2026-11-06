@@ -63,6 +63,15 @@
 .featured-items-grid__price {
   color: var(--color-accent);
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.featured-items-grid__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  white-space: nowrap;
 }
 
 .featured-items-grid__bids {

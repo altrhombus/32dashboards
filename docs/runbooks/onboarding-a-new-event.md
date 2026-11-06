@@ -67,7 +67,8 @@ setup done by hand, panel by panel, which is quicker once you know it.
      closes (the TV counts down to it and announces the last minutes),
      whether the TVs switch to Celebration on their own at that moment
      (off by default), announcements, and the Ask Me title and message
-     for an event without planned rounds.
+     for an event without planned rounds. Announcements take **bold**
+     and _italics_; Ask Me messages also take lists and headings.
    - _Ask Me rounds_: each appeal of the night, and whether Ask Me money
      is added to the total (off by default; leave it off if Ask Me gifts
      also go into the auction, or they're counted twice).

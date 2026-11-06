@@ -745,7 +745,7 @@ function describeMoment(m: DonationMoment): string {
     case "total-increase":
       return `${formatAmount(m.delta)} came in`;
     case "new-bid":
-      return `New bid on ${m.itemTitle}${m.amount !== null ? `: ${formatAmount(m.amount)}` : ""}`;
+      return `${m.newBids > 1 ? `${m.newBids} new bids` : "New bid"} on ${m.itemTitle}${m.amount !== null ? `: ${formatAmount(m.amount)}` : ""}`;
     case "milestone":
       return `Milestone ${formatAmount(m.amount)} reached${m.label ? `: ${m.label}` : ""}`;
     case "incentive-met":

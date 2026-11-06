@@ -64,12 +64,17 @@ export function FeaturedItemsGrid({
           <div className="featured-items-grid__title clamp-2" title={item.title}>
             {item.title || "Untitled item"}
           </div>
-          {item.currentBid !== null && (
-            <div className="featured-items-grid__price num">{formatAmount(item.currentBid)}</div>
-          )}
-          {item.bidCount !== null && (
-            <div className="featured-items-grid__bids num">
-              {item.bidCount} bid{item.bidCount === 1 ? "" : "s"}
+          {/* Price on the left, bids on the right: one line, so the picture gets the room. */}
+          {(item.currentBid !== null || item.bidCount !== null) && (
+            <div className="featured-items-grid__meta">
+              {item.currentBid !== null && (
+                <span className="featured-items-grid__price num">{formatAmount(item.currentBid)}</span>
+              )}
+              {item.bidCount !== null && (
+                <span className="featured-items-grid__bids num">
+                  {item.bidCount} bid{item.bidCount === 1 ? "" : "s"}
+                </span>
+              )}
             </div>
           )}
         </div>

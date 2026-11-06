@@ -68,7 +68,17 @@ export const InfoBarConfigSchema = z.object({
     .max(INFO_BAR_SEGMENTS.length)
     .default([...INFO_BAR_SEGMENTS]),
   segmentSeconds: z.number().int().min(4).max(120).default(12),
+  /**
+   * Seconds for each segment of a kind, overriding segmentSeconds (which the
+   * item marquee gets twice of). Several of a kind (announcements) get it each.
+   */
+  seconds: z.record(InfoBarSegmentKindSchema, z.number().int().min(3).max(300)).default({}),
 });
+
+/** How long one segment of `kind` shows, in seconds. */
+export function segmentSecondsFor(config: InfoBarConfig, kind: InfoBarSegmentKind): number {
+  return config.seconds[kind] ?? (kind === "items" ? config.segmentSeconds * 2 : config.segmentSeconds);
+}
 export type InfoBarConfig = z.infer<typeof InfoBarConfigSchema>;
 
 /** The show's current state. Every output (venue TV now, stream later) renders its own layout per scene. */

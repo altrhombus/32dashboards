@@ -17,7 +17,7 @@ export function MomentToast({ moment }: MomentToastProps) {
         </>
       ) : (
         <>
-          <span className="moment-toast__text">New bid</span>
+          <span className="moment-toast__text">{moment.newBids > 1 ? `${moment.newBids} new bids` : "New bid"}</span>
           <span className="moment-toast__title clamp-1" title={moment.itemTitle}>
             {moment.itemTitle}
           </span>

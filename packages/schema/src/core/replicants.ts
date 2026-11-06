@@ -148,6 +148,8 @@ export const DonationMomentSchema = z.discriminatedUnion("kind", [
     itemTitle: z.string(),
     amount: z.number().nullable(),
     bidCount: z.number().int().nonnegative().nullable(),
+    /** How many bids arrived on the item since the last result (several can between refreshes). */
+    newBids: z.number().int().positive().default(1),
   }),
 ]);
 export type DonationMoment = z.infer<typeof DonationMomentSchema>;
@@ -200,6 +202,8 @@ export const ScreenSchema = z.object({
   id: ScreenIdSchema,
   name: z.string().trim().min(1).max(60),
   layouts: z.record(ScreenViewSchema, z.string().min(1).max(100)).default({}),
+  /** Bigger or smaller text on every block of this TV, e.g. 1.2 for a small or far-away screen. Omitted: 1. */
+  textSize: z.number().min(0.5).max(2).optional(),
 });
 export type Screen = z.infer<typeof ScreenSchema>;
 

@@ -58,6 +58,8 @@ export const FundraiserEventSchema = z.object({
   sponsors: z.array(SponsorSchema).default([]),
   /** The heading over the logos in `sponsors`: sponsors, or e.g. the causes the event helps. */
   sponsorsTitle: z.string().trim().max(60).default(SPONSORS_TITLE),
+  /** How long each logo shows in a Logos block before the next (the info bar has its own timing). */
+  sponsorsSeconds: z.number().int().min(2).max(60).default(6),
   milestones: z.array(MilestoneSchema).max(50).default([]),
   bidWars: z.array(BidWarSchema).max(20).default([]),
   prizes: z.array(PrizeSchema).max(50).default([]),

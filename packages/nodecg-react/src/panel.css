@@ -57,6 +57,18 @@ body {
   line-height: 1.1;
 }
 
+/* A small text-style button inside a label, e.g. "Reset". */
+.link-button {
+  min-height: 0;
+  margin-left: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--action);
+  font-size: 0.85em;
+  text-decoration: underline;
+}
+
 .grow {
   flex: 1;
   min-width: 0;

@@ -8,7 +8,13 @@ import { buildSegments } from "./segments.js";
 
 export const CELEBRATION_MS = 8_000;
 export const TOAST_MS = 6_000;
+/** A toast's time on screen while others wait, so a burst of bids drains. */
+export const TOAST_BUSY_MS = 3_500;
 export const MAX_TOASTS = 3;
+/** Toasts arrive at least this far apart, so each one gets its moment. */
+export const TOAST_GAP_MS = 1_000;
+/** Toasts waiting beyond this are dropped, oldest first: a backlog would only show stale bids. */
+export const MAX_WAITING_TOASTS = 12;
 /** How long an Ask Me round's wrap-up stays on screen. */
 export const ROUND_WRAP_MS = 7_000;
 
@@ -57,51 +63,85 @@ export function useInfoBar(live: LiveStateReplicant | undefined) {
 
 /**
  * Listens for fundraiser-core's donation moments for `eventId`: milestones,
- * met incentives and the last calls before bidding closes go to `celebrate`; new donations and bids become
- * toasts, a few at a time, each for a few seconds; a finished Ask Me round
- * becomes its wrap-up (`roundWrap`) for ROUND_WRAP_MS.
+ * met incentives and the last calls before bidding closes go to `celebrate`;
+ * new donations and bids become toasts, each its own, arriving one by one
+ * (at most MAX_TOASTS on screen; the rest wait their turn, and toasts stay up
+ * for less time while others wait); a finished Ask Me round becomes its
+ * wrap-up (`roundWrap`) for ROUND_WRAP_MS.
  */
 export function useDonationMoments(eventId: string | null, celebrate: (moment: CelebrationMoment) => void) {
   const [toasts, setToasts] = useState<ToastMoment[]>([]);
   const [roundWrap, setRoundWrap] = useState<RoundWrapMoment | null>(null);
   const eventRef = useRef(eventId);
   eventRef.current = eventId;
+  const waiting = useRef<ToastMoment[]>([]);
+  // A ref, so a new `celebrate` doesn't resubscribe and lose the toasts' timers.
+  const celebrateRef = useRef(celebrate);
+  celebrateRef.current = celebrate;
 
   useEffect(() => {
     setToasts([]);
     setRoundWrap(null);
+    waiting.current = [];
   }, [eventId]);
 
   useEffect(() => {
     const timers = new Set<ReturnType<typeof setTimeout>>();
+    const later = (ms: number, run: () => void) => {
+      const timer = setTimeout(() => {
+        timers.delete(timer);
+        run();
+      }, ms);
+      timers.add(timer);
+    };
+    let shown = 0;
+    let lastShownAt = 0;
+    let pumpQueued = false;
+
+    // Moves the next waiting toast on screen when there's room, one at a time.
+    const pump = () => {
+      if (pumpQueued || waiting.current.length === 0 || shown >= MAX_TOASTS) return;
+      const wait = lastShownAt + TOAST_GAP_MS - Date.now();
+      if (wait > 0) {
+        pumpQueued = true;
+        later(wait, () => {
+          pumpQueued = false;
+          pump();
+        });
+        return;
+      }
+      const moment = waiting.current.shift()!;
+      shown++;
+      lastShownAt = Date.now();
+      setToasts((current) => [...current, moment]);
+      later(waiting.current.length > 0 ? TOAST_BUSY_MS : TOAST_MS, () => {
+        shown--;
+        setToasts((current) => current.filter((t) => t.id !== moment.id));
+        pump();
+      });
+      pump();
+    };
+
     const handler = (moment: DonationMoment) => {
       if (moment.eventId !== eventRef.current) return;
       if (moment.kind === "milestone" || moment.kind === "incentive-met" || moment.kind === "last-call") {
-        celebrate(moment);
+        celebrateRef.current(moment);
         return;
       }
       if (moment.kind === "askme-round") {
         setRoundWrap(moment);
-        const timer = setTimeout(() => {
-          timers.delete(timer);
-          setRoundWrap((current) => (current?.id === moment.id ? null : current));
-        }, ROUND_WRAP_MS);
-        timers.add(timer);
+        later(ROUND_WRAP_MS, () => setRoundWrap((current) => (current?.id === moment.id ? null : current)));
         return;
       }
-      setToasts((current) => [...current, moment].slice(-MAX_TOASTS));
-      const timer = setTimeout(() => {
-        timers.delete(timer);
-        setToasts((current) => current.filter((t) => t.id !== moment.id));
-      }, TOAST_MS);
-      timers.add(timer);
+      waiting.current = [...waiting.current, moment].slice(-MAX_WAITING_TOASTS);
+      pump();
     };
     nodecg.listenFor("donationMoment", "fundraiser-core", handler);
     return () => {
       nodecg.unlisten("donationMoment", "fundraiser-core", handler);
       for (const timer of timers) clearTimeout(timer);
     };
-  }, [celebrate]);
+  }, []);
 
   return { toasts, roundWrap };
 }

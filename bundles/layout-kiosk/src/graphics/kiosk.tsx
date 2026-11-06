@@ -82,12 +82,18 @@ function usePreviewTheme() {
   return theme;
 }
 
-/** Bigger blocks get bigger text: scale each slot's content from its component's reference size. */
-function slotScale(slot: Slot, size: { width: number; height: number }): number {
-  const entry = kioskCatalog[slot.component];
-  if (!entry) return 1;
-  const variant = slot.variant ?? Object.keys(entry.variants)[0]!;
-  return contentScale(entry.variants[variant], size);
+/**
+ * Bigger blocks get bigger text: scale each slot's content from its
+ * component's reference size, then by the block's own text size and the
+ * screen's (`screenTextSize`), if either is set.
+ */
+function slotScaleFor(screenTextSize: number) {
+  return (slot: Slot, size: { width: number; height: number }): number => {
+    const entry = kioskCatalog[slot.component];
+    if (!entry) return 1;
+    const variant = slot.variant ?? Object.keys(entry.variants)[0]!;
+    return Math.round(contentScale(entry.variants[variant], size) * (slot.scale ?? 1) * screenTextSize * 100) / 100;
+  };
 }
 
 /** Sample data for a preview, wearing the real event's look when one is on screen. */
@@ -110,6 +116,52 @@ function useHeartbeat() {
     const timer = setInterval(beat, HEARTBEAT_MS);
     return () => clearInterval(timer);
   }, []);
+}
+
+/** Offline this long before the TV says so; shorter blips pass unnoticed. */
+const OFFLINE_NOTICE_MS = 10_000;
+/** Back after at least this long offline, the TV reloads, to start fresh (e.g. after a server restart). */
+const RELOAD_AFTER_MS = 60_000;
+
+/**
+ * A small "Reconnecting…" in the corner while the TV has lost the server,
+ * so a volunteer glancing at it knows it's frozen on old numbers. Only on a
+ * real TV, not in dashboard previews.
+ */
+function ConnectionNotice() {
+  const [offline, setOffline] = useState(false);
+  useEffect(() => {
+    if (isPreview) return;
+    const socket = nodecg.socket;
+    let since: number | null = socket.connected ? null : Date.now();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const lost = () => {
+      since ??= Date.now();
+      clearTimeout(timer);
+      timer = setTimeout(() => setOffline(true), OFFLINE_NOTICE_MS);
+    };
+    const back = () => {
+      clearTimeout(timer);
+      setOffline(false);
+      if (since !== null && Date.now() - since >= RELOAD_AFTER_MS) location.reload();
+      since = null;
+    };
+    if (since !== null) lost();
+    socket.on("disconnect", lost);
+    socket.on("connect", back);
+    return () => {
+      clearTimeout(timer);
+      socket.off("disconnect", lost);
+      socket.off("connect", back);
+    };
+  }, []);
+  if (!offline) return null;
+  return (
+    <div className="kiosk-offline" role="status">
+      <span className="kiosk-offline__dot" aria-hidden="true" />
+      Reconnecting…
+    </div>
+  );
 }
 
 /** The venue TV: renders this screen's layout for the current scene and the event on screen. */
@@ -161,8 +213,10 @@ function Kiosk() {
   useEffect(() => {
     if (problem) console.error(`Showing the built-in ${view} layout instead: ${problem}`);
   }, [problem, view]);
+  const screenTextSize = screen?.textSize ?? 1;
+  const slotScale = useMemo(() => slotScaleFor(screenTextSize), [screenTextSize]);
 
-  if (!live || !scene) return null;
+  if (!live || !scene) return <ConnectionNotice />;
 
   return (
     <ThemeProvider theme={previewTheme ?? live.event?.theme ?? DEFAULT_THEME}>
@@ -175,6 +229,7 @@ function Kiosk() {
           slotScale={slotScale}
         />
       </div>
+      <ConnectionNotice />
     </ThemeProvider>
   );
 }

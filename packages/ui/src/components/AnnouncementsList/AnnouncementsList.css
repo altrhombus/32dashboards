@@ -14,3 +14,66 @@
   border-radius: var(--radius-sm);
   font-size: 0.95rem;
 }
+
+/* One at a time: the announcement fills the box, with dots for how many there are. */
+.announcements-list--rotating {
+  flex: 1;
+  min-height: 0;
+  justify-content: space-between;
+}
+
+.announcements-list__slide {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  animation: announcement-in 0.5s var(--ease-standard) both;
+  transition:
+    opacity 0.4s ease-in,
+    transform 0.4s ease-in;
+}
+
+.announcements-list__slide--leaving {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.announcements-list__dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.announcements-list__dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.3;
+  transition: opacity 0.3s;
+}
+
+.announcements-list__dots span[data-on] {
+  opacity: 0.85;
+}
+
+@keyframes announcement-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .announcements-list__slide,
+  .announcements-list__slide--leaving {
+    transform: none;
+  }
+
+  @keyframes announcement-in {
+    from {
+      opacity: 0;
+    }
+  }
+}

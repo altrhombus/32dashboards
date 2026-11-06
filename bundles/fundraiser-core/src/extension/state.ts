@@ -279,10 +279,11 @@ export const MAX_BID_MOMENTS_PER_RESULT = 10;
 
 /**
  * Compares a newly stored result with the previous one for the same event
- * and returns what's worth celebrating: a rise in the source total, and
- * items with more bids or a higher bid. The first result for an event yields
- * nothing (it's a baseline, not a donation), and items hidden by the event's
- * filters are never celebrated.
+ * and returns what's worth celebrating: items with more bids or a higher
+ * bid, and a rise in the source total that bids don't explain (e.g. a
+ * donation), so one bid is celebrated once, not also as a "thank you". The
+ * first result for an event yields nothing (it's a baseline, not a
+ * donation), and items hidden by the event's filters are never celebrated.
  */
 export function detectMoments(
   previous: SourceResult | undefined,
@@ -294,8 +295,17 @@ export function detectMoments(
   const base = { eventId: next.eventId, at: next.observedAt };
   const moments: DonationMoment[] = [];
 
-  const delta = roundCents(next.total - previous.total);
-  if (delta > 0) {
+  const before = new Map(previous.items.map((item) => [item.id, item]));
+
+  // What bids added to the total, hidden items included (their bids aren't donations to thank either).
+  let fromBids = 0;
+  for (const item of next.items) {
+    const old = before.get(item.id);
+    const was = old ? (old.currentBid ?? 0) : 0;
+    if (item.currentBid !== null && item.currentBid > was) fromBids += item.currentBid - was;
+  }
+  const delta = roundCents(next.total - previous.total - fromBids);
+  if (delta >= 1) {
     moments.push({
       kind: "total-increase",
       id: deps.newId(),
@@ -305,7 +315,6 @@ export function detectMoments(
     });
   }
 
-  const before = new Map(previous.items.map((item) => [item.id, item]));
   let bids = 0;
   for (const item of applyFilters(next.items, event.filters).items) {
     const old = before.get(item.id);
@@ -321,6 +330,7 @@ export function detectMoments(
       itemTitle: item.title,
       amount: item.currentBid,
       bidCount: item.bidCount,
+      newBids: moreBids ? item.bidCount! - old.bidCount! : 1,
     });
     if (++bids >= MAX_BID_MOMENTS_PER_RESULT) break;
   }

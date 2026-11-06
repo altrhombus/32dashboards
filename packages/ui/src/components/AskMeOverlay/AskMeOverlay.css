@@ -13,6 +13,11 @@
   text-align: center;
 }
 
+/* Everything but the message keeps its size; the message takes what's left. */
+.ask-me-overlay > * {
+  flex-shrink: 0;
+}
+
 .ask-me-overlay__logo {
   max-height: 4rem;
   max-width: 40%;
@@ -39,10 +44,29 @@
   }
 }
 
+.ask-me-overlay > .ask-me-overlay__message {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .ask-me-overlay__message {
   max-width: 700px;
   font-size: 1.15rem;
   line-height: 1.5;
+}
+
+/* Scaled down by useFitText when the message is too long for the screen. */
+.ask-me-overlay__message-text {
+  font-size: calc(var(--ask-me-fit, 1) * 1em);
+}
+
+.ask-me-overlay__message-text > :first-child {
+  margin-top: 0;
+}
+
+.ask-me-overlay__message-text > :last-child {
+  margin-bottom: 0;
 }
 
 .ask-me-overlay__total-wrapper {
@@ -61,6 +85,7 @@
 
 .ask-me-overlay__total-amount {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 2.5rem;
   color: var(--color-accent);
 }

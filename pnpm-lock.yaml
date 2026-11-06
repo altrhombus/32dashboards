@@ -637,6 +637,9 @@ importers:
       '@fontsource/bitter':
         specifier: 5.3.0
         version: 5.3.0
+      '@fontsource/courier-prime':
+        specifier: 5.2.8
+        version: 5.2.8
       '@fontsource/jetbrains-mono':
         specifier: 5.3.0
         version: 5.3.0
@@ -1861,6 +1864,9 @@ packages:
 
   '@fontsource/bitter@5.3.0':
     resolution: {integrity: sha512-RYfrDnaja7v6FO8AwknA5aw/BuVgLBJvwLIShkS42XUIxMbvi/yp47Ax/Xnn9OTVIGFiTXCbVsH0O9HhTTDtqA==}
+
+  '@fontsource/courier-prime@5.2.8':
+    resolution: {integrity: sha512-M3xOCcXnGuFi9TcGCrz4hm5yeWg4Sn35MALRLPnqNoHhawTFvhyi2KSI2+5RyFtDNJrb58bPh8LLipgiI9KA0w==}
 
   '@fontsource/jetbrains-mono@5.3.0':
     resolution: {integrity: sha512-fqDfB5I9f1p1TV486aUgB9t8zP84P0O1FtQR5Ol9vjwPy+S+EIGlVYm1cvj2W5shcZMTg2nZFdVMoH5wFu8a1A==}
@@ -6846,6 +6852,8 @@ snapshots:
   '@fontsource/atkinson-hyperlegible@5.3.0': {}
 
   '@fontsource/bitter@5.3.0': {}
+
+  '@fontsource/courier-prime@5.2.8': {}
 
   '@fontsource/jetbrains-mono@5.3.0': {}
 

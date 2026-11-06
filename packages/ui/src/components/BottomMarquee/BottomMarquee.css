@@ -22,4 +22,5 @@
 .bottom-marquee__price {
   color: var(--color-accent);
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }

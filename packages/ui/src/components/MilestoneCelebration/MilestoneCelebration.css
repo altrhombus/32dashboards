@@ -18,6 +18,7 @@
 
 .milestone-celebration__amount {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   font-size: 1.6em;
   color: var(--color-accent);

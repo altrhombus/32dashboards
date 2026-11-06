@@ -9,7 +9,16 @@ export interface BottomMarqueeProps {
   speedPxPerFrame?: number;
   /** Fires each time the marquee completes one full lap -- drives incentive-machine's cycle mode. */
   onCycleComplete?: () => void;
+  /**
+   * Marquees with the same key pick up where the last one stopped, e.g. the
+   * info bar's, which is unmounted while other segments show. Without one,
+   * it starts at the first item.
+   */
+  resumeKey?: string;
 }
+
+/** Where each keyed marquee was, so the next one with that key resumes there. */
+const resumePositions = new Map<string, number>();
 
 /**
  * Seamless duplicate-content marquee. Uses ResizeObserver to measure the
@@ -21,10 +30,11 @@ export function BottomMarquee({
   items,
   speedPxPerFrame = durations.scrollerSpeedPxPerFrame,
   onCycleComplete,
+  resumeKey,
 }: BottomMarqueeProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const positionRef = useRef(0);
+  const positionRef = useRef(resumeKey ? (resumePositions.get(resumeKey) ?? 0) : 0);
   const contentWidthRef = useRef(0);
   const onCycleCompleteRef = useRef(onCycleComplete);
   onCycleCompleteRef.current = onCycleComplete;
@@ -50,11 +60,12 @@ export function BottomMarquee({
       if (wrapperRef.current) {
         wrapperRef.current.style.transform = `translateX(${positionRef.current}px)`;
       }
+      if (resumeKey) resumePositions.set(resumeKey, positionRef.current);
       rafId = requestAnimationFrame(tick);
     }
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [speedPxPerFrame]);
+  }, [speedPxPerFrame, resumeKey]);
 
   if (items.length === 0) {
     return <div className="bottom-marquee" />;

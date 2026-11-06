@@ -20,10 +20,20 @@ const dark = (
   secondaryColor: string,
   backgroundFrom: string,
   backgroundTo: string,
+  textColor = LIGHT_TEXT,
 ): Palette => ({
   name,
-  colors: { accentColor, secondaryColor, backgroundFrom, backgroundTo, textColor: LIGHT_TEXT },
+  colors: { accentColor, secondaryColor, backgroundFrom, backgroundTo, textColor },
 });
+
+const light = (
+  name: string,
+  accentColor: string,
+  secondaryColor: string,
+  backgroundFrom: string,
+  backgroundTo: string,
+  textColor: string,
+): Palette => ({ name, colors: { accentColor, secondaryColor, backgroundFrom, backgroundTo, textColor } });
 
 export const PALETTES: Palette[] = [
   dark("Midnight gold", "#ebc81e", "#4dd0e1", "#181c2a", "#23284a"),
@@ -36,6 +46,11 @@ export const PALETTES: Palette[] = [
   dark("Lagoon", "#4fd1c5", "#ebc94c", "#10282f", "#143c46"),
   dark("Crimson", "#eb7a7a", "#ebc26b", "#2a1015", "#3d1820"),
   dark("Dusk", "#eb9b4f", "#e07aa0", "#2a1530", "#3f1f3a"),
+  // Cozy ones, with warmer text: for evenings in and winter galas.
+  dark("Bedtime", "#ebb3c4", "#b9a6e8", "#1d1a33", "#2b2347", "#f3eef8"),
+  dark("Cocoa", "#ebc48f", "#e8a7a0", "#2a1d1a", "#3a2924", "#f5ece4"),
+  dark("Lavender night", "#e3c0eb", "#9fd3c7", "#211a33", "#30264a", "#f2eef8"),
+  dark("Starlight", "#ebd27a", "#a9c4eb", "#141a33", "#1f2750", "#eef1fb"),
   // Light palettes: dark text on a pale background, for bright rooms.
   {
     name: "Paper",
@@ -57,4 +72,6 @@ export const PALETTES: Palette[] = [
       textColor: "#14213d",
     },
   },
+  light("Cotton candy", "#a83a6b", "#4a5aa8", "#ebdde6", "#dcd6eb", "#2a1f33"),
+  light("Warm flannel", "#9e3b2e", "#3d6b5c", "#ebe1d3", "#e2d2c2", "#2b211c"),
 ];
