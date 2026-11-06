@@ -27,6 +27,12 @@
   mask-image: linear-gradient(90deg, #000 85%, transparent);
 }
 
+.recent-donations__empty {
+  font-size: 0.8em;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
 .recent-donations__chip {
   flex: none;
   display: inline-flex;

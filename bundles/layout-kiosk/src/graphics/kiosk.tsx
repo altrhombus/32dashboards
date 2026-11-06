@@ -209,7 +209,7 @@ function Kiosk() {
     history: moments,
     quiet: quietRef,
   });
-  const { display, celebrate } = useInfoBar(live, recent.length);
+  const { display, celebrate } = useInfoBar(live);
   celebrateRef.current = celebrate;
   // While the info bar lists the latest bids, toasts would only repeat it.
   const quiet = display.type === "segment" && display.segment.content.kind === "recent";

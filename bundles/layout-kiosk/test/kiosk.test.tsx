@@ -203,13 +203,12 @@ describe("buildSegments", () => {
     expect(buildSegments(custom).segments.map((s) => [s.key, s.durationMs])).toEqual([[`prize:${id(11)}`, 5000]]);
   });
 
-  it("adds Latest bids only once there's a bid to show", () => {
+  it("gives Latest bids its turn even before the first bid", () => {
     const withRecent = {
       ...live,
       event: { ...worstEvent, infoBar: { segments: ["recent" as const], segmentSeconds: 10, seconds: {} } },
     };
-    expect(buildSegments(withRecent, 0).segments).toEqual([]);
-    expect(buildSegments(withRecent, 3).segments.map((s) => [s.key, s.durationMs])).toEqual([["recent", 20_000]]);
+    expect(buildSegments(withRecent).segments.map((s) => [s.key, s.durationMs])).toEqual([["recent", 20_000]]);
   });
 
   it("gives each kind its own time when one is set", () => {

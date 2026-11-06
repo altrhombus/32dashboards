@@ -26,6 +26,9 @@ export function RecentDonations({ moments, label = "Latest" }: RecentDonationsPr
         ))}
       </span>
       <div className="recent-donations__row">
+        {moments.length === 0 && (
+          <span className="recent-donations__empty">New bids will show here as they come in</span>
+        )}
         {moments.map((m) => (
           // key: each one slides in once, when it arrives
           <span key={m.id} className="recent-donations__chip">

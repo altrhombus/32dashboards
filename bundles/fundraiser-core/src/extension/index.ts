@@ -59,7 +59,9 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   const sourceResults = nodecg.Replicant<SourceResultsReplicant>("sourceResults", { defaultValue: {} });
   const sources = nodecg.Replicant<RegisteredSourcesReplicant>("sources", { defaultValue: [], persistent: false });
   const sourceLog = nodecg.Replicant<SourceLogReplicant>("sourceLog", { defaultValue: [], persistent: false });
-  const moments = nodecg.Replicant<MomentsReplicant>("moments", { defaultValue: [], persistent: false });
+  // Kept across restarts (it's capped at MOMENTS_LIMIT), so the TVs' latest bids and the console's
+  // list of what the TV celebrated don't go blank when NodeCG restarts mid-event.
+  const moments = nodecg.Replicant<MomentsReplicant>("moments", { defaultValue: [] });
   const outputs = nodecg.Replicant<OutputsReplicant>("outputs", { defaultValue: [], persistent: false });
   const screens = nodecg.Replicant<ScreensReplicant>("screens", { defaultValue: [] });
   const scene = nodecg.Replicant<SceneReplicant>("scene", {

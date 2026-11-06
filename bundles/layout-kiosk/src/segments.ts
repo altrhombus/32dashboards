@@ -34,8 +34,7 @@ export interface SegmentPlan {
   pinned: Segment | null;
 }
 
-/** `recentCount`: how many latest bids there are; Latest bids is left out until there's one. */
-export function buildSegments(live: LiveStateReplicant, recentCount = 0): SegmentPlan {
+export function buildSegments(live: LiveStateReplicant): SegmentPlan {
   const event = live.event;
   if (!event) return { segments: [], pinned: null };
   const ms = event.infoBar.segmentSeconds * 1000;
@@ -70,7 +69,8 @@ export function buildSegments(live: LiveStateReplicant, recentCount = 0): Segmen
         );
         break;
       case "recent":
-        if (recentCount > 0) add("recent", { kind: "recent" });
+        // Always takes its turn (with a placeholder until the first bid), so the rotation is what was set.
+        add("recent", { kind: "recent" });
         break;
       case "sponsors":
         for (const sponsor of event.sponsors)

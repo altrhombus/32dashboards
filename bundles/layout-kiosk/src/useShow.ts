@@ -33,14 +33,10 @@ export const ROUND_WRAP_MS = 7_000;
  * returns what it says to show. `celebrate` queues a milestone or met
  * incentive, which interrupts the rotation.
  */
-export function useInfoBar(live: LiveStateReplicant | undefined, recentCount = 0) {
+export function useInfoBar(live: LiveStateReplicant | undefined) {
   const [snapshot, send] = useMachine(infoBarMachine, { input: {} });
   const celebrations = useRef(new Map<string, CelebrationMoment>());
-  const hasRecent = recentCount > 0;
-  const plan = useMemo(
-    () => (live ? buildSegments(live, hasRecent ? 1 : 0) : { segments: [], pinned: null }),
-    [live, hasRecent],
-  );
+  const plan = useMemo(() => (live ? buildSegments(live) : { segments: [], pinned: null }), [live]);
 
   // Only resend when the rotation itself changes, not on every total update.
   const signature = JSON.stringify([plan.segments.map((s) => [s.key, s.durationMs]), plan.pinned?.key]);

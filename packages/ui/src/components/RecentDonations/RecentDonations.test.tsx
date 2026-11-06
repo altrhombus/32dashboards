@@ -5,6 +5,11 @@ import { RecentDonations } from "./RecentDonations.js";
 const base = { eventId: "00000000-0000-4000-8000-000000000001", at: "2026-11-07T20:00:00.000Z" };
 
 describe("RecentDonations", () => {
+  it("says what it's for before the first bid", () => {
+    const { container } = render(<RecentDonations moments={[]} />);
+    expect(container.textContent).toContain("New bids will show here");
+  });
+
   it("lists bids and donations newest first, with how many bids came in", () => {
     const { container } = render(
       <RecentDonations
