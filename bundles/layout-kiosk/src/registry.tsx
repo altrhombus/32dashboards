@@ -31,6 +31,9 @@ import { selectFeaturedItems, type SegmentContent } from "./segments.js";
  */
 
 /** Wraps a component in a titled card when the slot's options give a title. */
+/** How long each announcement stays in the Announcements block. */
+const ANNOUNCEMENT_MS = 7_000;
+
 /** When the bidding countdown starts calling attention to itself. */
 const URGENT_MS = 10 * 60_000;
 
@@ -211,7 +214,8 @@ export const kioskRegistry: Registry<KioskData> = {
       live.event?.announcements.length ? { announcements: live.event.announcements, title: options.title } : null,
     component: ({ announcements, title }) => (
       <Card title={title}>
-        <AnnouncementsList announcements={announcements} />
+        {/* One at a time, so each can be as long as it needs at TV size. */}
+        <AnnouncementsList announcements={announcements} rotateMs={ANNOUNCEMENT_MS} />
       </Card>
     ),
   }),

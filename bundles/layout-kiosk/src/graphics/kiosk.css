@@ -39,10 +39,10 @@ body,
 
 .kiosk-card__title {
   margin: 0;
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
+  font-size: 1.375rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  opacity: 0.75;
+  opacity: 0.85;
 }
 
 .kiosk-card .countdown-clock {
@@ -50,7 +50,7 @@ body,
 }
 
 .kiosk-card .countdown-clock__value {
-  font-size: 3rem;
+  font-size: 3.5rem;
 }
 
 .kiosk-info-bar {
@@ -62,7 +62,7 @@ body,
   border-radius: var(--radius-lg);
   background: var(--color-band);
   border-top: 3px solid var(--color-accent);
-  font-size: 1.4rem;
+  font-size: 2.25rem;
   overflow: hidden;
   animation: kiosk-segment-in 0.4s var(--ease-standard);
 }
@@ -72,17 +72,19 @@ body,
   min-width: 0;
 }
 
+/* A bid war lists its options, so its text is a step smaller to fit the strip. */
 .kiosk-info-bar--bidWar {
-  font-size: 1rem;
+  font-size: 1.5rem;
 }
 
 .kiosk-info-bar--celebrating {
   background: color-mix(in srgb, var(--color-band) 85%, var(--color-text) 8%);
-  font-size: 1.8rem;
+  font-size: 2.25rem;
 }
 
 .kiosk-info-bar__logo {
   display: flex;
+  align-self: stretch;
   gap: 24px;
   align-items: center;
   justify-content: center;
@@ -106,7 +108,7 @@ body,
   flex-direction: column;
   align-items: flex-start;
   gap: var(--spacing-sm);
-  font-size: 1.3rem;
+  font-size: 2rem;
 }
 
 .kiosk-intermission {
@@ -334,4 +336,112 @@ body,
   .kiosk-offline__dot {
     animation: none;
   }
+}
+
+/*
+ * TV text sizes. Components default to web-page sizes; on the TV, text has
+ * to carry across a room. In stage px (the 1920x1080 stage; 1rem = 16px):
+ * room-level text (info bar, announcements) ~36px, mid-level (header,
+ * prices) ~34-40px, walk-up detail (item titles, headings, bid counts)
+ * ~22-26px. The hero numbers (total, countdowns, Ask Me) are sized above.
+ * Each block's own size, and the screen's text size, scale these further.
+ */
+[data-component="header"] .kiosk-header__title {
+  font-size: 2.5rem;
+}
+
+[data-component="header"] .kiosk-header__clock {
+  font-size: 2rem;
+  white-space: nowrap;
+}
+
+[data-component="featuredItems"] .featured-items-grid__card {
+  gap: 6px;
+  padding: 10px;
+}
+
+[data-component="featuredItems"] .featured-items-grid__title {
+  margin-top: 2px;
+  font-size: 1.375rem;
+  line-height: 1.2;
+}
+
+[data-component="featuredItems"] .featured-items-grid__price {
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+
+[data-component="featuredItems"] .featured-items-grid__bids {
+  font-size: 1.25rem;
+  opacity: 0.85;
+}
+
+/* One announcement at a time (the list rotates), so each gets the whole box. */
+[data-component="announcements"] .announcements-list__item {
+  font-size: 1.625rem;
+  line-height: 1.3;
+}
+
+[data-component="sponsors"] .sponsor-carousel__name {
+  font-size: 1.75rem;
+}
+
+/* The logo takes all the card's room below its heading. */
+[data-component="sponsors"] .sponsor-carousel {
+  flex: 1;
+  min-height: 0;
+}
+
+.kiosk-info-bar .bottom-marquee__item {
+  font-size: 2.25rem;
+}
+
+.kiosk-info-bar .incentive-tracker__header {
+  font-size: 1.75rem;
+}
+
+.kiosk-info-bar .incentive-tracker__bar {
+  height: 16px;
+}
+
+.kiosk-info-bar .bid-war-card__bar {
+  height: 0.5em;
+}
+
+.kiosk-info-bar .prize-card__description {
+  opacity: 0.9;
+}
+
+/* In the info bar: the heading as a label, the logo (or name) as big as the strip. */
+.kiosk-info-bar__logo-title {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-size: 0.75em;
+}
+
+.kiosk-info-bar .sponsor-carousel {
+  flex: 1;
+  align-self: stretch;
+  min-height: 0;
+  margin: 10px 0;
+}
+
+/* Label and logo meet in the middle of the strip. */
+.kiosk-info-bar .sponsor-carousel__slide {
+  justify-content: flex-start;
+}
+
+.kiosk-info-bar .sponsor-carousel__logo {
+  width: auto;
+  max-width: 100%;
+}
+
+.kiosk-info-bar .sponsor-carousel__name {
+  font-size: 1em;
+  white-space: nowrap;
+}
+
+.kiosk-info-bar .incentive-tracker__amounts {
+  white-space: nowrap;
 }
