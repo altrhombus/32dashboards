@@ -4,6 +4,7 @@ import { errorText, newId, uploadAsset, useReplicant } from "@32dashboards/nodec
 import {
   INFO_BAR_SEGMENTS,
   SPONSORS_TITLE,
+  segmentSecondsFor,
   type ActiveEventIdReplicant,
   type BidWar,
   type EventsReplicant,
@@ -231,16 +232,52 @@ function BidWars({ event, run }: { event: FundraiserEvent; run: Run }) {
   );
 }
 
+/** How many segments of each kind the event has right now (the item marquee counts as one). */
+function segmentCounts(event: FundraiserEvent): Record<InfoBarSegmentKind, number> {
+  return {
+    items: 1,
+    incentives: event.incentives.filter((i) => i.active).length,
+    bidWars: event.bidWars.filter((w) => w.active && w.options.length >= 2).length,
+    prizes: event.prizes.filter((p) => p.active).length,
+    callToAction: event.callToAction.trim() ? 1 : 0,
+    announcements: event.announcements.filter((a) => a.trim()).length,
+    sponsors: event.sponsors.length,
+  };
+}
+
 function InfoBarEditor({ event, run }: { event: FundraiserEvent; run: Run }) {
   const [draft, setDraft, dirty] = useDraft(event.infoBar);
   const move = (index: number, by: number) => setDraft({ ...draft, segments: moveItem(draft.segments, index, by) });
   const missing = INFO_BAR_SEGMENTS.filter((kind) => !draft.segments.includes(kind));
+  const counts = segmentCounts(event);
+  const turn = draft.segments.reduce((sum, kind) => sum + counts[kind] * segmentSecondsFor(draft, kind), 0);
+  const marquee = draft.segments.includes("items") ? segmentSecondsFor(draft, "items") : 0;
+  const setSeconds = (kind: InfoBarSegmentKind, text: string) => {
+    const seconds = { ...draft.seconds };
+    const n = Number(text);
+    if (text.trim() === "") delete seconds[kind];
+    else if (Number.isInteger(n) && n > 0) seconds[kind] = Math.min(300, n);
+    else return;
+    setDraft({ ...draft, seconds });
+  };
 
   return (
     <>
       {draft.segments.map((kind, index) => (
         <div className="list-row" key={kind}>
-          <span style={{ flex: 1 }}>{SEGMENT_LABELS[kind]}</span>
+          <span style={{ flex: 1 }}>
+            {SEGMENT_LABELS[kind]}
+            {counts[kind] > 1 && <span className="muted"> ({counts[kind]}, each)</span>}
+          </span>
+          <input
+            inputMode="numeric"
+            style={{ width: 64 }}
+            aria-label={`Seconds for ${SEGMENT_LABELS[kind]}`}
+            placeholder={String(kind === "items" ? draft.segmentSeconds * 2 : draft.segmentSeconds)}
+            value={draft.seconds[kind] ?? ""}
+            onChange={(e) => setSeconds(kind, e.target.value)}
+          />
+          <span className="muted">s</span>
           <button type="button" disabled={index === 0} onClick={() => move(index, -1)}>
             ↑
           </button>
@@ -263,7 +300,7 @@ function InfoBarEditor({ event, run }: { event: FundraiserEvent; run: Run }) {
         ))}
       </div>
       <label className="row">
-        Seconds per segment
+        Seconds for the rest
         <input
           inputMode="numeric"
           style={{ width: 60 }}
@@ -274,6 +311,11 @@ function InfoBarEditor({ event, run }: { event: FundraiserEvent; run: Run }) {
           }}
         />
       </label>
+      <p className="muted" style={{ margin: 0 }}>
+        Blank rows use that (the item marquee gets twice as long). One full turn takes about {turn} seconds
+        {marquee > 0 && turn > 0 && `; the item marquee is ${Math.round((marquee / turn) * 100)}% of it`}. The marquee
+        picks up where it left off each time.
+      </p>
       <button
         type="button"
         disabled={!dirty}
