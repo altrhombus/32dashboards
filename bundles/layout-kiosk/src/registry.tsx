@@ -17,6 +17,7 @@ import {
   MomentToast,
   PrizeCard,
   InlineMarkdown,
+  RecentDonations,
   SponsorCarousel,
   TotalRaisedCounter,
 } from "@32dashboards/ui";
@@ -68,7 +69,7 @@ function lastCall(minutesLeft: number, event: KioskData["live"]["event"]) {
   };
 }
 
-function Segment({ content, total }: { content: SegmentContent; total: number }) {
+function Segment({ content, total, recent }: { content: SegmentContent; total: number; recent: ToastMoment[] }) {
   switch (content.kind) {
     case "items":
       // Resumes where it left off, so each turn shows the next stretch of items, not the first ones again.
@@ -87,6 +88,8 @@ function Segment({ content, total }: { content: SegmentContent; total: number })
           <InlineMarkdown text={content.text} />
         </div>
       );
+    case "recent":
+      return <RecentDonations moments={recent} label="Bids" />;
     case "sponsor":
       return (
         <div className="kiosk-info-bar__logo">
@@ -97,7 +100,7 @@ function Segment({ content, total }: { content: SegmentContent; total: number })
   }
 }
 
-function InfoBar({ display, total }: { display: InfoBarDisplay; total: number }) {
+function InfoBar({ display, total, recent }: { display: InfoBarDisplay; total: number; recent: ToastMoment[] }) {
   if (display.type === "empty") return <div className="kiosk-info-bar" />;
   if (display.type === "celebration") {
     const m = display.moment;
@@ -115,7 +118,7 @@ function InfoBar({ display, total }: { display: InfoBarDisplay; total: number })
   }
   return (
     <div className={`kiosk-info-bar kiosk-info-bar--${display.segment.content.kind}`} key={display.segment.key}>
-      <Segment content={display.segment.content} total={total} />
+      <Segment content={display.segment.content} total={total} recent={recent} />
     </div>
   );
 }
@@ -253,9 +256,9 @@ export const kioskRegistry: Registry<KioskData> = {
     ),
   }),
 
-  infoBar: defineComponent<KioskData, { display: InfoBarDisplay; total: number }>({
+  infoBar: defineComponent<KioskData, { display: InfoBarDisplay; total: number; recent: ToastMoment[] }>({
     variants: ["bar"],
-    select: ({ infoBar, live }) => ({ display: infoBar, total: live.total }),
+    select: ({ infoBar, live, recent }) => ({ display: infoBar, total: live.total, recent }),
     component: InfoBar,
   }),
 

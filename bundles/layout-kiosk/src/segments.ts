@@ -23,7 +23,8 @@ export type SegmentContent =
   | { kind: "prize"; prize: Prize }
   | { kind: "callToAction"; text: string }
   | { kind: "announcement"; text: string }
-  | { kind: "sponsor"; sponsor: Sponsor; title: string };
+  | { kind: "sponsor"; sponsor: Sponsor; title: string }
+  | { kind: "recent" };
 
 export type Segment = InfoBarSegment & { content: SegmentContent };
 
@@ -66,6 +67,10 @@ export function buildSegments(live: LiveStateReplicant): SegmentPlan {
         event.announcements.forEach(
           (text, i) => text.trim() && add(`announcement:${i}:${text}`, { kind: "announcement", text }),
         );
+        break;
+      case "recent":
+        // Always takes its turn (with a placeholder until the first bid), so the rotation is what was set.
+        add("recent", { kind: "recent" });
         break;
       case "sponsors":
         for (const sponsor of event.sponsors)

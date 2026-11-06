@@ -6,22 +6,31 @@ export interface MomentToastProps {
   moment: Extract<DonationMoment, { kind: "total-increase" | "new-bid" }>;
 }
 
-/** A short "surprise and delight" pop for a new donation or bid. */
+/**
+ * A short "surprise and delight" pop for a new donation or bid: a small
+ * label on top, then what happened, so it reads at a glance.
+ */
 export function MomentToast({ moment }: MomentToastProps) {
   return (
     <div className="moment-toast" role="status">
       {moment.kind === "total-increase" ? (
         <>
-          <span className="moment-toast__amount num">+{formatAmount(moment.delta)}</span>
-          <span className="moment-toast__text">Thank you!</span>
+          <span className="moment-toast__kicker">Donation</span>
+          {/* What, then how much: the amount is on the right, as for bids. */}
+          <span className="moment-toast__line">
+            <span className="moment-toast__text">Thank you!</span>
+            <span className="moment-toast__amount num">+{formatAmount(moment.delta)}</span>
+          </span>
         </>
       ) : (
         <>
-          <span className="moment-toast__text">{moment.newBids > 1 ? `${moment.newBids} new bids` : "New bid"}</span>
-          <span className="moment-toast__title clamp-1" title={moment.itemTitle}>
-            {moment.itemTitle}
+          <span className="moment-toast__kicker">{moment.newBids > 1 ? `${moment.newBids} new bids` : "New bid"}</span>
+          <span className="moment-toast__line">
+            <span className="moment-toast__title clamp-1" title={moment.itemTitle}>
+              {moment.itemTitle}
+            </span>
+            {moment.amount !== null && <span className="moment-toast__amount num">{formatAmount(moment.amount)}</span>}
           </span>
-          {moment.amount !== null && <span className="moment-toast__amount num">{formatAmount(moment.amount)}</span>}
         </>
       )}
     </div>

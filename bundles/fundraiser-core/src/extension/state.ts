@@ -8,6 +8,7 @@ import {
   type FundraiserEvent,
   type LiveStateReplicant,
   type Screen,
+  type SourceItem,
   type SourceResult,
   type UpdateEventMessage,
 } from "@32dashboards/schema/core";
@@ -298,11 +299,13 @@ export function detectMoments(
   const before = new Map(previous.items.map((item) => [item.id, item]));
 
   // What bids added to the total, hidden items included (their bids aren't donations to thank either).
+  // An item without bids still shows its opening price as its current bid, but it isn't in the
+  // total until someone bids, so a first bid at the opening price adds the whole amount.
+  const inTotal = (item: SourceItem | undefined) => (!item || item.bidCount === 0 ? 0 : (item.currentBid ?? 0));
   let fromBids = 0;
   for (const item of next.items) {
-    const old = before.get(item.id);
-    const was = old ? (old.currentBid ?? 0) : 0;
-    if (item.currentBid !== null && item.currentBid > was) fromBids += item.currentBid - was;
+    const added = inTotal(item) - inTotal(before.get(item.id));
+    if (added > 0) fromBids += added;
   }
   const delta = roundCents(next.total - previous.total - fromBids);
   if (delta >= 1) {

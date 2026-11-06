@@ -57,6 +57,8 @@ export const INFO_BAR_SEGMENTS = [
   "callToAction",
   "announcements",
   "sponsors",
+  // The latest bids and donations, newest first (pop-ups pause while it shows).
+  "recent",
 ] as const;
 export const InfoBarSegmentKindSchema = z.enum(INFO_BAR_SEGMENTS);
 export type InfoBarSegmentKind = z.infer<typeof InfoBarSegmentKindSchema>;
@@ -66,7 +68,8 @@ export const InfoBarConfigSchema = z.object({
   segments: z
     .array(InfoBarSegmentKindSchema)
     .max(INFO_BAR_SEGMENTS.length)
-    .default([...INFO_BAR_SEGMENTS]),
+    // Latest bids is opt-in: it changes how pop-ups behave.
+    .default(INFO_BAR_SEGMENTS.filter((kind) => kind !== "recent")),
   segmentSeconds: z.number().int().min(4).max(120).default(12),
   /**
    * Seconds for each segment of a kind, overriding segmentSeconds (which the
@@ -77,7 +80,8 @@ export const InfoBarConfigSchema = z.object({
 
 /** How long one segment of `kind` shows, in seconds. */
 export function segmentSecondsFor(config: InfoBarConfig, kind: InfoBarSegmentKind): number {
-  return config.seconds[kind] ?? (kind === "items" ? config.segmentSeconds * 2 : config.segmentSeconds);
+  const long = kind === "items" || kind === "recent";
+  return config.seconds[kind] ?? (long ? config.segmentSeconds * 2 : config.segmentSeconds);
 }
 export type InfoBarConfig = z.infer<typeof InfoBarConfigSchema>;
 

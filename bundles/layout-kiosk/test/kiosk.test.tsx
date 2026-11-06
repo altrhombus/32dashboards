@@ -66,6 +66,7 @@ describe("kiosk layouts", () => {
       scene: scene(sceneId),
       infoBar: { type: "segment", segment: plan.segments[0]! },
       roundWrap: null,
+      recent: [],
       toasts: [
         {
           kind: "new-bid",
@@ -97,6 +98,7 @@ describe("kiosk layouts", () => {
       scene: scene("askMe"),
       infoBar: { type: "empty" },
       toasts: [],
+      recent: [],
       roundWrap: {
         kind: "askme-round",
         id: id(40),
@@ -133,6 +135,7 @@ describe("kiosk layouts", () => {
         infoBar: { type: "empty" },
         toasts: [],
         roundWrap: null,
+        recent: [],
       };
       const { container, unmount } = render(
         <LayoutRenderer layout={builtInLayouts.askMe.layout} registry={kioskRegistry} data={data} fit="none" />,
@@ -165,6 +168,7 @@ describe("kiosk layouts", () => {
       },
       toasts: [],
       roundWrap: null,
+      recent: [],
     };
     const { container } = render(
       <LayoutRenderer layout={builtInLayouts.main.layout} registry={kioskRegistry} data={data} fit="none" />,
@@ -197,6 +201,14 @@ describe("buildSegments", () => {
       event: { ...worstEvent, infoBar: { segments: ["prizes" as const], segmentSeconds: 5, seconds: {} } },
     };
     expect(buildSegments(custom).segments.map((s) => [s.key, s.durationMs])).toEqual([[`prize:${id(11)}`, 5000]]);
+  });
+
+  it("gives Latest bids its turn even before the first bid", () => {
+    const withRecent = {
+      ...live,
+      event: { ...worstEvent, infoBar: { segments: ["recent" as const], segmentSeconds: 10, seconds: {} } },
+    };
+    expect(buildSegments(withRecent).segments.map((s) => [s.key, s.durationMs])).toEqual([["recent", 20_000]]);
   });
 
   it("gives each kind its own time when one is set", () => {

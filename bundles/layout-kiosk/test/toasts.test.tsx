@@ -60,4 +60,25 @@ describe("toasts", () => {
     act(() => vi.advanceTimersByTime(TOAST_MS));
     expect(result.current.toasts).toEqual([]);
   });
+
+  it("pauses toasts while the info bar lists the latest bids, but still lists them", () => {
+    const quiet = { current: true };
+    const { result } = renderHook(() => useDonationMoments(EVENT, () => {}, { quiet }));
+    act(() => {
+      listener!(bid(1));
+      listener!(bid(2));
+    });
+    act(() => vi.advanceTimersByTime(TOAST_GAP_MS * 3));
+    expect(result.current.toasts).toEqual([]);
+    expect(result.current.recent.map((m) => m.id)).toEqual([bid(2).id, bid(1).id]);
+
+    quiet.current = false;
+    act(() => listener!(bid(3)));
+    expect(result.current.toasts.map((t) => t.id)).toEqual([bid(3).id]);
+  });
+
+  it("starts the latest bids from earlier moments, newest first", () => {
+    const { result } = renderHook(() => useDonationMoments(EVENT, () => {}, { history: [bid(1), bid(2)] }));
+    expect(result.current.recent.map((m) => m.id)).toEqual([bid(2).id, bid(1).id]);
+  });
 });
