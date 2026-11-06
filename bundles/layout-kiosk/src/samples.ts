@@ -44,7 +44,7 @@ function demoEvent() {
     askMe: { enabled: false, title: "Fund a kennel", message: "Every **$250** builds one new kennel.", total: 1750 },
     announcements: ["Dessert auction opens at 8", "Thank you to our volunteers!"],
     incentives: [{ id: id(101), name: "New puppy play yard", target: 15000, active: true }],
-    sponsors: [{ id: id(102), name: "Northside Bakery", logoUrl: null, sortOrder: 0 }],
+    sponsors: [{ id: id(102), name: "Northside Bakery", logoUrl: null, sortOrder: 0, backdrop: "auto" }],
     milestones: [{ id: id(103), amount: 10000, label: "A month of food for every dog" }],
     bidWars: [
       {
@@ -77,7 +77,7 @@ function worstEvent() {
       { id: id(2), name: LONG_TITLE, target: HUGE_TOTAL, active: true },
       { id: id(3), name: "Inactive", target: 10, active: false },
     ],
-    sponsors: [{ id: id(4), name: LONG_NAME, logoUrl: null, sortOrder: 0 }],
+    sponsors: [{ id: id(4), name: LONG_NAME, logoUrl: null, sortOrder: 0, backdrop: "auto" }],
     milestones: [{ id: id(5), amount: 1000, label: LONG_DESCRIPTION.slice(0, 120) }],
     bidWars: [
       {

@@ -5,7 +5,7 @@ export * from "./replicants.js";
 export * from "./messages.js";
 export { ThemeSchema, type Theme } from "../theme.js";
 export { IncentiveSchema, type Incentive } from "../incentive.js";
-export { SponsorSchema, type Sponsor } from "../sponsor.js";
+export { LOGO_BACKDROPS, LogoBackdropSchema, SponsorSchema, type LogoBackdrop, type Sponsor } from "../sponsor.js";
 export { AskMeConfigSchema, type AskMeConfig } from "../askme.js";
 export { formatCurrency, parseCurrencyValue } from "../currency.js";
 export * from "./screens.js";

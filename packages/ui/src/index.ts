@@ -20,6 +20,7 @@ export * from "./components/ConfettiBurst/ConfettiBurst.js";
 export * from "./components/IncentiveTracker/IncentiveTracker.js";
 export * from "./components/IncentiveCelebrationOverlay/IncentiveCelebrationOverlay.js";
 export * from "./components/SponsorCarousel/SponsorCarousel.js";
+export * from "./components/SponsorCarousel/logoBackdrop.js";
 export * from "./components/AskMeOverlay/AskMeOverlay.js";
 export * from "./components/GrandCelebrationOverlay/GrandCelebrationOverlay.js";
 export * from "./components/BidWarCard/BidWarCard.js";

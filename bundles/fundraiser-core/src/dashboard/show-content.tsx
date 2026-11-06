@@ -1,8 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { errorText, newId, uploadAsset, useReplicant } from "@32dashboards/nodecg-react";
 import {
   INFO_BAR_SEGMENTS,
+  LOGO_BACKDROPS,
   SPONSORS_TITLE,
   segmentSecondsFor,
   type ActiveEventIdReplicant,
@@ -10,8 +11,9 @@ import {
   type EventsReplicant,
   type FundraiserEvent,
   type InfoBarSegmentKind,
+  type LogoBackdrop,
 } from "@32dashboards/schema/core";
-import { formatAmount, validateTheme } from "@32dashboards/ui";
+import { SponsorCarousel, formatAmount, useLogoCheck, validateTheme } from "@32dashboards/ui";
 import "@32dashboards/nodecg-react/panel.css";
 import { send } from "./send.js";
 
@@ -436,6 +438,61 @@ function LookAndLogos({ event, run }: { event: FundraiserEvent; run: Run }) {
   );
 }
 
+const BACKDROP_LABELS: Record<LogoBackdrop, string> = {
+  auto: "Auto",
+  plate: "Plate",
+  outline: "Outline",
+  mono: "One color",
+  none: "As is",
+};
+
+/** A logo as the TV draws it, on the event's colors, small. */
+function LogoPreview({
+  sponsor,
+  theme,
+}: {
+  sponsor: FundraiserEvent["sponsors"][number];
+  theme: FundraiserEvent["theme"];
+}) {
+  return (
+    <span
+      className="logo-preview"
+      style={
+        { background: theme.backgroundTo, color: theme.textColor, "--color-text": theme.textColor } as CSSProperties
+      }
+    >
+      <SponsorCarousel sponsors={[sponsor]} background={theme.backgroundTo} />
+    </span>
+  );
+}
+
+/** What goes behind a logo; for Auto, what it decided. */
+function BackdropSelect(props: {
+  sponsor: FundraiserEvent["sponsors"][number];
+  background: string;
+  onChange: (backdrop: LogoBackdrop) => void;
+}) {
+  const backdrop = props.sponsor.backdrop ?? "auto";
+  const check = useLogoCheck(backdrop === "auto" ? props.sponsor.logoUrl : null, props.background);
+  return (
+    <span className="row" style={{ gap: 6 }}>
+      <select
+        aria-label="Backdrop"
+        title="What's behind the logo on the TV"
+        value={backdrop}
+        onChange={(e) => props.onChange(e.target.value as LogoBackdrop)}
+      >
+        {LOGO_BACKDROPS.map((b) => (
+          <option key={b} value={b}>
+            {BACKDROP_LABELS[b]}
+          </option>
+        ))}
+      </select>
+      {backdrop === "auto" && check && <span className="muted">{check.needsPlate ? "plate added" : "as is"}</span>}
+    </span>
+  );
+}
+
 /** Headings people commonly use over the logos. */
 const LOGO_HEADINGS = [SPONSORS_TITLE, "Who we're helping", "Thank you to our supporters", "Our partners"];
 
@@ -475,7 +532,7 @@ function Logos({ event, run }: { event: FundraiserEvent; run: Run }) {
       const added = [];
       for (const file of Array.from(files)) {
         const logoUrl = await uploadAsset("sponsor-logos", file);
-        added.push({ id: newId(), name: nameFromFile(file.name), logoUrl, sortOrder: 0 });
+        added.push({ id: newId(), name: nameFromFile(file.name), logoUrl, sortOrder: 0, backdrop: "auto" as const });
       }
       const next = { ...draft, sponsors: [...sponsors, ...added] };
       setDraft(next);
@@ -491,7 +548,8 @@ function Logos({ event, run }: { event: FundraiserEvent; run: Run }) {
     <>
       <p className="muted" style={{ margin: 0 }}>
         Logos rotate on the Main screen and in the info bar: your sponsors, or the causes the event helps. The heading
-        goes over them.
+        goes over them. Backdrop: Auto puts a soft plate behind a see-through logo that would be hard to read on your
+        colors; Plate, Outline (a thin glow) and One color (in your text color, for see-through logos) apply always.
       </p>
       <label className="field">
         <span>Heading</span>
@@ -532,34 +590,57 @@ function Logos({ event, run }: { event: FundraiserEvent; run: Run }) {
         />
         {uploading && <span className="muted">Uploading…</span>}
       </label>
-      {sponsors.map((sponsor, index) => (
-        <div className="list-row" key={sponsor.id}>
-          {sponsor.logoUrl && <img src={sponsor.logoUrl} alt="" className="logo-thumb" />}
-          <input
-            aria-label="Name"
-            placeholder="Name (shown if the logo can't load)"
-            value={sponsor.name}
-            onChange={(e) => setSponsors(sponsors.map((s, i) => (i === index ? { ...s, name: e.target.value } : s)))}
-          />
-          <AssetSelect
-            label="Logo"
-            assets={logoFiles}
-            value={sponsor.logoUrl}
-            onChange={(logoUrl) => setSponsors(sponsors.map((s, i) => (i === index ? { ...s, logoUrl } : s)))}
-          />
-          <button type="button" disabled={index === 0} onClick={() => setSponsors(moveItem(sponsors, index, -1))}>
-            ↑
-          </button>
-          <button type="button" onClick={() => setSponsors(sponsors.filter((_, i) => i !== index))}>
-            Remove
-          </button>
-        </div>
-      ))}
+      {sponsors.map((sponsor, index) => {
+        const update = (patch: Partial<typeof sponsor>) =>
+          setSponsors(sponsors.map((s, i) => (i === index ? { ...s, ...patch } : s)));
+        return (
+          // Preview, name and order on top; the file and what's behind it beneath.
+          <div className="logo-row" key={sponsor.id}>
+            <LogoPreview sponsor={sponsor} theme={event.theme} />
+            <input
+              className="logo-row__name"
+              aria-label="Name"
+              placeholder="Name (shown if the logo can't load)"
+              value={sponsor.name}
+              onChange={(e) => update({ name: e.target.value })}
+            />
+            <span className="logo-row__order">
+              <button
+                type="button"
+                aria-label="Move up"
+                disabled={index === 0}
+                onClick={() => setSponsors(moveItem(sponsors, index, -1))}
+              >
+                ↑
+              </button>
+              <button type="button" onClick={() => setSponsors(sponsors.filter((_, i) => i !== index))}>
+                Remove
+              </button>
+            </span>
+            <span className="logo-row__details">
+              <AssetSelect
+                label="Logo"
+                assets={logoFiles}
+                value={sponsor.logoUrl}
+                onChange={(logoUrl) => update({ logoUrl })}
+              />
+              <BackdropSelect
+                sponsor={sponsor}
+                background={event.theme.backgroundTo}
+                onChange={(backdrop) => update({ backdrop })}
+              />
+            </span>
+          </div>
+        );
+      })}
       <div className="row">
         <button
           type="button"
           onClick={() =>
-            setSponsors([...sponsors, { id: newId(), name: "", logoUrl: null, sortOrder: sponsors.length }])
+            setSponsors([
+              ...sponsors,
+              { id: newId(), name: "", logoUrl: null, sortOrder: sponsors.length, backdrop: "auto" },
+            ])
           }
         >
           Add a name without a logo
