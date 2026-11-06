@@ -89,7 +89,7 @@ function Segment({ content, total, recent }: { content: SegmentContent; total: n
         </div>
       );
     case "recent":
-      return <RecentDonations moments={recent} label="Latest bids" />;
+      return <RecentDonations moments={recent} label="Bids" />;
     case "sponsor":
       return (
         <div className="kiosk-info-bar__logo">

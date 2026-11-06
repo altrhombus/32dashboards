@@ -178,7 +178,9 @@ export function useDonationMoments(
         later(ROUND_WRAP_MS, () => setRoundWrap((current) => (current?.id === moment.id ? null : current)));
         return;
       }
-      setRecent((current) => mergeRecent([moment], current));
+      // "How long ago" goes by this screen's clock for what arrives live, so a TV computer whose
+      // clock is a little off still says "just now" for a bid that just came in.
+      setRecent((current) => mergeRecent([{ ...moment, at: new Date().toISOString() }], current));
       waiting.current = [...waiting.current, moment].slice(-MAX_WAITING_TOASTS);
       pump();
     };
