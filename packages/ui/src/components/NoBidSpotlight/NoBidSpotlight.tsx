@@ -10,6 +10,10 @@ export interface NoBidSpotlightProps {
   /** Items on screen at once. */
   size?: number;
   rotationMs?: number;
+  /** For a block sharing the screen: each item side-on, with less around it. */
+  compact?: boolean;
+  /** False while another view has this space: it waits, and carries on from there. */
+  active?: boolean;
 }
 
 /** Long enough to read an item, pull out a phone and scan its code. */
@@ -20,15 +24,21 @@ const ROTATION_MS = 20_000;
  * code that opens it. Slower and closer than the featured grid: its job is to
  * get someone to reach for their phone.
  */
-export function NoBidSpotlight({ items, size = 2, rotationMs = ROTATION_MS }: NoBidSpotlightProps) {
-  const { visible, step } = useRotation(items, size, rotationMs);
+export function NoBidSpotlight({
+  items,
+  size = 2,
+  rotationMs = ROTATION_MS,
+  compact = false,
+  active = true,
+}: NoBidSpotlightProps) {
+  const { visible, step } = useRotation(items, size, rotationMs, active);
 
   if (items.length === 0) {
     return <div className="no-bid-spotlight no-bid-spotlight--empty">Every item has a bid. Thank you!</div>;
   }
 
   return (
-    <div className="no-bid-spotlight">
+    <div className={`no-bid-spotlight${compact ? " no-bid-spotlight--compact" : ""}`}>
       <h2 className="no-bid-spotlight__heading">
         No bids yet. Be the first!
         {items.length > size && <span className="no-bid-spotlight__count num">{items.length} items waiting</span>}

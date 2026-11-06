@@ -852,6 +852,20 @@ function BlockInspector(props: {
             </label>
           );
         }
+        if (field.kind === "choice") {
+          return (
+            <label key={field.key} className="field">
+              <span>{label}</span>
+              <select value={String(value)} disabled={props.readOnly} onChange={(e) => set(field.key, e.target.value)}>
+                {field.options.map((option) => (
+                  <option key={option} value={option}>
+                    {edit.CHOICE_LABELS[option] ?? option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          );
+        }
         return (
           <label key={field.key} className="row toggle">
             <input

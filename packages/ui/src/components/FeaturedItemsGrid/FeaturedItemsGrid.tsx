@@ -10,14 +10,17 @@ export interface FeaturedItemsGridProps {
   rotationMs?: number;
   /** Cards visible at once. */
   size?: number;
+  /** False while another view has this space: it waits, and carries on from there. */
+  active?: boolean;
 }
 
 export function FeaturedItemsGrid({
   items,
   rotationMs = durations.featuredItemRotationMs,
   size = featuredItemsGridSize,
+  active = true,
 }: FeaturedItemsGridProps) {
-  const { visible, step } = useRotation(items, size, rotationMs);
+  const { visible, step } = useRotation(items, size, rotationMs, active);
 
   if (items.length === 0) {
     return <div className="featured-items-grid featured-items-grid--empty">No featured items right now</div>;

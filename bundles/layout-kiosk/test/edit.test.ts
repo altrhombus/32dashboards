@@ -93,6 +93,9 @@ describe("settingFields", () => {
     expect(edit.settingFields(kioskCatalog.featuredItems!.settings)).toEqual([
       { key: "title", kind: "text", maxLength: 60, fallback: "Featured items" },
       { key: "size", kind: "number", min: 1, max: 12, fallback: 6 },
+      { key: "show", kind: "choice", options: ["both", "featured", "noBids"], fallback: "both" },
+      { key: "featuredSeconds", kind: "number", min: 5, max: 300, fallback: 30 },
+      { key: "noBidsSeconds", kind: "number", min: 5, max: 300, fallback: 20 },
     ]);
     expect(edit.settingFields(kioskCatalog.header!.settings)).toEqual([]);
   });

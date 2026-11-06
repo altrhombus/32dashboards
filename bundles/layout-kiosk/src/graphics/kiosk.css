@@ -54,6 +54,23 @@ body,
   font-size: 3.5rem;
 }
 
+/* One view of the items block; the other waits, hidden, to pick up where it left off. */
+.kiosk-items {
+  flex: 1;
+  min-height: 0;
+  animation: kiosk-items-in 0.6s var(--ease-standard);
+}
+
+.kiosk-items[hidden] {
+  display: none;
+}
+
+@keyframes kiosk-items-in {
+  from {
+    opacity: 0;
+  }
+}
+
 .kiosk-info-bar {
   display: flex;
   align-items: center;

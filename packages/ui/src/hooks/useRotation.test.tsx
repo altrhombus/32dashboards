@@ -43,4 +43,29 @@ describe("useRotation", () => {
     act(() => void vi.advanceTimersByTime(5000));
     expect(result.current.visible).toEqual(["0", "1"]);
   });
+
+  it("waits while another view has the space, and carries on from there", () => {
+    const { result, rerender } = renderHook(({ active }) => useRotation(items(6), 2, 1000, active), {
+      initialProps: { active: true },
+    });
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(result.current.visible).toEqual(["2", "3"]);
+    rerender({ active: false });
+    act(() => void vi.advanceTimersByTime(5000));
+    expect(result.current.visible).toEqual(["2", "3"]);
+    rerender({ active: true });
+    expect(result.current.visible).toEqual(["2", "3"]);
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(result.current.visible).toEqual(["4", "5"]);
+  });
+
+  it("moves on after a turn too short for a step, so each turn shows something new", () => {
+    const { result, rerender } = renderHook(({ active }) => useRotation(items(6), 2, 20_000, active), {
+      initialProps: { active: true },
+    });
+    act(() => void vi.advanceTimersByTime(5000));
+    rerender({ active: false });
+    rerender({ active: true });
+    expect(result.current.visible).toEqual(["2", "3"]);
+  });
 });

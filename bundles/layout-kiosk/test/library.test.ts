@@ -19,7 +19,7 @@ describe("copyLayout", () => {
     expect(layouts).toHaveLength(1);
     expect(layouts[0]).toMatchObject({ id: layoutId, name: "Copy of Main", view: "main", draft: null });
     const featured = layouts[0]!.published.blocks.find((b) => b.component === "featuredItems");
-    expect(featured?.settings).toEqual({ title: "Featured items", size: 6 });
+    expect(featured?.settings).toMatchObject({ title: "Featured items", size: 6, show: "both" });
   });
 
   it("copies a saved layout under a given name", () => {

@@ -15,6 +15,10 @@ import { SPONSORS_TITLE } from "@32dashboards/schema/core";
 const title = (fallback: string) => z.string().trim().max(60).default(fallback);
 const none = z.object({}).strict();
 
+/** What a Featured items block shows: both, taking turns, or just one. */
+export const ITEM_VIEWS = ["both", "featured", "noBids"] as const;
+export type ItemView = (typeof ITEM_VIEWS)[number];
+
 export const kioskCatalog: Catalog = {
   header: {
     name: "Event header",
@@ -40,12 +44,21 @@ export const kioskCatalog: Catalog = {
   },
   featuredItems: {
     name: "Featured items",
-    description: "Auction items worth a look: valuable items with few bids.",
+    description:
+      "Auction items worth a look: valuable items with few bids, taking turns with items that have no bids yet and QR codes to bid. Shows just one of them if you choose.",
     category: "items",
     placement: "block",
     variants: { grid: { minWidth: 600, minHeight: 300, reference: { width: 1320, height: 550 }, maxScale: 1.6 } },
     repeatable: false,
-    settings: z.object({ title: title("Featured items"), size: z.number().int().min(1).max(12).default(6) }).strict(),
+    settings: z
+      .object({
+        title: title("Featured items"),
+        size: z.number().int().min(1).max(12).default(6),
+        show: z.enum(ITEM_VIEWS).default("both"),
+        featuredSeconds: z.number().int().min(5).max(300).default(30),
+        noBidsSeconds: z.number().int().min(5).max(300).default(20),
+      })
+      .strict(),
   },
   noBidItems: {
     name: "No bids yet",

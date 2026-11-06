@@ -62,7 +62,11 @@ network.
      type a message and pick a countdown first. Celebration (the
      end-of-night thank-you) needs a second tap.
      To put No bids yet on one TV only, use **On each screen now** and pick
-     **Built-in No bids yet** for that screen.
+     **Built-in No bids yet** for that screen. On **Main**, the items block
+     already takes turns: featured items for 30 seconds, then items with
+     no bids and their QR codes for 20. To change the timing, or keep it to
+     just one, copy the layout in the **Layouts** tab, select the block,
+     and use **What to show**.
    - **Cash and checks at the venue.** Tap +$20, +$50, +$100, or +$500, or
      type another amount: each is added to the venue total and thanked on
      the TV. **Take off** (beside Add) takes an amount back off, without a

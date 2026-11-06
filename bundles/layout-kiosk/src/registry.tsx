@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { defineComponent, type Registry } from "@32dashboards/layout-engine";
 import {
   AnnouncementsList,
@@ -24,6 +24,7 @@ import {
   TotalRaisedCounter,
 } from "@32dashboards/ui";
 import { SPONSORS_TITLE, askMeProgress, firstLink, shortenLinks } from "@32dashboards/schema/core";
+import type { ItemView } from "./catalog.js";
 import type { CelebrationMoment, InfoBarDisplay, KioskData, ToastMoment } from "./data.js";
 import { selectFeaturedItems, selectNoBidItems, type SegmentContent } from "./segments.js";
 
@@ -41,12 +42,57 @@ const URGENT_MS = 10 * 60_000;
 
 /** Wraps a component in a titled card when the slot's options give a title. */
 function Card({ title, children }: { title?: unknown; children: ReactNode }) {
-  if (typeof title !== "string" || !title) return <div className="kiosk-card">{children}</div>;
+  // One element with or without a title: what's inside keeps its place when the title comes and goes.
   return (
     <section className="kiosk-card">
-      <h2 className="kiosk-card__title">{title}</h2>
+      {typeof title === "string" && title && <h2 className="kiosk-card__title">{title}</h2>}
       {children}
     </section>
+  );
+}
+
+type Items = KioskData["live"]["items"];
+
+/**
+ * The items block: featured items and items with no bids yet, taking turns,
+ * or just one. Both stay on the page while they wait, so each picks up where
+ * it left off instead of starting again from its first items.
+ */
+function ItemsBlock(props: {
+  featured: Items;
+  noBids: Items;
+  size: number;
+  title?: unknown;
+  show: ItemView;
+  featuredMs: number;
+  noBidsMs: number;
+}) {
+  const { featured, noBids, show, featuredMs, noBidsMs } = props;
+  const takingTurns = show === "both" && featured.length > 0 && noBids.length > 0;
+  const [turn, setTurn] = useState<"featured" | "noBids">("featured");
+  useEffect(() => {
+    if (!takingTurns) return;
+    const timer = setTimeout(
+      () => setTurn((t) => (t === "featured" ? "noBids" : "featured")),
+      turn === "featured" ? featuredMs : noBidsMs,
+    );
+    return () => clearTimeout(timer);
+  }, [takingTurns, turn, featuredMs, noBidsMs]);
+  const showing = takingTurns ? turn : show === "both" ? (noBids.length > 0 ? "noBids" : "featured") : show;
+
+  return (
+    <Card title={showing === "featured" ? props.title : undefined}>
+      {show !== "noBids" && (
+        <div className="kiosk-items" hidden={showing !== "featured"}>
+          <FeaturedItemsGrid items={featured} size={props.size} active={showing === "featured"} />
+        </div>
+      )}
+      {show !== "featured" && (
+        <div className="kiosk-items" hidden={showing !== "noBids"}>
+          <NoBidSpotlight items={noBids} rotationMs={noBidsMs} compact active={showing === "noBids"} />
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -234,17 +280,23 @@ export const kioskRegistry: Registry<KioskData> = {
     component: TotalRaisedCounter,
   }),
 
-  featuredItems: defineComponent<KioskData, { items: KioskData["live"]["items"]; size: number; title?: unknown }>({
+  featuredItems: defineComponent<KioskData, Parameters<typeof ItemsBlock>[0]>({
     variants: ["grid"],
     select: ({ live }, { options }) => {
       const size = typeof options.size === "number" ? options.size : 6;
-      return { items: selectFeaturedItems(live.items, size), size, title: options.title };
+      const seconds = (value: unknown, fallback: number) => (typeof value === "number" ? value : fallback) * 1000;
+      return {
+        featured: selectFeaturedItems(live.items, size),
+        noBids: selectNoBidItems(live.items),
+        size,
+        title: options.title,
+        // A layout saved before these settings existed takes turns like the built-in one.
+        show: (options.show as ItemView | undefined) ?? "both",
+        featuredMs: seconds(options.featuredSeconds, 30),
+        noBidsMs: seconds(options.noBidsSeconds, 20),
+      };
     },
-    component: ({ items, size, title }) => (
-      <Card title={title}>
-        <FeaturedItemsGrid items={items} size={size} />
-      </Card>
-    ),
+    component: ItemsBlock,
   }),
 
   noBidItems: defineComponent<KioskData, { items: KioskData["live"]["items"]; size: number }>({
