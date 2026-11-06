@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import { useMachine } from "@xstate/react";
 import { infoBarMachine, selectInfoBarView } from "@32dashboards/incentive-machine";
 import type { DonationMoment, LiveStateReplicant } from "@32dashboards/schema/core";
-import type { CelebrationMoment, InfoBarDisplay, RoundWrapMoment, ToastMoment } from "./data.js";
+import type { CelebrationMoment, InfoBarDisplay, LiveSoldMoment, RoundWrapMoment, ToastMoment } from "./data.js";
 import { buildSegments } from "./segments.js";
 
 export const CELEBRATION_MS = 8_000;
@@ -32,6 +32,8 @@ function mergeRecent(newer: ToastMoment[], older: ToastMoment[]): ToastMoment[] 
 }
 /** How long an Ask Me round's wrap-up stays on screen. */
 export const ROUND_WRAP_MS = 7_000;
+/** How long a live auction item's SOLD stamp stays on screen. */
+export const SOLD_MS = 8_000;
 
 /**
  * Drives the info bar: feeds the current segments to the sequencer and
@@ -106,6 +108,7 @@ export function useDonationMoments(
   quietRef.current = options.quiet;
   const seededFor = useRef<string | null>(null);
   const [roundWrap, setRoundWrap] = useState<RoundWrapMoment | null>(null);
+  const [sold, setSold] = useState<LiveSoldMoment | null>(null);
   const eventRef = useRef(eventId);
   eventRef.current = eventId;
   const waiting = useRef<ToastMoment[]>([]);
@@ -116,6 +119,7 @@ export function useDonationMoments(
   useEffect(() => {
     setToasts([]);
     setRoundWrap(null);
+    setSold(null);
     waiting.current = [];
     setRecent([]);
     seededFor.current = null;
@@ -201,6 +205,11 @@ export function useDonationMoments(
         later(ROUND_WRAP_MS, () => setRoundWrap((current) => (current?.id === moment.id ? null : current)));
         return;
       }
+      if (moment.kind === "live-sold") {
+        setSold(moment);
+        later(SOLD_MS, () => setSold((current) => (current?.id === moment.id ? null : current)));
+        return;
+      }
       feedQueue = [...feedQueue, moment].slice(-MAX_RECENT);
       feed();
       waiting.current = [...waiting.current, moment].slice(-MAX_WAITING_TOASTS);
@@ -213,5 +222,5 @@ export function useDonationMoments(
     };
   }, []);
 
-  return { toasts, roundWrap, recent };
+  return { toasts, roundWrap, sold, recent };
 }

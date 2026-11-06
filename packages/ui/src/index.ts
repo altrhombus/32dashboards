@@ -18,6 +18,8 @@ export * from "./components/TotalRaisedCounter/TotalRaisedCounter.js";
 export * from "./components/FeaturedItemsGrid/FeaturedItemsGrid.js";
 export * from "./components/NoBidSpotlight/NoBidSpotlight.js";
 export * from "./components/QrCode/QrCode.js";
+export * from "./components/LiveAuctionStage/LiveAuctionStage.js";
+export * from "./components/LiveSoldStamp/LiveSoldStamp.js";
 export * from "./components/BottomMarquee/BottomMarquee.js";
 export * from "./components/ConfettiBurst/ConfettiBurst.js";
 export * from "./components/IncentiveTracker/IncentiveTracker.js";

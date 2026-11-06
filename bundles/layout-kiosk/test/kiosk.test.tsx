@@ -502,3 +502,68 @@ describe("the items block", () => {
     });
   });
 });
+
+describe("the Live auction scene", () => {
+  const renderScene = (live: LiveStateReplicant, sold: KioskData["sold"] = null) =>
+    render(
+      <LayoutRenderer
+        layout={builtInLayouts.liveAuction.layout}
+        registry={kioskRegistry}
+        data={{
+          live,
+          scene: scene("liveAuction"),
+          infoBar: { type: "empty" },
+          roundWrap: null,
+          sold,
+          recent: [],
+          toasts: [],
+        }}
+        fit="none"
+      />,
+    ).container;
+  const demo = sampleLive("demo");
+
+  it("shows the item, the running bid, and what's next", () => {
+    renderScene(demo);
+    expect(screen.getByText("Week at the lake house")).toBeInTheDocument();
+    expect(screen.getByText("Current bid")).toBeInTheDocument();
+    expect(screen.getByText("$850")).toBeInTheDocument();
+    expect(screen.getByText("Up next: Chef's dinner for ten")).toBeInTheDocument();
+  });
+
+  it("leaves the bid off when nobody's keeping up with it", () => {
+    renderScene({ ...demo, event: { ...demo.event!, liveShowBid: false } });
+    expect(screen.getByText("Week at the lake house")).toBeInTheDocument();
+    expect(screen.queryByText("Current bid")).toBeNull();
+  });
+
+  it("holds the room with a title and the total when there are no items", () => {
+    renderScene({ ...demo, event: { ...demo.event!, liveLots: [] } });
+    expect(screen.getByText("Live auction")).toBeInTheDocument();
+    expect(screen.getByText("$12,480")).toBeInTheDocument();
+  });
+
+  it("says thank you, with what it raised, after the last item", () => {
+    const event = { ...demo.event!, liveCurrent: demo.event!.liveLots.length };
+    renderScene({ ...demo, event, liveRaised: 3100 });
+    expect(screen.getByText("Thank you!")).toBeInTheDocument();
+    expect(screen.getByText("$3,100")).toBeInTheDocument();
+  });
+
+  it("stamps SOLD with the price and paddle", () => {
+    renderScene(demo, {
+      kind: "live-sold",
+      id: id(50),
+      eventId: id(1),
+      at: NOW,
+      lotId: id(51),
+      title: "Week at the lake house",
+      amount: 2200,
+      paddle: "42",
+      imageUrl: null,
+    });
+    expect(screen.getByText("Sold!")).toBeInTheDocument();
+    expect(screen.getByText("$2,200")).toBeInTheDocument();
+    expect(screen.getByText("Paddle 42")).toBeInTheDocument();
+  });
+});

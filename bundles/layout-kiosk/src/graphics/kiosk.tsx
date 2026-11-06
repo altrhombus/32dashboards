@@ -205,7 +205,7 @@ function Kiosk() {
   const celebrateRef = useRef<(moment: CelebrationMoment) => void>(() => {});
   const relayCelebrate = useCallback((moment: CelebrationMoment) => celebrateRef.current(moment), []);
   const quietRef = useRef(false);
-  const { toasts, roundWrap, recent } = useDonationMoments(live?.event?.id ?? null, relayCelebrate, {
+  const { toasts, roundWrap, sold, recent } = useDonationMoments(live?.event?.id ?? null, relayCelebrate, {
     history: moments,
     quiet: quietRef,
   });
@@ -241,7 +241,7 @@ function Kiosk() {
         <LayoutRenderer
           layout={layout}
           registry={kioskRegistry}
-          data={{ live, scene, infoBar: display, toasts: quiet ? [] : toasts, roundWrap, recent, hasInfoBar }}
+          data={{ live, scene, infoBar: display, toasts: quiet ? [] : toasts, roundWrap, sold, recent, hasInfoBar }}
           slotScale={slotScale}
         />
       </div>

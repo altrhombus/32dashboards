@@ -3,12 +3,14 @@ import {
   FundraiserEventSchema,
   applyFilters,
   liveStateFor,
+  lotFinished,
   roundCents,
   type BidWar,
   type CreateEventMessage,
   type DonationMoment,
   type FundraiserEvent,
   type AskMeRound,
+  type LiveLot,
   type LiveStateReplicant,
   type Screen,
   type SourceItem,
@@ -95,6 +97,30 @@ function mergeAskMeRounds(event: FundraiserEvent, edited: AskMeRound[]) {
   };
 }
 
+/**
+ * Edited live auction items, keeping how each has gone. Like Ask Me rounds, a
+ * finished item stays finished and stays ahead of the items still to come.
+ */
+function mergeLiveLots(event: FundraiserEvent, edited: LiveLot[]) {
+  const before = new Map(event.liveLots.map((lot) => [lot.id, lot]));
+  const kept = new Set(edited.map((lot) => lot.id));
+  const merged = edited.map((lot) => {
+    const old = before.get(lot.id);
+    return {
+      ...lot,
+      currentBid: old?.currentBid ?? null,
+      soldFor: old?.soldFor ?? null,
+      paddle: old?.paddle ?? "",
+      passed: old?.passed ?? false,
+    };
+  });
+  const finished = [
+    ...event.liveLots.filter((lot) => lotFinished(lot) && !kept.has(lot.id)),
+    ...merged.filter(lotFinished),
+  ];
+  return { liveLots: [...finished, ...merged.filter((lot) => !lotFinished(lot))], liveCurrent: finished.length };
+}
+
 /** Edited bid wars, keeping each option's running total, which only nudges change. */
 function mergeBidWars(event: FundraiserEvent, edited: BidWar[]): BidWar[] {
   const totals = new Map(event.bidWars.flatMap((war) => war.options.map((o) => [o.id, o.total] as const)));
@@ -106,11 +132,12 @@ function mergeBidWars(event: FundraiserEvent, edited: BidWar[]): BidWar[] {
 
 export function updateEvent(state: CoreState, { eventId, patch }: UpdateEventMessage, deps: Deps): CoreState {
   return editEvent(state, eventId, deps, (event) => {
-    const { theme, askMe, infoBar, askMeRounds, bidWars, ...rest } = patch;
+    const { theme, askMe, infoBar, askMeRounds, bidWars, liveLots, ...rest } = patch;
     return {
       ...rest,
       ...(askMeRounds && mergeAskMeRounds(event, askMeRounds)),
       ...(bidWars && { bidWars: mergeBidWars(event, bidWars) }),
+      ...(liveLots && mergeLiveLots(event, liveLots)),
       ...(theme && { theme: { ...event.theme, ...theme } }),
       ...(askMe && { askMe: { ...event.askMe, ...askMe } }),
       ...(infoBar && { infoBar: { ...event.infoBar, ...infoBar } }),
@@ -154,6 +181,15 @@ export function duplicateEvent(
     askMeRaised: 0,
     askMeRounds: source.askMeRounds.map((round) => ({ ...round, id: deps.newId(), raised: null })),
     askMeCurrent: 0,
+    liveLots: source.liveLots.map((lot) => ({
+      ...lot,
+      id: deps.newId(),
+      currentBid: null,
+      soldFor: null,
+      paddle: "",
+      passed: false,
+    })),
+    liveCurrent: 0,
     createdAt: now,
     updatedAt: now,
   });
@@ -269,6 +305,77 @@ export function nudgeAskMe(
       throw new CommandError("That round has finished. To change it, reopen it with its own Undo.");
     }
     return { askMe: { ...event.askMe, total: Math.max(0, roundCents(event.askMe.total + delta)) } };
+  });
+}
+
+/** The live item `lotId`, which must be the one up now, so a late tap can't land on the next item. */
+function lotUpNow(event: FundraiserEvent, lotId: string): LiveLot {
+  const lot = event.liveLots[event.liveCurrent];
+  if (lot?.id !== lotId) throw new CommandError("That item isn't up any more.");
+  return lot;
+}
+
+function editLot(event: FundraiserEvent, lotId: string, patch: Partial<LiveLot>) {
+  return event.liveLots.map((lot) => (lot.id === lotId ? { ...lot, ...patch } : lot));
+}
+
+/** Raises the running bid on the item up now, from its starting bid if nobody has bid yet. */
+export function nudgeLiveBid(state: CoreState, eventId: string, lotId: string, delta: number, deps: Deps): CoreState {
+  return editEvent(state, eventId, deps, (event) => {
+    const lot = lotUpNow(event, lotId);
+    const from = lot.currentBid ?? lot.startingBid ?? 0;
+    return { liveLots: editLot(event, lotId, { currentBid: Math.max(0, roundCents(from + delta)) }) };
+  });
+}
+
+export function setLiveBid(
+  state: CoreState,
+  eventId: string,
+  lotId: string,
+  amount: number | null,
+  deps: Deps,
+): CoreState {
+  return editEvent(state, eventId, deps, (event) => {
+    lotUpNow(event, lotId);
+    return { liveLots: editLot(event, lotId, { currentBid: amount === null ? null : roundCents(amount) }) };
+  });
+}
+
+export function sellLiveLot(
+  state: CoreState,
+  input: { eventId: string; lotId: string; amount: number; paddle?: string | undefined },
+  deps: Deps,
+): CoreState {
+  return editEvent(state, input.eventId, deps, (event) => {
+    lotUpNow(event, input.lotId);
+    return {
+      liveLots: editLot(event, input.lotId, {
+        soldFor: roundCents(input.amount),
+        currentBid: roundCents(input.amount),
+        paddle: input.paddle ?? "",
+      }),
+      liveCurrent: event.liveCurrent + 1,
+    };
+  });
+}
+
+export function passLiveLot(state: CoreState, eventId: string, lotId: string, deps: Deps): CoreState {
+  return editEvent(state, eventId, deps, (event) => {
+    lotUpNow(event, lotId);
+    return { liveLots: editLot(event, lotId, { passed: true }), liveCurrent: event.liveCurrent + 1 };
+  });
+}
+
+/** Undoes selling or passing: back to the most recently finished item, with its bid as it was. */
+export function reopenLiveLot(state: CoreState, eventId: string, lotId: string, deps: Deps): CoreState {
+  return editEvent(state, eventId, deps, (event) => {
+    if (event.liveLots[event.liveCurrent - 1]?.id !== lotId) {
+      throw new CommandError("Only the most recent item can be reopened.");
+    }
+    return {
+      liveLots: editLot(event, lotId, { soldFor: null, paddle: "", passed: false }),
+      liveCurrent: event.liveCurrent - 1,
+    };
   });
 }
 

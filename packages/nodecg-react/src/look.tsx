@@ -258,7 +258,10 @@ export function useLogoColors(url: string | null): Palette | null {
  * dashboard's Assets tab does, and resolves with its asset URL once NodeCG
  * lists it.
  */
-export async function uploadAsset(category: "event-logos" | "sponsor-logos", file: File): Promise<string> {
+export async function uploadAsset(
+  category: "event-logos" | "sponsor-logos" | "live-items",
+  file: File,
+): Promise<string> {
   const body = new FormData();
   body.append("file", file, file.name);
   const response = await fetch(`/assets/fundraiser-core/${category}`, {

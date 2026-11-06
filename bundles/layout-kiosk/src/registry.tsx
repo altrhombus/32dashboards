@@ -11,6 +11,8 @@ import {
   GrandCelebrationOverlay,
   IncentiveTracker,
   KioskHeader,
+  LiveAuctionStage,
+  LiveSoldStamp,
   MilestoneCelebration,
   NoBidSpotlight,
   QrCode,
@@ -23,7 +25,7 @@ import {
   SponsorCarousel,
   TotalRaisedCounter,
 } from "@32dashboards/ui";
-import { SPONSORS_TITLE, askMeProgress, firstLink, shortenLinks } from "@32dashboards/schema/core";
+import { SPONSORS_TITLE, askMeProgress, firstLink, liveProgress, shortenLinks } from "@32dashboards/schema/core";
 import type { ItemView } from "./catalog.js";
 import type { CelebrationMoment, InfoBarDisplay, KioskData, ToastMoment } from "./data.js";
 import { selectFeaturedItems, selectNoBidItems, type SegmentContent } from "./segments.js";
@@ -473,6 +475,41 @@ export const kioskRegistry: Registry<KioskData> = {
       };
     },
     component: ({ askMe, logoUrl, kicker }) => <AskMeOverlay askMe={askMe} logoUrl={logoUrl} kicker={kicker} visible />,
+  }),
+
+  liveAuction: defineComponent<KioskData, Parameters<typeof LiveAuctionStage>[0]>({
+    variants: ["stage"],
+    select: ({ live }) => {
+      const event = live.event;
+      if (!event) return null;
+      const progress = liveProgress(event);
+      const sponsors = [...event.sponsors].sort((a, b) => a.sortOrder - b.sortOrder);
+      return {
+        lot: progress.lot,
+        number: progress.number,
+        count: progress.count,
+        nextTitle: progress.next ? progress.next.title || `Live item ${progress.number + 1}` : null,
+        showBid: event.liveShowBid,
+        done: progress.done,
+        raised: live.liveRaised,
+        total: live.total,
+        logos: sponsors.length ? (
+          <SponsorCarousel
+            sponsors={sponsors}
+            intervalMs={(event.sponsorsSeconds || 6) * 1000}
+            background={event.theme.backgroundTo}
+          />
+        ) : undefined,
+      };
+    },
+    component: LiveAuctionStage,
+  }),
+
+  liveSold: defineComponent<KioskData, Parameters<typeof LiveSoldStamp>[0]>({
+    variants: ["full"],
+    select: ({ sold }) =>
+      sold ? { title: sold.title, amount: sold.amount, paddle: sold.paddle, imageUrl: sold.imageUrl } : null,
+    component: LiveSoldStamp,
   }),
 
   grandCelebration: defineComponent<KioskData, { totalRaised: number; causeName: string; logoUrl: string | null }>({

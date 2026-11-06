@@ -13,6 +13,7 @@ const FIELD_NAMES: Record<string, string> = {
   bidWars: "Bid war",
   callToAction: "Call to action",
   incentives: "Incentive",
+  liveLots: "Live item",
   milestones: "Milestone",
   prizes: "Prize",
   sponsors: "Logo",

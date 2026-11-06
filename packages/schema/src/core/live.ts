@@ -1,4 +1,5 @@
 import type { FundraiserEvent } from "./event.js";
+import { liveRaised } from "./liveAuction.js";
 import type { LiveStateReplicant } from "./replicants.js";
 import type { SourceItem, SourceResult } from "./source.js";
 
@@ -22,13 +23,18 @@ export function liveStateFor(event: FundraiserEvent | null, result: SourceResult
   const rawTotal = result?.total ?? 0;
   const adjustment = event?.adjustment ?? 0;
   const askMeRaised = event?.askMeRaised ?? 0;
+  const sold = event ? liveRaised(event) : 0;
   const { items, hidden } = applyFilters(result?.items ?? [], event?.filters ?? []);
   return {
     event,
     rawTotal,
     adjustment,
     askMeRaised,
-    total: Math.round((rawTotal + adjustment + (event?.askMeInTotal ? askMeRaised : 0)) * 100) / 100,
+    liveRaised: sold,
+    total:
+      Math.round(
+        (rawTotal + adjustment + (event?.askMeInTotal ? askMeRaised : 0) + (event?.liveInTotal ? sold : 0)) * 100,
+      ) / 100,
     items,
     hiddenItemCount: hidden,
     sourceId: result?.sourceId ?? null,

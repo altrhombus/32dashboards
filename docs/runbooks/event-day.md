@@ -98,6 +98,22 @@ network.
        round entered by mistake.
      - Without planned rounds, Ask Me is one appeal you can finish and
        run again.
+   - **Live auction.** Add the items beforehand on the **Event** tab, under
+     Show content, **Live auction**: title, a line or two, what it's worth,
+     the starting bid, and a photo (a phone can take one). Then tap the
+     **Live auction** scene; on a phone the **Auction** tab opens by itself.
+     - **Open at** starts the bid. Tap an increment once, then the big
+       button for each bid after it; you only need to stay close to the
+       auctioneer. **Set** types an exact amount.
+     - **SOLD** takes a second tap and stamps the TVs with the final price
+       (add a paddle number if you like), then the next item comes up.
+       **No sale** moves on quietly. Both have an Undo.
+     - If nobody's keeping up with the bidding, turn off **Show bids on the
+       TV**: the TVs show the item alone, and you type the price at SOLD.
+     - The sales aren't in the total unless you tap **Add it to the total**
+       on the pad. Leave them out if they also go into 32auctions. It can
+       change at any time.
+     - If bidding closes while this scene is up, the TVs stay on it.
    - **Pop-ups.** Each new bid on an item pops up on its own ("New bid",
      or "3 new bids" if several came in between refreshes), and money the
      bids don't explain (a donation) gets a "Thank you". In a rush they

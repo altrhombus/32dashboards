@@ -7,6 +7,7 @@ export const VIEW_NAMES: Record<ScreenView, string> = {
   noBids: "No bids yet",
   intermission: "Intermission",
   askMe: "Ask Me",
+  liveAuction: "Live auction",
   celebration: "Celebration",
   standby: "Standby",
 };

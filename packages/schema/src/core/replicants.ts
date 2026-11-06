@@ -32,6 +32,8 @@ export const LiveStateReplicantSchema = z.object({
   adjustment: z.number(),
   /** Finished Ask Me rounds, part of `total`. */
   askMeRaised: z.number().default(0),
+  /** What the live auction has sold; part of `total` only with the event's liveInTotal. */
+  liveRaised: z.number().default(0),
   total: z.number(),
   items: z.array(SourceItemSchema),
   hiddenItemCount: z.number().int().nonnegative(),
@@ -130,6 +132,18 @@ export const DonationMomentSchema = z.discriminatedUnion("kind", [
     count: z.number().int().nonnegative().default(0),
     /** Every Ask Me round so far tonight, this one included. */
     raisedTonight: z.number().default(0),
+  }),
+  z.object({
+    // A live auction item sold (added to the total if the event adds them).
+    kind: z.literal("live-sold"),
+    id: z.string().uuid(),
+    eventId: z.string().uuid(),
+    at: timestamp(),
+    lotId: z.string().uuid(),
+    title: z.string(),
+    amount: z.number().positive(),
+    paddle: z.string().default(""),
+    imageUrl: z.string().nullable().default(null),
   }),
   z.object({
     // Bidding is about to close (minutesLeft 10, 5 or 1), or just closed (0).

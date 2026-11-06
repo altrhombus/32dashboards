@@ -543,3 +543,91 @@ describe("editing while the show runs", () => {
     expect(core.detectThresholdMoments(at(900), at(1100), deps, 1100)).toHaveLength(0);
   });
 });
+
+describe("the live auction", () => {
+  function auction() {
+    const { state, eventId, deps } = withEvent();
+    const lot = (title: string, startingBid: number | null = null) => ({
+      id: deps.newId(),
+      title,
+      description: "",
+      imageUrl: null,
+      value: null,
+      startingBid,
+      currentBid: null,
+      soldFor: null,
+      paddle: "",
+      passed: false,
+    });
+    const liveLots = [lot("Lake house", 500), lot("Dinner"), lot("Art")];
+    const made = core.updateEvent({ ...state, activeEventId: eventId }, { eventId, patch: { liveLots } }, deps);
+    return { state: made, eventId, deps, ids: liveLots.map((l) => l.id) };
+  }
+
+  it("raises the bid from the starting bid, with every tap counted", () => {
+    const { state, eventId, deps, ids } = auction();
+    const once = core.nudgeLiveBid(state, eventId, ids[0]!, 100, deps);
+    const twice = core.nudgeLiveBid(once, eventId, ids[0]!, 100, deps);
+    expect(twice.events[0]!.liveLots[0]!.currentBid).toBe(700);
+  });
+
+  it("puts a bid back to none when undoing the first one", () => {
+    const { state, eventId, deps, ids } = auction();
+    const opened = core.setLiveBid(state, eventId, ids[0]!, 500, deps);
+    expect(core.setLiveBid(opened, eventId, ids[0]!, null, deps).events[0]!.liveLots[0]!.currentBid).toBeNull();
+  });
+
+  it("sells the item up now and moves on", () => {
+    const { state, eventId, deps, ids } = auction();
+    const sold = core.sellLiveLot(state, { eventId, lotId: ids[0]!, amount: 900, paddle: "42" }, deps).events[0]!;
+    expect(sold.liveLots[0]).toMatchObject({ soldFor: 900, paddle: "42" });
+    expect(sold.liveCurrent).toBe(1);
+  });
+
+  it("won't take a late tap on an item that has moved on", () => {
+    const { state, eventId, deps, ids } = auction();
+    const sold = core.sellLiveLot(state, { eventId, lotId: ids[0]!, amount: 900 }, deps);
+    expect(() => core.nudgeLiveBid(sold, eventId, ids[0]!, 100, deps)).toThrow(/isn't up any more/);
+    expect(() => core.sellLiveLot(sold, { eventId, lotId: ids[0]!, amount: 950 }, deps)).toThrow(/isn't up any more/);
+  });
+
+  it("counts sales in the total only when the event says so", () => {
+    const { state, eventId, deps, ids } = auction();
+    const sold = core.sellLiveLot(state, { eventId, lotId: ids[0]!, amount: 900 }, deps);
+    expect(core.computeLiveState(sold)).toMatchObject({ liveRaised: 900, total: 0 });
+    const added = core.updateEvent(sold, { eventId, patch: { liveInTotal: true } }, deps);
+    expect(core.computeLiveState(added)).toMatchObject({ liveRaised: 900, total: 900 });
+  });
+
+  it("undoes only the latest item, keeping its bid", () => {
+    const { state, eventId, deps, ids } = auction();
+    const bid = core.setLiveBid(state, eventId, ids[0]!, 800, deps);
+    const one = core.sellLiveLot(bid, { eventId, lotId: ids[0]!, amount: 800 }, deps);
+    const two = core.passLiveLot(one, eventId, ids[1]!, deps);
+    expect(() => core.reopenLiveLot(two, eventId, ids[0]!, deps)).toThrow(/most recent/);
+    const back = core.reopenLiveLot(core.reopenLiveLot(two, eventId, ids[1]!, deps), eventId, ids[0]!, deps);
+    expect(back.events[0]!.liveCurrent).toBe(0);
+    expect(back.events[0]!.liveLots[0]).toMatchObject({ soldFor: null, currentBid: 800 });
+  });
+
+  it("keeps what happened when the list is edited, whatever an older editor sends", () => {
+    const { state, eventId, deps, ids } = auction();
+    const sold = core.sellLiveLot(state, { eventId, lotId: ids[0]!, amount: 900 }, deps);
+    const [first, second, third] = sold.events[0]!.liveLots;
+    const stale = [third!, second!, { ...first!, soldFor: null, title: "Lake house!" }];
+    const next = core.updateEvent(sold, { eventId, patch: { liveLots: stale } }, deps).events[0]!;
+    expect(next.liveLots[0]).toMatchObject({ title: "Lake house!", soldFor: 900 });
+    expect(next.liveCurrent).toBe(1);
+    const gone = core.updateEvent(sold, { eventId, patch: { liveLots: [second!, third!] } }, deps).events[0]!;
+    expect(gone.liveLots.map((l) => l.title)).toEqual(["Lake house", "Dinner", "Art"]);
+  });
+
+  it("starts a copied event's auction over", () => {
+    const { state, eventId, deps, ids } = auction();
+    const sold = core.sellLiveLot(state, { eventId, lotId: ids[0]!, amount: 900 }, deps);
+    const copied = core.duplicateEvent(sold, { eventId }, deps);
+    const copy = copied.state.events.find((e) => e.id === copied.eventId)!;
+    expect(copy.liveCurrent).toBe(0);
+    expect(copy.liveLots[0]).toMatchObject({ title: "Lake house", soldFor: null, currentBid: null });
+  });
+});

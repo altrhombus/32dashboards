@@ -118,6 +118,9 @@ tabs at the bottom are **Money**, **Ask Me**, **Scenes** and **More**.
   it, after a second tap.
 - **No bids yet:** tap the scene to show items nobody has bid on, with QR
   codes to bid. Good for a quiet stretch.
+- **Live auction:** tap the **Live auction** scene. On a phone, the
+  **Auction** tab opens by itself. Tap bids as they're called, then **SOLD**
+  (a second tap) with the final price.
 - **Bidding closing:** the TVs count down the last minutes and announce
   when bidding closes. If the event is set to switch by itself, they go to
   **Celebration**; otherwise start it when you're ready.
