@@ -24,3 +24,6 @@ bundles/*/schemas/
 
 # Data set aside by scripts/restore.sh
 .pre-restore-*/
+
+# Playwright output
+.e2e-results/

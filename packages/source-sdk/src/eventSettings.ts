@@ -2,6 +2,7 @@ import type NodeCG from "nodecg/types";
 import { z } from "zod";
 import { CommandError, listenForCommand } from "./commands.js";
 import type { FundraiserCoreApi } from "./contract.js";
+import { plain } from "./plain.js";
 import type { SecretStore } from "./secrets.js";
 
 /*
@@ -54,7 +55,7 @@ export function createEventSettings<S extends z.ZodTypeAny>(
   });
   const listeners = new Set<(eventId: string) => void>();
 
-  const plainConfigs = (): Record<string, Config> => JSON.parse(JSON.stringify(configs.value ?? {}));
+  const plainConfigs = (): Record<string, Config> => plain(configs.value ?? {});
   const changed = (id: string) => {
     for (const listener of listeners) listener(id);
   };

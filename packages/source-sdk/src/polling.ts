@@ -31,6 +31,11 @@ export interface PollingSourceDefinition<S extends z.ZodTypeAny> {
   /** Secrets that must be set before polling starts. */
   requiredSecrets?: readonly string[];
   intervalSeconds(config: z.output<S>): number;
+  /**
+   * An operator asked to try again for this event: its settings or credentials
+   * were saved, or they tapped Fetch now. Runs before the fresh cycle starts.
+   */
+  onRetry?(eventId: string): void;
   /** Fetches one observation. Throw to report a failed cycle; it's retried on the next one. */
   poll(context: PollContext<z.output<S>>): Promise<PollResult>;
 }
@@ -78,6 +83,8 @@ export function createPollingSource<S extends z.ZodTypeAny>(
   let timer: ReturnType<typeof setTimeout> | undefined;
   let inFlight: AbortController | null = null;
   let stopped = false;
+  // Events whose settings changed: the next result starts over, rather than comparing with the last.
+  const startingOver = new Set<string>();
 
   const schedule = (ms: number) => {
     clearTimeout(timer);
@@ -134,7 +141,13 @@ export function createPollingSource<S extends z.ZodTypeAny>(
         log: (level, message) => handle.log(level, message, eventId),
       });
       if (controller.signal.aborted) return;
-      const outcome = handle.report({ eventId, total: result.total, items: result.items, observedAt: now() });
+      const outcome = handle.report({
+        eventId,
+        total: result.total,
+        items: result.items,
+        observedAt: now(),
+        baseline: startingOver.delete(eventId),
+      });
       if (outcome === "stored") {
         const count = result.items?.length ?? 0;
         handle.setStatus({
@@ -160,9 +173,12 @@ export function createPollingSource<S extends z.ZodTypeAny>(
     core.onActiveEventChange(retarget),
     core.onEventsChange(retarget),
     settings.onChange((eventId) => {
+      startingOver.add(eventId);
+      definition.onRetry?.(eventId);
       if (eventId === target) restart();
     }),
     handle.onRefreshRequested((eventId) => {
+      definition.onRetry?.(eventId);
       if (eventId === target && !inFlight) restart();
     }),
   ];
@@ -184,7 +200,13 @@ export function createPollingSource<S extends z.ZodTypeAny>(
       signal,
       log: (level, message) => handle.log(level, message, eventId),
     });
-    const outcome = handle.report({ eventId, total: result.total, items: result.items, observedAt: now() });
+    const outcome = handle.report({
+      eventId,
+      total: result.total,
+      items: result.items,
+      observedAt: now(),
+      baseline: startingOver.delete(eventId),
+    });
     return { result, outcome };
   }
 

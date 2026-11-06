@@ -16,7 +16,8 @@ type Config = z.infer<typeof configSchema>;
 function setup(poll: (ctx: PollContext<Config>) => Promise<PollResult>) {
   const fake = createFakeNodecg("source-test");
   const core = createFakeCore([testEvent(A, "test"), testEvent(B, "test")]);
-  const secrets = new SecretStore(path.join(mkdtempSync(path.join(tmpdir(), "poll-")), "s.json"));
+  const dir = mkdtempSync(path.join(tmpdir(), "poll-"));
+  const secrets = new SecretStore(path.join(dir, "s.json"), path.join(dir, "s.key"));
   const calls: PollContext<Config>[] = [];
   const source = createPollingSource(
     fake.api,
@@ -203,5 +204,15 @@ describe("createPollingSource", () => {
     t.source.stop();
     await vi.advanceTimersByTimeAsync(60_000);
     expect(t.calls).toHaveLength(1);
+  });
+
+  it("starts over after settings change, so a new total isn't taken for new money", async () => {
+    const t = setup(async () => ({ total: 5 }));
+    t.core.activate(A);
+    await t.configure(A);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(t.core.reports.at(-1)).toMatchObject({ eventId: A, baseline: true });
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(t.core.reports.at(-1)).toMatchObject({ eventId: A, baseline: false });
   });
 });

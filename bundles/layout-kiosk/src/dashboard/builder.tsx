@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import GridLayout, { getCompactor, useContainerWidth, type Layout } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import { cellSize, contentScale, type BlockLayout } from "@32dashboards/layout-engine/data";
-import { ConfirmButton, errorText, useReplicant } from "@32dashboards/nodecg-react";
+import { ConfirmButton, errorText, useNarrow, useReplicant } from "@32dashboards/nodecg-react";
 import {
   SCREEN_VIEWS,
   type LiveStateReplicant,
@@ -39,20 +39,6 @@ const sendKiosk = <N extends KioskMessageName>(name: N, payload: KioskMessagePay
 const CATEGORY_NAMES = { money: "Money", items: "Items", show: "Show", brand: "Brand", scene: "Whole scenes" } as const;
 
 type PreviewData = "event" | "demo" | "worst";
-
-/** True while the viewport is phone-sized. */
-function useNarrow(maxWidth: number): boolean {
-  const query = `(max-width: ${maxWidth}px)`;
-  const [narrow, setNarrow] = useState(() => window.matchMedia?.(query).matches ?? false);
-  useEffect(() => {
-    const list = window.matchMedia?.(query);
-    if (!list) return;
-    const onChange = () => setNarrow(list.matches);
-    list.addEventListener("change", onChange);
-    return () => list.removeEventListener("change", onChange);
-  }, [query]);
-  return narrow;
-}
 
 interface Note {
   text: string;
@@ -863,6 +849,20 @@ function BlockInspector(props: {
                 disabled={props.readOnly}
                 onChange={(e) => e.target.value !== "" && set(field.key, Math.round(Number(e.target.value)))}
               />
+            </label>
+          );
+        }
+        if (field.kind === "choice") {
+          return (
+            <label key={field.key} className="field">
+              <span>{label}</span>
+              <select value={String(value)} disabled={props.readOnly} onChange={(e) => set(field.key, e.target.value)}>
+                {field.options.map((option) => (
+                  <option key={option} value={option}>
+                    {edit.CHOICE_LABELS[option] ?? option}
+                  </option>
+                ))}
+              </select>
             </label>
           );
         }

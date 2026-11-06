@@ -4,6 +4,7 @@ import type { ScreenView } from "@32dashboards/schema/core";
 export const VIEW_NAMES: Record<ScreenView, string> = {
   welcome: "Welcome",
   main: "Main",
+  noBids: "No bids yet",
   intermission: "Intermission",
   askMe: "Ask Me",
   celebration: "Celebration",

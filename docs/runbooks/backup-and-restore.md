@@ -37,6 +37,12 @@ What's there now is moved to `.pre-restore-<timestamp>/`, not deleted, so a
 wrong restore can be undone the same way. Delete that folder once you've
 checked the restore. Reload the kiosk afterwards (F5 on the TV).
 
+Backups don't include the key that opens saved credentials
+(`~/.config/32dashboards/secrets.key`), so a copied backup holds no readable
+passwords. Restoring on this laptop just works. On another computer the source
+adapters can't open their files and NodeCG says so: delete
+`db/source-secrets/`, start NodeCG, and enter the source's credentials again.
+
 ## The whole distro
 
 To move to a new laptop, or to keep a complete snapshot (code, toolchain,

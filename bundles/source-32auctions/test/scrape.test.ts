@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkIntegrity, parseItemsPage, parseTotalRaised, ScrapeIntegrityError } from "../src/extension/parser.js";
-import { normalizeCards, scrapeAuction, TotalNotShownError } from "../src/extension/scrape.js";
+import { normalizeCards, scrapeAuction, sumOfBids, TotalNotShownError } from "../src/extension/scrape.js";
 import { itemsUrl, summaryUrl, type Config } from "../src/config.js";
 
 // Same fixtures (and assertions) as the legacy Python parser tests.
@@ -120,6 +120,7 @@ describe("scrapeAuction", () => {
       id: "/item/1",
       title: "Signed Guitar",
       imageUrl: `${BASE}/images/item1.jpg`,
+      url: `${BASE}/item/1`,
       currentBid: 50,
       value: 100,
       bidCount: 3,
@@ -176,8 +177,28 @@ describe("scrapeAuction", () => {
       fetchImpl: site.fetchImpl,
     });
     expect(site.requests.map((r) => r.url)).not.toContain(summaryUrl(BASE, config));
-    expect(result.total).toBe(result.items!.reduce((sum, i) => sum + (i.currentBid ?? 0), 0));
+    expect(result.total).toBe(sumOfBids(result.items as Parameters<typeof sumOfBids>[0]));
     expect(result.total).toBeGreaterThan(0);
+  });
+
+  it("adds up only items with bids: an opening price or a Buy Now price isn't money raised", () => {
+    const total = sumOfBids([
+      { currentBid: 100, bidCount: 0 },
+      { currentBid: 50, bidCount: 3 },
+      { currentBid: 25, bidCount: null },
+    ]);
+    expect(total).toBe(50);
+  });
+
+  it("keeps each item's address, for its QR code", () => {
+    const pageUrl = `${BASE}/organizations/1/auctions/2?r=1&t=all`;
+    const card = { title: "A", pictureUrl: null, price: "$5", remaining: null, value: null, bids: "0" };
+    const [item, noLink] = normalizeCards([
+      { card: { ...card, href: "/organizations/1/auctions/2/auction_items/6006" }, pageUrl },
+      { card: { ...card, href: null }, pageUrl },
+    ]);
+    expect(item!.url).toBe(`${BASE}/organizations/1/auctions/2/auction_items/6006`);
+    expect(noLink!.url).toBeNull();
   });
 
   it("reports no total, only items, when the total isn't shown", async () => {

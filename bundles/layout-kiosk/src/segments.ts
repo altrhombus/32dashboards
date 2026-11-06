@@ -1,6 +1,7 @@
 import type { InfoBarSegment } from "@32dashboards/incentive-machine";
 import {
   segmentSecondsFor,
+  shortenLinks,
   type BidWar,
   type Incentive,
   type LiveStateReplicant,
@@ -61,7 +62,9 @@ export function buildSegments(live: LiveStateReplicant): SegmentPlan {
         for (const prize of event.prizes.filter((p) => p.active)) add(`prize:${prize.id}`, { kind: "prize", prize });
         break;
       case "callToAction":
-        if (event.callToAction.trim()) add("callToAction", { kind: "callToAction", text: event.callToAction });
+        if (event.callToAction.trim()) {
+          add("callToAction", { kind: "callToAction", text: shortenLinks(event.callToAction) });
+        }
         break;
       case "announcements":
         event.announcements.forEach(
@@ -98,6 +101,11 @@ export function buildSegments(live: LiveStateReplicant): SegmentPlan {
     : null;
 
   return { segments, pinned };
+}
+
+/** Auction items nobody has bid on yet. Buy Now items have no bids to count, so they aren't among them. */
+export function selectNoBidItems(items: SourceItem[]): SourceItem[] {
+  return items.filter((item) => item.bidCount === 0 && item.available == null);
 }
 
 /**

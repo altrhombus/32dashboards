@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LayoutRenderer, validateLayout } from "@32dashboards/layout-engine";
 import { SCENE_IDS, type LiveStateReplicant, type SceneReplicant } from "@32dashboards/schema/core";
 import { LONG_DESCRIPTION, LONG_TITLE, worstCaseItems } from "@32dashboards/ui";
@@ -7,9 +7,9 @@ import type { KioskData } from "../src/data.js";
 import { kioskCatalog } from "../src/catalog.js";
 import { builtInLayouts, templates } from "../src/layouts.js";
 import { checkLayout } from "../src/library.js";
-import { kioskRegistry } from "../src/registry.js";
+import { kioskRegistry, usesSpotlight } from "../src/registry.js";
 import { sampleLive } from "../src/samples.js";
-import { buildSegments, selectFeaturedItems } from "../src/segments.js";
+import { buildSegments, selectFeaturedItems, selectNoBidItems } from "../src/segments.js";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const NOW = "2026-10-10T12:00:00.000Z";
@@ -43,7 +43,13 @@ describe("kiosk layouts", () => {
 
   it("fills built-in blocks' settings with the catalog's defaults", () => {
     const featured = builtInLayouts.main.blocks.blocks.find((b) => b.component === "featuredItems");
-    expect(featured?.settings).toEqual({ title: "Featured items", size: 6 });
+    expect(featured?.settings).toEqual({
+      title: "Featured items",
+      size: 6,
+      show: "both",
+      featuredSeconds: 30,
+      noBidsSeconds: 20,
+    });
     expect(builtInLayouts.main.layout.slots.countdown?.options).toEqual({ title: "Time left" });
   });
 
@@ -268,5 +274,231 @@ describe("selectFeaturedItems", () => {
     const items = [item("deal", 100, 1), item("quiet", null, 0), item("busy", null, 12), item("warm", 50, 5)];
     expect(selectFeaturedItems(items, 3).map((i) => i.id)).toEqual(["deal", "busy", "warm"]);
     expect(selectFeaturedItems(worstCaseItems).map((i) => i.id)).toEqual(["empty", "long", "name"]);
+  });
+});
+
+describe("the No bids yet scene", () => {
+  it("picks auction items without a bid, not Buy Now items or ones already bid on", () => {
+    const item = (id: string, bidCount: number | null, available?: number | null) => ({
+      id,
+      title: id,
+      imageUrl: null,
+      currentBid: 10,
+      value: null,
+      bidCount,
+      remaining: null,
+      available,
+    });
+    const picked = selectNoBidItems([item("open", 0), item("bid", 2), item("buy-now", null, 4), item("sold", 0, 0)]);
+    expect(picked.map((i) => i.id)).toEqual(["open"]);
+  });
+
+  it("offers a QR code on Welcome when the call to action has an address, without repeating it", () => {
+    const demo = sampleLive("demo");
+    const event = { ...demo.event!, callToAction: "Bid at https://www.32auctions.com/SpringGala" };
+    const data: KioskData = {
+      live: { ...demo, event },
+      scene: scene("welcome"),
+      infoBar: { type: "empty" },
+      roundWrap: null,
+      recent: [],
+      toasts: [],
+    };
+    render(<LayoutRenderer layout={builtInLayouts.welcome.layout} registry={kioskRegistry} data={data} fit="none" />);
+    expect(screen.getByRole("img", { name: "QR code to bid or give" })).toBeInTheDocument();
+    expect(screen.queryByText(/Bid at/)).toBeNull();
+  });
+
+  it("shows the address the short way in the info bar", () => {
+    const demo = sampleLive("demo");
+    const event = { ...demo.event!, callToAction: "Bid at https://www.32auctions.com/SpringGala" };
+    const cta = buildSegments({ ...demo, event }).segments.find((s) => s.content.kind === "callToAction");
+    expect(cta?.content).toEqual({ kind: "callToAction", text: "Bid at 32auctions.com/SpringGala" });
+  });
+});
+
+describe("milestones over a scene that shouldn't be covered", () => {
+  it.each(["askMe", "celebration"] as const)("%s shows a banner, not the spotlight", (sceneId) => {
+    const moment = {
+      kind: "last-call" as const,
+      id: id(30),
+      eventId: id(1),
+      at: NOW,
+      minutesLeft: 5,
+    };
+    const data: KioskData = {
+      live,
+      scene: scene(sceneId),
+      infoBar: { type: "celebration", moment },
+      roundWrap: null,
+      recent: [],
+      toasts: [],
+    };
+    const { container } = render(
+      <LayoutRenderer layout={builtInLayouts[sceneId].layout} registry={kioskRegistry} data={data} fit="none" />,
+    );
+    expect(container.querySelector(".kiosk-banner")).not.toBeNull();
+    expect(screen.getByText("5 minutes left")).toBeInTheDocument();
+    expect(builtInLayouts[sceneId].blocks.overlays.map((o) => o.component)).not.toContain("milestoneSpotlight");
+  });
+});
+
+describe("how milestones are celebrated", () => {
+  const milestone = (label: string) => ({
+    kind: "milestone" as const,
+    id: id(40),
+    eventId: id(1),
+    at: NOW,
+    milestoneId: id(41),
+    amount: 5000,
+    label,
+  });
+  const goal = {
+    kind: "incentive-met" as const,
+    id: id(42),
+    eventId: id(1),
+    at: NOW,
+    incentiveId: id(43),
+    name: "New van",
+    target: 5000,
+  };
+  const lastCall = { kind: "last-call" as const, id: id(44), eventId: id(1), at: NOW, minutesLeft: 5 };
+  const withStyle = (milestoneStyle: NonNullable<LiveStateReplicant["event"]>["milestoneStyle"]) => {
+    const demo = sampleLive("demo");
+    return { ...demo, event: { ...demo.event!, milestoneStyle } };
+  };
+
+  it.each([
+    ["spotlight", "", true],
+    ["spotlight", "A new van", true],
+    ["infoBar", "", false],
+    ["infoBar", "A new van", false],
+    ["named", "", false],
+    ["named", "A new van", true],
+  ] as const)("%s, label %j: full screen is %s", (style, label, expected) => {
+    expect(usesSpotlight({ live: withStyle(style) }, milestone(label))).toBe(expected);
+  });
+
+  it("treats a goal as labeled, and always gives last calls the screen", () => {
+    expect(usesSpotlight({ live: withStyle("named") }, goal)).toBe(true);
+    expect(usesSpotlight({ live: withStyle("infoBar") }, goal)).toBe(false);
+    expect(usesSpotlight({ live: withStyle("infoBar") }, lastCall)).toBe(true);
+  });
+
+  it("never misses one: a layout without an info bar gets the full screen", () => {
+    expect(usesSpotlight({ live: withStyle("infoBar"), hasInfoBar: false }, milestone(""))).toBe(true);
+  });
+
+  const renderMain = (live: LiveStateReplicant, moment: ReturnType<typeof milestone>) =>
+    render(
+      <LayoutRenderer
+        layout={builtInLayouts.main.layout}
+        registry={kioskRegistry}
+        data={{
+          live,
+          scene: scene("main"),
+          infoBar: { type: "celebration", moment },
+          roundWrap: null,
+          recent: [],
+          toasts: [],
+          hasInfoBar: true,
+        }}
+        fit="none"
+      />,
+    ).container;
+
+  it("puts on the show in the bar when nothing covers the screen", () => {
+    const container = renderMain(withStyle("named"), milestone(""));
+    expect(container.querySelector(".kiosk-info-bar--starring")).not.toBeNull();
+    expect(container.querySelector(".milestone-spotlight")).toBeNull();
+  });
+
+  it("keeps the bar quiet under the full screen", () => {
+    const container = renderMain(withStyle("named"), milestone("A new van"));
+    expect(container.querySelector(".kiosk-info-bar--starring")).toBeNull();
+    expect(container.querySelector(".milestone-spotlight")).not.toBeNull();
+  });
+});
+
+describe("the items block", () => {
+  const item = (n: number, bidCount: number): LiveStateReplicant["items"][number] => ({
+    id: `item-${n}`,
+    title: `Item ${n}`,
+    imageUrl: null,
+    currentBid: 10,
+    value: 100,
+    bidCount,
+    remaining: null,
+    url: `https://example.test/${n}`,
+  });
+  const block = builtInLayouts.main.blocks.blocks.find((b) => b.component === "featuredItems")!;
+  const FeaturedBlock = kioskRegistry.featuredItems!;
+
+  function renderBlock(items: LiveStateReplicant["items"], settings: Record<string, unknown> = {}) {
+    const data: KioskData = {
+      live: { ...sampleLive("demo"), items },
+      scene: scene("main"),
+      infoBar: { type: "empty" },
+      roundWrap: null,
+      recent: [],
+      toasts: [],
+    };
+    const props = FeaturedBlock.select(data, { variant: "grid", options: { ...block.settings, ...settings } })!;
+    const Component = FeaturedBlock.component;
+    return render(<Component {...props} />).container;
+  }
+  const pane = (container: HTMLElement, selector: string) =>
+    container.querySelector(selector)?.closest<HTMLElement>(".kiosk-items") ?? null;
+
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("takes turns: featured items, then no bids, then back", () => {
+    const container = renderBlock([item(1, 1), item(2, 0)], { featuredSeconds: 30, noBidsSeconds: 20 });
+    const featured = pane(container, ".featured-items-grid")!;
+    const noBids = pane(container, ".no-bid-spotlight")!;
+    expect([featured.hidden, noBids.hidden]).toEqual([false, true]);
+    act(() => void vi.advanceTimersByTime(30_000));
+    expect([featured.hidden, noBids.hidden]).toEqual([true, false]);
+    act(() => void vi.advanceTimersByTime(20_000));
+    expect([featured.hidden, noBids.hidden]).toEqual([false, true]);
+  });
+
+  it("picks up where each left off, rather than starting again", () => {
+    const items = [1, 2, 3, 4, 5].map((n) => item(n, 0));
+    const container = renderBlock(items, { featuredSeconds: 10, noBidsSeconds: 10, size: 1 });
+    const shown = () => [...container.querySelectorAll(".no-bid-spotlight__title")].map((el) => el.textContent);
+    expect(shown()).toEqual(["Item 1", "Item 2"]);
+    act(() => void vi.advanceTimersByTime(10_000));
+    act(() => void vi.advanceTimersByTime(10_000));
+    act(() => void vi.advanceTimersByTime(10_000));
+    expect(shown()).toEqual(["Item 3", "Item 4"]);
+  });
+
+  it("shows just one when a layout says so", () => {
+    expect(pane(renderBlock([item(1, 1), item(2, 0)], { show: "featured" }), ".no-bid-spotlight")).toBeNull();
+    expect(pane(renderBlock([item(1, 1), item(2, 0)], { show: "noBids" }), ".featured-items-grid")).toBeNull();
+  });
+
+  it("stays on featured items once every item has a bid", () => {
+    const container = renderBlock([item(1, 1)]);
+    act(() => void vi.advanceTimersByTime(60_000));
+    expect(pane(container, ".featured-items-grid")!.hidden).toBe(false);
+  });
+
+  it("takes turns in a layout saved before the setting existed", () => {
+    const data: KioskData = {
+      live: { ...sampleLive("demo"), items: [item(1, 1), item(2, 0)] },
+      scene: scene("main"),
+      infoBar: { type: "empty" },
+      roundWrap: null,
+      recent: [],
+      toasts: [],
+    };
+    expect(FeaturedBlock.select(data, { variant: "grid", options: { title: "Items", size: 6 } })).toMatchObject({
+      show: "both",
+      featuredMs: 30_000,
+      noBidsMs: 20_000,
+    });
   });
 });

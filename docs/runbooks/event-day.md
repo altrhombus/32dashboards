@@ -49,14 +49,24 @@ network.
    left, tap **Put on the TVs**, then tap again to confirm. Check the strip:
    the source should say **receiving data**. **No data yet** means nothing
    has arrived (normal for manual entry until the first entry; otherwise
-   tap **Fetch now**). The preview shows exactly what the TV shows.
+   tap **Fetch now**). The preview shows exactly what the TV shows. If you
+   rehearsed on this event, open **What the TV celebrated** and tap **Clear
+   this list**, so the TVs' Latest bids starts fresh.
 
 5. **Run the show.** Everything during the event happens in the Live tab:
    - **Scenes.** The scene with the red outline is on the TV. Tap another
-     to switch. **Welcome** is for arrivals (logo, cause, how to give,
-     when bidding closes). For Intermission, type a message and pick a
-     countdown first. Celebration (the end-of-night thank-you) needs a
-     second tap.
+     to switch. **Welcome** is for arrivals (logo, cause, a QR code to
+     give if the call to action has a web address, when bidding closes).
+     **No bids yet** shows two items nobody has bid on, large, each with a
+     QR code that opens it; it moves on every 20 seconds. For Intermission,
+     type a message and pick a countdown first. Celebration (the
+     end-of-night thank-you) needs a second tap.
+     To put No bids yet on one TV only, use **On each screen now** and pick
+     **Built-in No bids yet** for that screen. On **Main**, the items block
+     already takes turns: featured items for 30 seconds, then items with
+     no bids and their QR codes for 20. To change the timing, or keep it to
+     just one, copy the layout in the **Layouts** tab, select the block,
+     and use **What to show**.
    - **Cash and checks at the venue.** Tap +$20, +$50, +$100, or +$500, or
      type another amount: each is added to the venue total and thanked on
      the TV. **Take off** (beside Add) takes an amount back off, without a
@@ -74,12 +84,18 @@ network.
      are (**Ask Me 1 of 3 · Fund a kennel**).
      - **Finish round 1 · next: …** celebrates the round and brings up
        the next appeal at $0. **Skip** moves on from a round that raised
-       nothing.
+       nothing, and takes a second tap.
+     - **Edit this appeal** fixes the words of the appeal on now, right
+       there. To plan or reorder appeals, use **Ask Me rounds** in Show
+       content, which saves as you type, with a small TV beside it.
      - After the last round, the TVs go back to the scene from before Ask
        Me and celebrate there with tonight's Ask Me total.
-     - Switching to another scene also finishes the round on now.
-     - Every step has an Undo. **Clear this round** drops a round entered
-       by mistake.
+     - Switching to another scene with money in the round finishes it
+       too, so that takes a second tap that says so.
+     - Every step has an Undo. An Undo that can't apply any more (a tap in
+       a round that has finished, say) says so and changes nothing; reopen
+       the round with its own Undo instead. **Clear this round** drops a
+       round entered by mistake.
      - Without planned rounds, Ask Me is one appeal you can finish and
        run again.
    - **Pop-ups.** Each new bid on an item pops up on its own ("New bid",
@@ -87,7 +103,15 @@ network.
      bids don't explain (a donation) gets a "Thank you". In a rush they
      queue up and come in one by one, a few on screen at a time.
    - **Milestones** fill the TVs for a few seconds (the milestone
-     spotlight), then the show carries on by itself.
+     spotlight), or play in the info bar, as the event chooses under
+     **Milestones** in Show content: every one in the bar, or the bar with
+     the full screen kept for milestones with a label. Goals count as
+     labeled, and last calls always fill the screen. To try it in a
+     rehearsal, add venue cash past a milestone, then **Take off** the same
+     amount. On Ask Me and
+     Celebration they show as a strip across the top instead, so the
+     appeal or thank-you stays up. Each is celebrated once: a total that
+     dips and recovers doesn't repeat it.
    - **Bidding closing.** In the last 10 minutes the countdown glows, and
      pulses in the last minute. The TVs announce 10, 5 and 1 minute left,
      then that bidding has closed. They switch to Celebration on their own
@@ -132,6 +156,11 @@ tab, move that screen's **Text size on this TV** slider; the TV changes
 when you let go. To change one part of a layout instead, select it in the
 **Layouts** tab and use its **Text size** (copy a built-in layout first).
 
+**The phone says "Lost the laptop".** The phone can't reach the laptop:
+check its Wi-Fi. What you tap goes through once it's back, so look at the
+amounts before tapping again. If an action takes a while, the console says
+it's still waiting.
+
 **A TV shows "Reconnecting…" in the corner.** It has lost the laptop:
 the network dropped, or NodeCG is restarting. It reconnects by itself;
 after a minute or more away it also reloads. If it stays, check the
@@ -147,8 +176,9 @@ ones:
 - _Not configured for this event_: fill in the source's settings in its
   panel on the **Sources** tab (for 32auctions, the **32auctions source** panel).
 - _Sign-in turned down_, or _HTTP 401/403_: the organizer sign-in in the
-  **32auctions source** panel is wrong or has ended. Save the email and
-  password again; see [rotating secrets](rotating-secrets.md#32auctions-sign-in).
+  **32auctions source** panel is wrong or has ended. Tap **Fetch now** to
+  try it again, or save the email and password again; see
+  [rotating secrets](rotating-secrets.md#32auctions-sign-in).
 - _Total raised not found_: check the auction's public path, or the site
   layout changed. Keep the show going with cash and checks in the **Money** section.
 

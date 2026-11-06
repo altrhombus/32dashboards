@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type NodeCG from "nodecg/types";
-import { CommandError, getCore, listenForCommand, type FundraiserCoreApi } from "@32dashboards/source-sdk";
+import { roundCents } from "@32dashboards/schema/core";
+import { CommandError, getCore, listenForCommand, plain, type FundraiserCoreApi } from "@32dashboards/source-sdk";
 import { SOURCE_ID, manualMessageSchemas, type EntriesReplicant, type ManualEntry } from "../model.js";
 
 const EMPTY: ManualEntry = { total: 0, items: [] };
@@ -11,9 +12,9 @@ const EMPTY: ManualEntry = { total: 0, items: [] };
  * adjustment, filters, and donation moments all work the same way.
  */
 export default function sourceManual(nodecg: NodeCG.ServerAPI, core: FundraiserCoreApi = getCore(nodecg.extensions)) {
-  const handle = core.registerSource(SOURCE_ID, { label: "Manual entry" });
+  const handle = core.registerSource(SOURCE_ID, { label: "Manual entry", handEntered: true });
   const entries = nodecg.Replicant<EntriesReplicant>("entries", { defaultValue: {} });
-  const plain = (): EntriesReplicant => JSON.parse(JSON.stringify(entries.value ?? {}));
+  const copy = (): EntriesReplicant => plain(entries.value ?? {});
 
   const report = (eventId: string, entry: ManualEntry) => {
     const outcome = handle.report({
@@ -31,20 +32,18 @@ export default function sourceManual(nodecg: NodeCG.ServerAPI, core: FundraiserC
   /** Applies an edit to one event's entry, reports it, then saves it. Nothing is saved if the core refuses it. */
   const edit = (eventId: string, change: (entry: ManualEntry) => ManualEntry) => {
     if (!core.getEvent(eventId)) throw new CommandError(`No event with id ${eventId}`);
-    const all = plain();
+    const all = copy();
     const next = change(all[eventId] ?? EMPTY);
     report(eventId, next);
     entries.value = { ...all, [eventId]: next };
     handle.setStatus({ state: "ok", message: "Entered by hand", eventId });
   };
 
-  const round = (n: number) => Math.round(n * 100) / 100;
-
   listenForCommand(nodecg, "setTotal", manualMessageSchemas.setTotal, ({ eventId, total }) =>
-    edit(eventId, (entry) => ({ ...entry, total: round(total) })),
+    edit(eventId, (entry) => ({ ...entry, total: roundCents(total) })),
   );
   listenForCommand(nodecg, "addDonation", manualMessageSchemas.addDonation, ({ eventId, amount }) =>
-    edit(eventId, (entry) => ({ ...entry, total: round(entry.total + amount) })),
+    edit(eventId, (entry) => ({ ...entry, total: roundCents(entry.total + amount) })),
   );
   listenForCommand(nodecg, "upsertItem", manualMessageSchemas.upsertItem, ({ eventId, item }) => {
     const id = item.id ?? randomUUID();
@@ -64,14 +63,14 @@ export default function sourceManual(nodecg: NodeCG.ServerAPI, core: FundraiserC
   // duplicate; they are dropped when the event is deleted.
   core.onEventsChange((events) => {
     const live = new Set(events.map((e) => e.id));
-    const all = plain();
+    const all = copy();
     const kept = Object.fromEntries(Object.entries(all).filter(([id]) => live.has(id)));
     if (Object.keys(kept).length !== Object.keys(all).length) entries.value = kept;
   });
 
   // "Refresh now" re-sends what's stored, e.g. after the event's source was switched to manual.
   handle.onRefreshRequested((eventId) => {
-    const entry = plain()[eventId];
+    const entry = copy()[eventId];
     if (entry) report(eventId, entry);
   });
 

@@ -446,3 +446,100 @@ describe("detectThresholdMoments", () => {
     expect(core.detectThresholdMoments(other, live(2000), deps)).toEqual([]);
   });
 });
+
+describe("editing while the show runs", () => {
+  const rounds = (deps: core.Deps) =>
+    ["One", "Two", "Three"].map((title) => ({ id: deps.newId(), title, message: "", raised: null }));
+
+  function running() {
+    const { state, eventId, deps } = withEvent();
+    const planned = core.updateEvent(state, { eventId, patch: { askMeRounds: rounds(deps) } }, deps);
+    const first = planned.events[0]!.askMeRounds[0]!;
+    const tapped = core.nudgeAskMe(planned, eventId, 100, deps);
+    return { state: core.finishAskMeRound(tapped, eventId, 100, first.id, deps), eventId, deps, first };
+  }
+
+  it("keeps what a finished round raised, whatever an older editor sends", () => {
+    const { state, eventId, deps, first } = running();
+    const stale = state.events[0]!.askMeRounds.map((r) => ({ ...r, raised: null, title: `${r.title}!` }));
+    const next = core.updateEvent(state, { eventId, patch: { askMeRounds: stale } }, deps).events[0]!;
+    expect(next.askMeRounds[0]).toMatchObject({ id: first.id, title: "One!", raised: 100 });
+    expect(next.askMeCurrent).toBe(1);
+  });
+
+  it("can't lose a finished round, or put one behind the rounds to come", () => {
+    const { state, eventId, deps, first } = running();
+    const [, second, third] = state.events[0]!.askMeRounds;
+    const next = core.updateEvent(state, { eventId, patch: { askMeRounds: [third!, second!] } }, deps).events[0]!;
+    expect(next.askMeRounds.map((r) => r.title)).toEqual(["One", "Three", "Two"]);
+    expect(next.askMeRounds[0]!.id).toBe(first.id);
+    expect(next.askMeCurrent).toBe(1);
+  });
+
+  it("stays on the round on now when one still to come is removed", () => {
+    const { state, eventId, deps } = running();
+    const [one, two] = state.events[0]!.askMeRounds;
+    const next = core.updateEvent(state, { eventId, patch: { askMeRounds: [one!, two!] } }, deps).events[0]!;
+    expect(next.askMeRounds[next.askMeCurrent]!.title).toBe("Two");
+  });
+
+  it("refuses to undo a tap once its round has finished, leaving the round on now alone", () => {
+    const { state, eventId, deps, first } = running();
+    const later = core.nudgeAskMe(state, eventId, 50, deps);
+    expect(() => core.nudgeAskMe(later, eventId, -100, deps, { id: first.id, raised: 0 })).toThrow(/has finished/);
+  });
+
+  it("undoes a tap in the round on now", () => {
+    const { state, eventId, deps } = running();
+    const current = state.events[0]!.askMeRounds[1]!;
+    const tapped = core.nudgeAskMe(state, eventId, 50, deps);
+    const undone = core.nudgeAskMe(tapped, eventId, -50, deps, { id: current.id, raised: 100 });
+    expect(undone.events[0]!.askMe.total).toBe(0);
+  });
+
+  it("tells repeats of one appeal apart when there's no plan", () => {
+    const { state, eventId, deps } = withEvent();
+    const tapped = core.nudgeAskMe(state, eventId, 100, deps);
+    const finished = core.finishAskMeRound(tapped, eventId, 100, undefined, deps);
+    const again = core.nudgeAskMe(finished, eventId, 150, deps);
+    expect(() => core.nudgeAskMe(again, eventId, -100, deps, { id: null, raised: 0 })).toThrow(/has finished/);
+  });
+
+  it("keeps bid war totals, whatever an older editor sends", () => {
+    const { state, eventId, deps } = withEvent();
+    const option = { id: deps.newId(), name: "Biscuit", total: 0 };
+    const war = { id: deps.newId(), name: "Name the cat", description: "", active: true, options: [option] };
+    const created = core.updateEvent(state, { eventId, patch: { bidWars: [war] } }, deps);
+    const nudged = core.nudgeBidWar(created, { eventId, bidWarId: war.id, optionId: option.id, delta: 25 }, deps);
+    const renamed = { ...war, name: "Name the kitten" };
+    const next = core.updateEvent(nudged, { eventId, patch: { bidWars: [renamed] } }, deps).events[0]!;
+    expect(next.bidWars[0]).toMatchObject({ name: "Name the kitten", options: [{ total: 25 }] });
+  });
+
+  it("pins one incentive, unpinning the others", () => {
+    const { state, eventId, deps } = withEvent();
+    const incentive = (name: string) => ({
+      id: deps.newId(),
+      name,
+      target: 100,
+      active: true,
+      displayNow: false,
+      displayUntilMet: false,
+    });
+    const [a, b] = [incentive("A"), incentive("B")];
+    const made = core.updateEvent(state, { eventId, patch: { incentives: [a, b] } }, deps);
+    const pinned = core.pinIncentive(core.pinIncentive(made, eventId, a.id, deps), eventId, b.id, deps);
+    expect(pinned.events[0]!.incentives.map((i) => i.displayNow)).toEqual([false, true]);
+    expect(core.pinIncentive(pinned, eventId, null, deps).events[0]!.incentives.some((i) => i.displayNow)).toBe(false);
+  });
+
+  it("celebrates a milestone only past the highest total so far", () => {
+    const { state, eventId, deps } = withEvent();
+    const milestones = [{ id: deps.newId(), amount: 1000, label: "" }];
+    const made = { ...core.updateEvent(state, { eventId, patch: { milestones } }, deps), activeEventId: eventId };
+    const at = (total: number) =>
+      core.computeLiveState({ ...made, sourceResults: { [eventId]: result(eventId, total) } });
+    expect(core.detectThresholdMoments(at(900), at(1100), deps, 900)).toHaveLength(1);
+    expect(core.detectThresholdMoments(at(900), at(1100), deps, 1100)).toHaveLength(0);
+  });
+});

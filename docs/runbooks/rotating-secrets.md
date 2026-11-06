@@ -3,10 +3,16 @@
 | Secret                                   | Where it lives                                | When to rotate                                           |
 | ---------------------------------------- | --------------------------------------------- | -------------------------------------------------------- |
 | Dashboard `admin` password               | `cfg/nodecg.json` (as a salted hash)          | When someone who knew it leaves, or it may have leaked   |
-| Kiosk key                                | NodeCG's database, tied to the `admin` user   | When a kiosk URL may have been shared                    |
-| 32auctions organizer email and password  | `db/source-secrets/32auctions.json`           | When the account's password changes                      |
-| 32auctions session cookie and auth token | `db/source-secrets/32auctions.json`           | When the source reports HTTP 401/403, or after the event |
+| Dashboard key (in the phone QR code)     | NodeCG's database, tied to the `admin` user   | After every event, or if the QR code may have leaked     |
+| TV link token                            | `db/display-token`                            | When a TV link has gone somewhere it shouldn't           |
+| 32auctions organizer email and password  | `db/source-secrets/32auctions.json` (sealed)  | When the account's password changes                      |
+| 32auctions session cookie and auth token | `db/source-secrets/32auctions.json` (sealed)  | When the source reports HTTP 401/403, or after the event |
 | External push token                      | `db/source-secrets/external.json` (hash only) | When the pushing program changes hands                   |
+
+Files in `db/source-secrets/` are sealed with a key kept outside the repo, in
+`~/.config/32dashboards/secrets.key`. `pnpm backup` leaves that key out on
+purpose, so a copied backup holds no readable passwords. It doesn't protect
+against someone logged in to the laptop as you.
 
 Take a backup first (`pnpm backup`): it's how you undo a rotation that goes
 wrong.
@@ -23,15 +29,23 @@ pnpm nodecg:setup --force        # or NODECG_ADMIN_PASSWORD=... pnpm nodecg:setu
 sudo systemctl restart 32dashboards-nodecg
 ```
 
-This also replaces the session secret, so everyone is logged out. The kiosk
-keeps working: its key doesn't depend on the password.
+This also replaces the session secret, so everyone is logged out. The TVs
+keep working: their links don't depend on the password.
 
-## Kiosk key
+## Dashboard key
 
-In the dashboard, open **Settings** and use **Reset Key**. Every keyed URL
-stops working at once, including the TV pictures. Sign in again, then on
-each TV's computer click **Open on this computer** on the **Screens** tab
-(or run `infra/windows/open-kiosk.ps1`), which picks up the new key.
+This is what the **Open on your phone** QR code carries: anyone who has it can
+run the show. In the dashboard, open **Settings** and use **Reset Key**. Phones
+signed in with the old code stop working at once; TVs carry on, because TV
+links use their own token. Sign in again on the laptop.
+
+## TV link token
+
+TV links can show the TV picture and nothing else: they can't open the
+dashboard, change the show, or upload anything. If one goes somewhere it
+shouldn't, tap **Replace the TV links** on the **Screens** tab, then on each
+TV's computer click **Open on this computer** (or run
+`infra/windows/open-kiosk.ps1`) to get the new one.
 
 ## 32auctions sign-in
 
@@ -45,9 +59,11 @@ owner) and never shown again; **Clear** removes them.
 organizer account's email and password, then tap **Refresh now**. The source
 signs in when it first needs the total and again whenever the session ends,
 so nothing expires mid-event. If 32auctions turns the sign-in down, the
-panel says why and the source doesn't try that password again until you
-save a new one, so a typo can't lock the account. After the password changes
-on 32auctions, save the new one here.
+panel says why and the source doesn't try that password again by itself, so a
+typo can't lock the account: save it again, or tap **Fetch now**, for one more
+try. A sign-in page that doesn't look right (site maintenance, say) sends no
+password, so the source just tries again on its next refresh. After the
+password changes on 32auctions, save the new one here.
 
 **Pasted cookies (fallback).** For accounts that use "Sign in with Google",
 or if automatic sign-in stops working (for example, if 32auctions adds a

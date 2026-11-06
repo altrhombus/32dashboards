@@ -228,6 +228,7 @@ function Kiosk() {
   useEffect(() => {
     if (problem) console.error(`Showing the built-in ${view} layout instead: ${problem}`);
   }, [problem, view]);
+  const hasInfoBar = Object.values(layout.slots).some((slot) => slot.component === "infoBar");
   const screenTextSize = screen?.textSize ?? 1;
   const slotScale = useMemo(() => slotScaleFor(screenTextSize), [screenTextSize]);
 
@@ -240,7 +241,7 @@ function Kiosk() {
         <LayoutRenderer
           layout={layout}
           registry={kioskRegistry}
-          data={{ live, scene, infoBar: display, toasts: quiet ? [] : toasts, roundWrap, recent }}
+          data={{ live, scene, infoBar: display, toasts: quiet ? [] : toasts, roundWrap, recent, hasInfoBar }}
           slotScale={slotScale}
         />
       </div>

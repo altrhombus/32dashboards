@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { useReplicant } from "@32dashboards/nodecg-react";
+import { ConfirmButton, useReplicant } from "@32dashboards/nodecg-react";
 import type {
   ActiveEventIdReplicant,
   EventsReplicant,
@@ -52,9 +52,11 @@ function Events() {
       </form>
 
       {activeId && (
-        <button type="button" onClick={() => run(send("activateEvent", { eventId: null }))}>
-          Take it off the TVs (show standby)
-        </button>
+        <ConfirmButton
+          label="Take it off the TVs (show standby)"
+          confirmLabel="Tap again: both TVs go to standby"
+          onConfirm={() => run(send("activateEvent", { eventId: null }))}
+        />
       )}
 
       {sorted.length === 0 && <p className="muted">No events yet.</p>}
@@ -63,6 +65,7 @@ function Events() {
           key={event.id}
           event={event}
           active={event.id === activeId}
+          otherOnAir={Boolean(activeId) && event.id !== activeId}
           sources={sources.map(({ id, label }) => ({ id, label }))}
           run={run}
         />
@@ -76,11 +79,17 @@ function Events() {
 function EventRow(props: {
   event: FundraiserEvent;
   active: boolean;
+  /** Another event is on the TVs, which putting this one on would replace. */
+  otherOnAir: boolean;
   sources: { id: string; label: string }[];
   run: (promise: Promise<unknown>) => void;
 }) {
   const { event, active, run } = props;
   const adapterId = event.source.adapterId;
+  // Changing the source of the event on the TVs changes the money they show, so that asks first.
+  const [source, setSource] = useState<string | null>(null);
+  const chooseSource = (next: string) =>
+    run(send("updateEvent", { eventId: event.id, patch: { source: { adapterId: next || null } } }));
   // Keep a configured adapter selectable even if it hasn't registered this run.
   const options =
     adapterId && !props.sources.some((s) => s.id === adapterId)
@@ -96,10 +105,8 @@ function EventRow(props: {
       <label className="row">
         <span className="muted">Money comes from</span>
         <select
-          value={adapterId ?? ""}
-          onChange={(e) =>
-            run(send("updateEvent", { eventId: event.id, patch: { source: { adapterId: e.target.value || null } } }))
-          }
+          value={source ?? adapterId ?? ""}
+          onChange={(e) => (active ? setSource(e.target.value) : chooseSource(e.target.value))}
         >
           <option value="">None</option>
           {options.map(({ id, label }) => (
@@ -109,24 +116,43 @@ function EventRow(props: {
           ))}
         </select>
       </label>
+      {source !== null && source !== (adapterId ?? "") && (
+        <div className="row">
+          <ConfirmButton
+            className="primary"
+            label="Change the money source"
+            confirmLabel="Tap again: this changes the money on the TVs"
+            onConfirm={() => {
+              chooseSource(source);
+              setSource(null);
+            }}
+          />
+          <button type="button" onClick={() => setSource(null)}>
+            Keep it
+          </button>
+        </div>
+      )}
       <div className="row">
-        <button type="button" disabled={active} onClick={() => run(send("activateEvent", { eventId: event.id }))}>
-          Put on the TVs
-        </button>
+        {props.otherOnAir ? (
+          <ConfirmButton
+            label="Put on the TVs"
+            confirmLabel="Tap again: this replaces what's on the TVs"
+            onConfirm={() => run(send("activateEvent", { eventId: event.id }))}
+          />
+        ) : (
+          <button type="button" disabled={active} onClick={() => run(send("activateEvent", { eventId: event.id }))}>
+            Put on the TVs
+          </button>
+        )}
         <button type="button" onClick={() => run(send("duplicateEvent", { eventId: event.id }))}>
           Duplicate
         </button>
-        <button
-          type="button"
+        <ConfirmButton
+          label="Delete"
+          confirmLabel="Tap again: this can't be undone"
           disabled={active}
-          onClick={() => {
-            if (window.confirm(`Delete "${event.name}"? This can't be undone.`)) {
-              run(send("deleteEvent", { eventId: event.id }));
-            }
-          }}
-        >
-          Delete
-        </button>
+          onConfirm={() => run(send("deleteEvent", { eventId: event.id }))}
+        />
       </div>
     </div>
   );

@@ -579,6 +579,8 @@ h2 {
 
 /* --- Phone layout: a slim header, the work in the middle, tabs within thumb reach. */
 .console--phone {
+  /* minmax(0, ...): a long event name mustn't stretch the page past the phone's screen. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   padding: 0 12px calc(88px + env(safe-area-inset-bottom, 0px));
 }
@@ -610,6 +612,44 @@ h2 {
   min-width: 0;
   font-size: 1.05rem;
   font-weight: 700;
+}
+
+.phone-head__problem {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--caution) 18%, transparent);
+  color: var(--caution);
+  font-weight: 600;
+}
+
+.offline {
+  display: grid;
+  gap: 2px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--caution);
+  color: var(--ink);
+}
+
+.askme__edit {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.askme__skip {
+  width: 100%;
+  min-height: var(--target);
+}
+
+.moments__clear {
+  margin-bottom: 8px;
 }
 
 .phone-head__details {

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { defineComponent, type Registry } from "@32dashboards/layout-engine";
 import {
   AnnouncementsList,
@@ -12,6 +12,8 @@ import {
   IncentiveTracker,
   KioskHeader,
   MilestoneCelebration,
+  NoBidSpotlight,
+  QrCode,
   MilestoneSpotlight,
   AskMeRoundWrap,
   MomentToast,
@@ -21,9 +23,10 @@ import {
   SponsorCarousel,
   TotalRaisedCounter,
 } from "@32dashboards/ui";
-import { SPONSORS_TITLE, askMeProgress } from "@32dashboards/schema/core";
-import type { InfoBarDisplay, KioskData, ToastMoment } from "./data.js";
-import { selectFeaturedItems, type SegmentContent } from "./segments.js";
+import { SPONSORS_TITLE, askMeProgress, firstLink, shortenLinks } from "@32dashboards/schema/core";
+import type { ItemView } from "./catalog.js";
+import type { CelebrationMoment, InfoBarDisplay, KioskData, ToastMoment } from "./data.js";
+import { selectFeaturedItems, selectNoBidItems, type SegmentContent } from "./segments.js";
 
 /*
  * The components kiosk layouts can place. Each declares its size variants
@@ -31,20 +34,65 @@ import { selectFeaturedItems, type SegmentContent } from "./segments.js";
  * where things go.
  */
 
-/** Wraps a component in a titled card when the slot's options give a title. */
 /** How long each announcement stays in the Announcements block. */
 const ANNOUNCEMENT_MS = 7_000;
 
 /** When the bidding countdown starts calling attention to itself. */
 const URGENT_MS = 10 * 60_000;
 
+/** Wraps a component in a titled card when the slot's options give a title. */
 function Card({ title, children }: { title?: unknown; children: ReactNode }) {
-  if (typeof title !== "string" || !title) return <div className="kiosk-card">{children}</div>;
+  // One element with or without a title: what's inside keeps its place when the title comes and goes.
   return (
     <section className="kiosk-card">
-      <h2 className="kiosk-card__title">{title}</h2>
+      {typeof title === "string" && title && <h2 className="kiosk-card__title">{title}</h2>}
       {children}
     </section>
+  );
+}
+
+type Items = KioskData["live"]["items"];
+
+/**
+ * The items block: featured items and items with no bids yet, taking turns,
+ * or just one. Both stay on the page while they wait, so each picks up where
+ * it left off instead of starting again from its first items.
+ */
+function ItemsBlock(props: {
+  featured: Items;
+  noBids: Items;
+  size: number;
+  title?: unknown;
+  show: ItemView;
+  featuredMs: number;
+  noBidsMs: number;
+}) {
+  const { featured, noBids, show, featuredMs, noBidsMs } = props;
+  const takingTurns = show === "both" && featured.length > 0 && noBids.length > 0;
+  const [turn, setTurn] = useState<"featured" | "noBids">("featured");
+  useEffect(() => {
+    if (!takingTurns) return;
+    const timer = setTimeout(
+      () => setTurn((t) => (t === "featured" ? "noBids" : "featured")),
+      turn === "featured" ? featuredMs : noBidsMs,
+    );
+    return () => clearTimeout(timer);
+  }, [takingTurns, turn, featuredMs, noBidsMs]);
+  const showing = takingTurns ? turn : show === "both" ? (noBids.length > 0 ? "noBids" : "featured") : show;
+
+  return (
+    <Card title={showing === "featured" ? props.title : undefined}>
+      {show !== "noBids" && (
+        <div className="kiosk-items" hidden={showing !== "featured"}>
+          <FeaturedItemsGrid items={featured} size={props.size} active={showing === "featured"} />
+        </div>
+      )}
+      {show !== "featured" && (
+        <div className="kiosk-items" hidden={showing !== "noBids"}>
+          <NoBidSpotlight items={noBids} rotationMs={noBidsMs} compact active={showing === "noBids"} />
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -100,12 +148,13 @@ function Segment({ content, total, recent }: { content: SegmentContent; total: n
   }
 }
 
-function InfoBar({ display, total, recent }: { display: InfoBarDisplay; total: number; recent: ToastMoment[] }) {
+function InfoBar(props: { display: InfoBarDisplay; total: number; recent: ToastMoment[]; starring: boolean }) {
+  const { display, total, recent, starring } = props;
   if (display.type === "empty") return <div className="kiosk-info-bar" />;
   if (display.type === "celebration") {
     const m = display.moment;
     return (
-      <div className="kiosk-info-bar kiosk-info-bar--celebrating">
+      <div className={`kiosk-info-bar kiosk-info-bar--celebrating${starring ? " kiosk-info-bar--starring" : ""}`}>
         {m.kind === "milestone" ? (
           <MilestoneCelebration heading="Milestone reached!" amount={m.amount} detail={m.label || undefined} />
         ) : m.kind === "incentive-met" ? (
@@ -123,6 +172,26 @@ function InfoBar({ display, total, recent }: { display: InfoBarDisplay; total: n
   );
 }
 
+/** What a celebration says, for the spotlight and the banner. */
+function celebrationText(moment: CelebrationMoment, event: KioskData["live"]["event"]) {
+  if (moment.kind === "last-call") return lastCall(moment.minutesLeft, event);
+  return moment.kind === "milestone"
+    ? { heading: "Milestone reached", amount: moment.amount, detail: moment.label || undefined }
+    : { heading: "Goal met", amount: moment.target, detail: moment.name };
+}
+
+/**
+ * Whether a celebration takes over the screen, or plays in the info bar. Last
+ * calls always take the screen: everyone needs to see those. So does anything
+ * on a layout with no info bar to play in.
+ */
+export function usesSpotlight(data: Pick<KioskData, "live" | "hasInfoBar">, moment: CelebrationMoment): boolean {
+  if (moment.kind === "last-call" || data.hasInfoBar === false) return true;
+  const style = data.live.event?.milestoneStyle ?? "spotlight";
+  if (style === "named") return moment.kind === "incentive-met" || Boolean(moment.label);
+  return style === "spotlight";
+}
+
 function Toasts({ toasts }: { toasts: ToastMoment[] }) {
   return (
     <div className="kiosk-toasts">
@@ -137,7 +206,10 @@ function Welcome(props: {
   name: string;
   causeName: string;
   logoUrl: string | null;
+  /** Shown when nothing else on screen says how to give. */
   callToAction: string;
+  /** Where the QR code goes, if the call to action has an address. */
+  giveUrl: string | null;
   endDateTime: string | null;
 }) {
   return (
@@ -156,10 +228,20 @@ function Welcome(props: {
           {props.callToAction}
         </div>
       )}
-      {props.endDateTime && (
+      {(props.giveUrl || props.endDateTime) && (
         <div className="kiosk-welcome__closes">
-          <span>Bidding closes in</span>
-          <CountdownClock endDateTime={props.endDateTime} urgentMs={URGENT_MS} endedLabel="Bidding closed" />
+          {props.giveUrl && (
+            <figure className="kiosk-welcome__qr">
+              <QrCode url={props.giveUrl} label="QR code to bid or give" />
+              <figcaption>Scan to bid or give</figcaption>
+            </figure>
+          )}
+          {props.endDateTime && (
+            <div className="kiosk-welcome__countdown">
+              <span>Bidding closes in</span>
+              <CountdownClock endDateTime={props.endDateTime} urgentMs={URGENT_MS} endedLabel="Bidding closed" />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -198,17 +280,32 @@ export const kioskRegistry: Registry<KioskData> = {
     component: TotalRaisedCounter,
   }),
 
-  featuredItems: defineComponent<KioskData, { items: KioskData["live"]["items"]; size: number; title?: unknown }>({
+  featuredItems: defineComponent<KioskData, Parameters<typeof ItemsBlock>[0]>({
     variants: ["grid"],
     select: ({ live }, { options }) => {
       const size = typeof options.size === "number" ? options.size : 6;
-      return { items: selectFeaturedItems(live.items, size), size, title: options.title };
+      const seconds = (value: unknown, fallback: number) => (typeof value === "number" ? value : fallback) * 1000;
+      return {
+        featured: selectFeaturedItems(live.items, size),
+        noBids: selectNoBidItems(live.items),
+        size,
+        title: options.title,
+        // A layout saved before these settings existed takes turns like the built-in one.
+        show: (options.show as ItemView | undefined) ?? "both",
+        featuredMs: seconds(options.featuredSeconds, 30),
+        noBidsMs: seconds(options.noBidsSeconds, 20),
+      };
     },
-    component: ({ items, size, title }) => (
-      <Card title={title}>
-        <FeaturedItemsGrid items={items} size={size} />
-      </Card>
-    ),
+    component: ItemsBlock,
+  }),
+
+  noBidItems: defineComponent<KioskData, { items: KioskData["live"]["items"]; size: number }>({
+    variants: ["spotlight"],
+    select: ({ live }, { options }) => ({
+      items: selectNoBidItems(live.items),
+      size: typeof options.size === "number" ? options.size : 2,
+    }),
+    component: NoBidSpotlight,
   }),
 
   announcements: defineComponent<KioskData, { announcements: string[]; title?: unknown }>({
@@ -263,15 +360,24 @@ export const kioskRegistry: Registry<KioskData> = {
     ),
   }),
 
-  infoBar: defineComponent<KioskData, { display: InfoBarDisplay; total: number; recent: ToastMoment[] }>({
+  infoBar: defineComponent<
+    KioskData,
+    { display: InfoBarDisplay; total: number; recent: ToastMoment[]; starring: boolean }
+  >({
     variants: ["bar"],
-    select: ({ infoBar, live, recent }) => ({ display: infoBar, total: live.total, recent }),
+    select: (data) => ({
+      display: data.infoBar,
+      total: data.live.total,
+      recent: data.recent,
+      // With nothing covering the screen, the bar is the whole celebration, so it puts on more of a show.
+      starring: data.infoBar.type === "celebration" && !usesSpotlight(data, data.infoBar.moment),
+    }),
     component: InfoBar,
   }),
 
   callToAction: defineComponent<KioskData, { text: string }>({
     variants: ["banner"],
-    select: ({ live }) => (live.event?.callToAction ? { text: live.event.callToAction } : null),
+    select: ({ live }) => (live.event?.callToAction ? { text: shortenLinks(live.event.callToAction) } : null),
     component: CallToActionBanner,
   }),
 
@@ -284,15 +390,22 @@ export const kioskRegistry: Registry<KioskData> = {
   milestoneSpotlight: defineComponent<KioskData, Parameters<typeof MilestoneSpotlight>[0]>({
     variants: ["full"],
     // Shown while the info bar celebrates, so both start and end together.
-    select: ({ infoBar, live }) => {
-      if (infoBar.type !== "celebration") return null;
-      const m = infoBar.moment;
-      if (m.kind === "last-call") return lastCall(m.minutesLeft, live.event);
-      return m.kind === "milestone"
-        ? { heading: "Milestone reached", amount: m.amount, detail: m.label || undefined }
-        : { heading: "Goal met", amount: m.target, detail: m.name };
-    },
+    select: (data) =>
+      data.infoBar.type === "celebration" && usesSpotlight(data, data.infoBar.moment)
+        ? celebrationText(data.infoBar.moment, data.live.event)
+        : null,
     component: MilestoneSpotlight,
+  }),
+
+  milestoneBanner: defineComponent<KioskData, Parameters<typeof MilestoneCelebration>[0]>({
+    variants: ["strip"],
+    select: ({ infoBar, live }) =>
+      infoBar.type === "celebration" ? { ...celebrationText(infoBar.moment, live.event), confetti: false } : null,
+    component: (props) => (
+      <div className="kiosk-banner">
+        <MilestoneCelebration {...props} />
+      </div>
+    ),
   }),
 
   welcome: defineComponent<KioskData, Parameters<typeof Welcome>[0]>({
@@ -303,7 +416,11 @@ export const kioskRegistry: Registry<KioskData> = {
             name: live.event.name,
             causeName: live.event.causeName,
             logoUrl: live.event.theme.logoUrl,
-            callToAction: live.event.callToAction,
+            // The info bar says it too, unless the event took it out of the rotation.
+            callToAction: live.event.infoBar.segments.includes("callToAction")
+              ? ""
+              : shortenLinks(live.event.callToAction),
+            giveUrl: firstLink(live.event.callToAction),
             endDateTime: live.event.endDateTime,
           }
         : null,

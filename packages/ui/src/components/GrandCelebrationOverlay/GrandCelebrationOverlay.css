@@ -25,6 +25,10 @@
   color: var(--color-text);
 }
 
+.grand-celebration-overlay__total {
+  font-weight: 700;
+}
+
 @keyframes grand-celebration-pop {
   from {
     opacity: 0;

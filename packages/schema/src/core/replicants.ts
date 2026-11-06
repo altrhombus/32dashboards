@@ -158,9 +158,16 @@ export type DonationMoment = z.infer<typeof DonationMomentSchema>;
 
 export const MOMENTS_LIMIT = 50;
 
-/** Replicant `moments` (not persisted): recent donation moments for the active event, newest last. */
+/** Replicant `moments` (persisted): recent donation moments for the active event, newest last. */
 export const MomentsReplicantSchema = z.array(DonationMomentSchema).max(MOMENTS_LIMIT);
 export type MomentsReplicant = z.infer<typeof MomentsReplicantSchema>;
+
+/**
+ * Replicant `totalPeaks` (persisted): the highest total each event has
+ * shown, so a total that dips and recovers doesn't celebrate twice.
+ */
+export const TotalPeaksReplicantSchema = z.record(z.string(), z.number());
+export type TotalPeaksReplicant = z.infer<typeof TotalPeaksReplicantSchema>;
 
 /** Replicant `scene` (persisted): what the show is doing right now. */
 export const SceneReplicantSchema = z.object({

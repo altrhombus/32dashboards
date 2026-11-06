@@ -1,23 +1,30 @@
 import { randomUUID } from "node:crypto";
 import type NodeCG from "nodecg/types";
-import type { z } from "zod";
+import { z } from "zod";
 import type { ScreensReplicant } from "@32dashboards/schema/core";
-import { CommandError, formatZodError, listenForCommand } from "@32dashboards/source-sdk";
+import { CommandError, formatZodError, listenForCommand, plain } from "@32dashboards/source-sdk";
+import { displayTokenFile, newDisplayToken, readDisplayToken, writeDisplayToken } from "./displayToken.js";
 import * as library from "../library.js";
 import { LayoutsReplicantSchema, kioskMessageSchemas, type LayoutsReplicant } from "../library.js";
 
 const deps: library.Deps = { now: () => new Date().toISOString(), newId: randomUUID };
 
-/** Copies a value out of NodeCG's change-tracking proxy. */
-const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
-
 /**
  * Keeps operator-saved layouts. Screens (fundraiser-core's `screens`) choose
  * among them; the kiosk graphic renders whichever its screen chose.
  */
-export default function layoutKiosk(nodecg: NodeCG.ServerAPI): void {
+export default function layoutKiosk(nodecg: NodeCG.ServerAPI, tokenFile = displayTokenFile()): void {
   const layouts = nodecg.Replicant<LayoutsReplicant>("layouts", { defaultValue: [] });
   const screens = nodecg.Replicant<ScreensReplicant>("screens", "fundraiser-core", { defaultValue: [] });
+
+  // Only the dashboard can ask for these: NodeCG refuses them from a connection using the TV token.
+  readDisplayToken(tokenFile);
+  listenForCommand(nodecg, "displayToken", z.undefined().or(z.null()), () => readDisplayToken(tokenFile));
+  listenForCommand(nodecg, "replaceDisplayToken", z.undefined().or(z.null()), () => {
+    const token = newDisplayToken();
+    writeDisplayToken(tokenFile, token);
+    return token;
+  });
 
   const stored = LayoutsReplicantSchema.safeParse(plain(layouts.value ?? []));
   if (!stored.success) nodecg.log.error(`Stored layouts don't match the schema: ${formatZodError(stored.error)}`);

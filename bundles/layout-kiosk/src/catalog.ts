@@ -15,6 +15,10 @@ import { SPONSORS_TITLE } from "@32dashboards/schema/core";
 const title = (fallback: string) => z.string().trim().max(60).default(fallback);
 const none = z.object({}).strict();
 
+/** What a Featured items block shows: both, taking turns, or just one. */
+export const ITEM_VIEWS = ["both", "featured", "noBids"] as const;
+export type ItemView = (typeof ITEM_VIEWS)[number];
+
 export const kioskCatalog: Catalog = {
   header: {
     name: "Event header",
@@ -40,12 +44,30 @@ export const kioskCatalog: Catalog = {
   },
   featuredItems: {
     name: "Featured items",
-    description: "Auction items worth a look: valuable items with few bids.",
+    description:
+      "Auction items worth a look: valuable items with few bids, taking turns with items that have no bids yet and QR codes to bid. Shows just one of them if you choose.",
     category: "items",
     placement: "block",
     variants: { grid: { minWidth: 600, minHeight: 300, reference: { width: 1320, height: 550 }, maxScale: 1.6 } },
     repeatable: false,
-    settings: z.object({ title: title("Featured items"), size: z.number().int().min(1).max(12).default(6) }).strict(),
+    settings: z
+      .object({
+        title: title("Featured items"),
+        size: z.number().int().min(1).max(12).default(6),
+        show: z.enum(ITEM_VIEWS).default("both"),
+        featuredSeconds: z.number().int().min(5).max(300).default(30),
+        noBidsSeconds: z.number().int().min(5).max(300).default(20),
+      })
+      .strict(),
+  },
+  noBidItems: {
+    name: "No bids yet",
+    description: "A couple of items nobody has bid on yet, large, each with a QR code that opens it.",
+    category: "items",
+    placement: "block",
+    variants: { spotlight: { minWidth: 900, minHeight: 500, reference: { width: 1872, height: 772 }, maxScale: 1.3 } },
+    repeatable: false,
+    settings: z.object({ size: z.number().int().min(1).max(2).default(2) }).strict(),
   },
   countdown: {
     name: "Time left",
@@ -111,6 +133,16 @@ export const kioskCatalog: Catalog = {
     repeatable: false,
     settings: none,
   },
+  milestoneBanner: {
+    name: "Milestone banner",
+    description:
+      "A strip along the top when a milestone is reached or bidding is closing, for scenes that shouldn't be covered.",
+    category: "money",
+    placement: "overlay",
+    variants: { strip: { minWidth: 0, minHeight: 0 } },
+    repeatable: false,
+    settings: none,
+  },
   askMeWrap: {
     name: "Ask Me wrap-up",
     description: "When an Ask Me round finishes, shows what it raised for a few seconds.",
@@ -122,7 +154,7 @@ export const kioskCatalog: Catalog = {
   },
   welcome: {
     name: "Welcome",
-    description: "For arrivals: the logo, the event and its cause, how to give, and when bidding closes.",
+    description: "For arrivals: the logo, the event and its cause, a QR code to give, and when bidding closes.",
     category: "scene",
     placement: "block",
     variants: { hero: { minWidth: 1200, minHeight: 500, reference: { width: 1872, height: 900 }, maxScale: 1.3 } },

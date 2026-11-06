@@ -19,4 +19,6 @@ export interface KioskData {
   roundWrap: RoundWrapMoment | null;
   /** The latest bids and donations, newest first, for the info bar's Latest bids. */
   recent: ToastMoment[];
+  /** False when this layout has no info bar, so a celebration can't play there. */
+  hasInfoBar?: boolean;
 }

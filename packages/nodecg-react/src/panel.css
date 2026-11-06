@@ -329,6 +329,17 @@ button.primary {
   font-weight: 600;
 }
 
+.sticky-error {
+  position: sticky;
+  bottom: 8px;
+  z-index: 5;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--tally);
+  border-radius: var(--radius);
+  background: var(--raise-hi);
+}
+
 :focus-visible {
   outline: 2px solid var(--action);
   outline-offset: 2px;

@@ -54,6 +54,23 @@ body,
   font-size: 3.5rem;
 }
 
+/* One view of the items block; the other waits, hidden, to pick up where it left off. */
+.kiosk-items {
+  flex: 1;
+  min-height: 0;
+  animation: kiosk-items-in 0.6s var(--ease-standard);
+}
+
+.kiosk-items[hidden] {
+  display: none;
+}
+
+@keyframes kiosk-items-in {
+  from {
+    opacity: 0;
+  }
+}
+
 .kiosk-info-bar {
   display: flex;
   align-items: center;
@@ -81,6 +98,72 @@ body,
 .kiosk-info-bar--celebrating {
   background: color-mix(in srgb, var(--color-band) 85%, var(--color-text) 8%);
   font-size: 2rem;
+}
+
+/* A celebration with the bar to itself: light sweeps across, and the amount arrives with a bounce. */
+.kiosk-info-bar--starring {
+  position: relative;
+  border-top-width: 5px;
+  background: color-mix(in srgb, var(--color-band) 72%, var(--color-accent) 28%);
+  animation: kiosk-star-glow 2.4s ease-in-out infinite;
+}
+
+.kiosk-info-bar--starring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 35%, color-mix(in srgb, #fff 40%, transparent) 50%, transparent 65%);
+  pointer-events: none;
+  transform: translateX(-100%);
+  animation: kiosk-star-sweep 2.4s ease-in-out infinite;
+}
+
+.kiosk-info-bar--starring .milestone-celebration__amount {
+  display: inline-block;
+  /* The bar is tinted with the accent, so the accent itself wouldn't stand out on it. */
+  color: var(--color-text);
+  animation: kiosk-star-pop 0.9s var(--ease-overshoot) both;
+}
+
+.kiosk-info-bar--starring .milestone-celebration__heading {
+  color: var(--color-text);
+}
+
+@keyframes kiosk-star-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes kiosk-star-glow {
+  50% {
+    box-shadow: inset 0 0 40px color-mix(in srgb, var(--color-accent) 55%, transparent);
+  }
+}
+
+@keyframes kiosk-star-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-info-bar--starring,
+  .kiosk-info-bar--starring .milestone-celebration__amount {
+    animation: none;
+  }
+
+  .kiosk-info-bar--starring::before {
+    display: none;
+  }
 }
 
 .kiosk-info-bar__logo {
@@ -180,13 +263,48 @@ body,
 .kiosk-welcome__closes {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: calc(var(--spacing-lg) * 2);
   font-size: 1.8rem;
-  opacity: 0.9;
 }
 
 .kiosk-welcome__closes .countdown-clock {
   max-width: none;
+}
+
+.kiosk-welcome__countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.kiosk-welcome__qr {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin: 0;
+  font-weight: 700;
+}
+
+.kiosk-welcome__qr .qr-code {
+  width: 200px;
+}
+
+/* A milestone or last call over a scene that shouldn't be covered. */
+.kiosk-banner {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  z-index: 2;
+  width: min(1400px, 90%);
+  padding: 6px var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  background: var(--color-band);
+  border-bottom: 3px solid var(--color-accent);
+  font-size: 1.6rem;
+  box-sizing: border-box;
+  transform: translateX(-50%);
+  animation: kiosk-segment-in 0.4s var(--ease-standard);
 }
 
 .kiosk-standby {

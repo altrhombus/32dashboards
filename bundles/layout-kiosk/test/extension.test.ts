@@ -1,3 +1,6 @@
+import { mkdtempSync, readFileSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { createFakeNodecg, createFakeWorld } from "@32dashboards/nodecg-testing";
 import layoutKiosk from "../src/extension/index.js";
@@ -8,8 +11,9 @@ function setup() {
   const core = createFakeNodecg("fundraiser-core", world);
   const screens = core.api.Replicant("screens", { defaultValue: [] as unknown[] });
   const fake = createFakeNodecg("layout-kiosk", world);
-  layoutKiosk(fake.api);
-  return { fake, screens, layouts: () => fake.replicant<LayoutsReplicant>("layouts").value };
+  const tokenFile = path.join(mkdtempSync(path.join(tmpdir(), "kiosk-")), "db", "display-token");
+  layoutKiosk(fake.api, tokenFile);
+  return { fake, screens, tokenFile, layouts: () => fake.replicant<LayoutsReplicant>("layouts").value };
 }
 
 describe("layout-kiosk extension", () => {
@@ -34,5 +38,17 @@ describe("layout-kiosk extension", () => {
     const id = (await fake.send("copyLayout", { fromId: "builtin:main" })) as string;
     screens.value = [{ id: "left", name: "Left TV", layouts: { main: id } }];
     await expect(fake.send("deleteLayout", { layoutId: id })).rejects.toThrow(/in use on Left TV/);
+  });
+
+  it("makes one display-only TV token, and replaces it on request", async () => {
+    const { fake, tokenFile } = setup();
+    const token = (await fake.send("displayToken", undefined)) as string;
+    expect(token).toMatch(/^tv-/);
+    expect(readFileSync(tokenFile, "utf8").trim()).toBe(token);
+    expect(statSync(tokenFile).mode & 0o777).toBe(0o600);
+    expect(await fake.send("displayToken", undefined)).toBe(token);
+    const next = await fake.send("replaceDisplayToken", undefined);
+    expect(next).not.toBe(token);
+    expect(await fake.send("displayToken", undefined)).toBe(next);
   });
 });

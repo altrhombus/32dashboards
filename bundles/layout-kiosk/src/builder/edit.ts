@@ -156,9 +156,10 @@ export function blockPixels(layout: BlockLayout, block: Pick<Block, "w" | "h">) 
 export type SettingField =
   | { key: string; kind: "text"; maxLength?: number; fallback: string }
   | { key: string; kind: "number"; min?: number; max?: number; fallback: number }
-  | { key: string; kind: "toggle"; fallback: boolean };
+  | { key: string; kind: "toggle"; fallback: boolean }
+  | { key: string; kind: "choice"; options: string[]; fallback: string };
 
-/** Reads simple fields (text, whole numbers, on/off) from a settings schema; anything else is skipped. */
+/** Reads simple fields (text, whole numbers, on/off, a choice) from a settings schema; anything else is skipped. */
 export function settingFields(schema: z.ZodTypeAny): SettingField[] {
   if (!(schema instanceof z.ZodObject)) return [];
   const fields: SettingField[] = [];
@@ -181,10 +182,25 @@ export function settingFields(schema: z.ZodTypeAny): SettingField[] {
       });
     } else if (inner instanceof z.ZodBoolean) {
       fields.push({ key, kind: "toggle", fallback: Boolean(fallback) });
+    } else if (inner instanceof z.ZodEnum) {
+      fields.push({ key, kind: "choice", options: inner.options as string[], fallback: String(fallback ?? "") });
     }
   }
   return fields;
 }
 
 /** Human names for settings keys. */
-export const SETTING_LABELS: Record<string, string> = { title: "Heading (empty hides it)", size: "How many to show" };
+export const SETTING_LABELS: Record<string, string> = {
+  title: "Heading (empty hides it)",
+  size: "How many to show",
+  show: "What to show",
+  featuredSeconds: "Seconds of featured items, when taking turns",
+  noBidsSeconds: "Seconds of items with no bids, when taking turns",
+};
+
+/** Human names for the values of choice settings. */
+export const CHOICE_LABELS: Record<string, string> = {
+  both: "Featured items and No bids yet, taking turns",
+  featured: "Just featured items",
+  noBids: "Just items with no bids yet",
+};

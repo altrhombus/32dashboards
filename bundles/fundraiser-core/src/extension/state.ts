@@ -3,9 +3,12 @@ import {
   FundraiserEventSchema,
   applyFilters,
   liveStateFor,
+  roundCents,
+  type BidWar,
   type CreateEventMessage,
   type DonationMoment,
   type FundraiserEvent,
+  type AskMeRound,
   type LiveStateReplicant,
   type Screen,
   type SourceItem,
@@ -74,11 +77,40 @@ export function createEvent(
   return { state: { ...state, events: [...state.events, event] }, eventId: event.id };
 }
 
+/**
+ * Edited Ask Me rounds, keeping what the show has done: a finished round stays
+ * finished, keeps what it raised, and stays ahead of the rounds still to come,
+ * whatever an editor that opened before it finished sends. Returns where the
+ * show is in the list.
+ */
+function mergeAskMeRounds(event: FundraiserEvent, edited: AskMeRound[]) {
+  const before = new Map(event.askMeRounds.map((round) => [round.id, round]));
+  const kept = new Set(edited.map((round) => round.id));
+  const merged = edited.map((round) => ({ ...round, raised: before.get(round.id)?.raised ?? null }));
+  const missing = event.askMeRounds.filter((round) => round.raised !== null && !kept.has(round.id));
+  const finished = [...missing, ...merged.filter((round) => round.raised !== null)];
+  return {
+    askMeRounds: [...finished, ...merged.filter((round) => round.raised === null)],
+    askMeCurrent: finished.length,
+  };
+}
+
+/** Edited bid wars, keeping each option's running total, which only nudges change. */
+function mergeBidWars(event: FundraiserEvent, edited: BidWar[]): BidWar[] {
+  const totals = new Map(event.bidWars.flatMap((war) => war.options.map((o) => [o.id, o.total] as const)));
+  return edited.map((war) => ({
+    ...war,
+    options: war.options.map((option) => ({ ...option, total: totals.get(option.id) ?? 0 })),
+  }));
+}
+
 export function updateEvent(state: CoreState, { eventId, patch }: UpdateEventMessage, deps: Deps): CoreState {
   return editEvent(state, eventId, deps, (event) => {
-    const { theme, askMe, infoBar, ...rest } = patch;
+    const { theme, askMe, infoBar, askMeRounds, bidWars, ...rest } = patch;
     return {
       ...rest,
+      ...(askMeRounds && mergeAskMeRounds(event, askMeRounds)),
+      ...(bidWars && { bidWars: mergeBidWars(event, bidWars) }),
       ...(theme && { theme: { ...event.theme, ...theme } }),
       ...(askMe && { askMe: { ...event.askMe, ...askMe } }),
       ...(infoBar && { infoBar: { ...event.infoBar, ...infoBar } }),
@@ -219,10 +251,31 @@ export function reopenAskMeRound(
   }));
 }
 
-/** Adds to the Ask Me total, never below zero. */
-export function nudgeAskMe(state: CoreState, eventId: string, delta: number, deps: Deps): CoreState {
+/**
+ * Adds to the Ask Me total, never below zero. With `round` (undoing a tap),
+ * refuses if that round has finished, rather than take its money out of the
+ * round on now.
+ */
+export function nudgeAskMe(
+  state: CoreState,
+  eventId: string,
+  delta: number,
+  deps: Deps,
+  round?: { id: string | null; raised: number },
+): CoreState {
+  return editEvent(state, eventId, deps, (event) => {
+    const currentRound = event.askMeRounds[event.askMeCurrent]?.id ?? null;
+    if (round && (round.id !== currentRound || roundCents(round.raised) !== roundCents(event.askMeRaised))) {
+      throw new CommandError("That round has finished. To change it, reopen it with its own Undo.");
+    }
+    return { askMe: { ...event.askMe, total: Math.max(0, roundCents(event.askMe.total + delta)) } };
+  });
+}
+
+/** Pins one incentive to the info bar in place of any other, or unpins them all. */
+export function pinIncentive(state: CoreState, eventId: string, incentiveId: string | null, deps: Deps): CoreState {
   return editEvent(state, eventId, deps, (event) => ({
-    askMe: { ...event.askMe, total: Math.max(0, roundCents(event.askMe.total + delta)) },
+    incentives: event.incentives.map((incentive) => ({ ...incentive, displayNow: incentive.id === incentiveId })),
   }));
 }
 
@@ -350,18 +403,21 @@ export function compareResults(
 
 /**
  * Milestones and incentive targets the displayed total just crossed, going
- * up, on the same event. Comparing displayed totals (not source results)
- * means adjustments count, and switching events or restarting never
+ * up, on the same event, past `peak` (the highest it has been). Comparing
+ * displayed totals (not source results) means adjustments count; the peak
+ * means a total that dips and recovers, a restart, or switching events never
  * re-celebrates a threshold that was already passed.
  */
 export function detectThresholdMoments(
   previous: LiveStateReplicant,
   next: LiveStateReplicant,
   deps: Deps,
+  peak = previous.total,
 ): DonationMoment[] {
   const event = next.event;
   if (!event || previous.event?.id !== event.id || next.total <= previous.total) return [];
-  const crossed = (amount: number) => previous.total < amount && amount <= next.total;
+  const from = Math.max(previous.total, peak);
+  const crossed = (amount: number) => from < amount && amount <= next.total;
   const base = { eventId: event.id, at: deps.now() };
   return [
     ...event.milestones
@@ -396,10 +452,6 @@ export { applyFilters };
 export function computeLiveState(state: CoreState): LiveStateReplicant {
   const event = state.activeEventId ? (state.events.find((e) => e.id === state.activeEventId) ?? null) : null;
   return liveStateFor(event, event ? state.sourceResults[event.id] : undefined);
-}
-
-function roundCents(value: number): number {
-  return Math.round(value * 100) / 100;
 }
 
 export const MAX_SCREENS = 12;

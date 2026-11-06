@@ -65,8 +65,7 @@ removing the distro removes the whole stack. The background is in
    the same network to confirm.
 
 7. **Log in once and open the kiosk.** Log in to the dashboard on the
-   laptop (`http://127.0.0.1:9090`). That creates the key the kiosk URL
-   needs. Then show the TV picture as in the
+   laptop (`http://127.0.0.1:9090`), then show the TV picture as in the
    [event-day runbook](event-day.md), step 3.
 
 8. **Name the screens.** On the dashboard's **Screens** tab, add each TV (e.g. "Main room left", id `main-left`). For each

@@ -369,4 +369,108 @@ describe("fundraiser-core extension", () => {
       vi.useRealTimers();
     }
   });
+
+  describe("money that isn't new", () => {
+    const at = (s: number) => new Date(Date.UTC(2026, 10, 7, 20, 0, s)).toISOString();
+    const milestones = [1000, 2000, 3000].map((amount, i) => ({
+      id: `00000000-0000-4000-8000-00000000000${i}`,
+      amount,
+      label: "",
+    }));
+    async function show() {
+      const t = setup();
+      const eventId = await createActiveEvent(t.fake);
+      await t.fake.send("updateEvent", { eventId, patch: { milestones } });
+      const source = t.api.registerSource("fake", { label: "Fake" });
+      const sent = () => t.fake.world.sent.filter((m) => m.messageName === "donationMoment").map((m) => m.data);
+      const kinds = () => sent().map((m) => (m as { kind: string }).kind);
+      return { ...t, eventId, source, sent, kinds };
+    }
+
+    it("takes an event's first result as where the total stood, not as milestones reached", async () => {
+      const { source, eventId, kinds, live } = await show();
+      source.report({ eventId, total: 2500, observedAt: at(1) });
+      expect(live().total).toBe(2500);
+      expect(kinds()).toEqual([]);
+    });
+
+    it("doesn't celebrate again when the total dips and recovers", async () => {
+      vi.useFakeTimers();
+      try {
+        const { source, eventId, kinds } = await show();
+        source.report({ eventId, total: 2500, observedAt: at(1) });
+        source.report({ eventId, total: 100, observedAt: at(2) });
+        source.report({ eventId, total: 2500, observedAt: at(3) });
+        vi.advanceTimersByTime(DONATION_GRACE_MS + 1000);
+        expect(kinds()).toEqual([]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("remembers the high even if the total hasn't risen since NodeCG started", async () => {
+      const { fake, source, eventId, kinds } = await show();
+      source.report({ eventId, total: 2500, observedAt: at(1) });
+      fake.replicant<Record<string, number>>("totalPeaks").value = {};
+      source.report({ eventId, total: 2500, observedAt: at(2) });
+      source.report({ eventId, total: 100, observedAt: at(3) });
+      source.report({ eventId, total: 2500, observedAt: at(4) });
+      expect(kinds()).toEqual([]);
+    });
+
+    it("celebrates what's new once the total passes its old high", async () => {
+      const { source, eventId, kinds } = await show();
+      source.report({ eventId, total: 2500, observedAt: at(1) });
+      source.report({ eventId, total: 100, observedAt: at(2) });
+      source.report({ eventId, total: 3100, observedAt: at(3) });
+      expect(kinds()).toEqual(["milestone"]);
+    });
+
+    it("starts over when told to, without celebrating the jump", async () => {
+      vi.useFakeTimers();
+      try {
+        const { source, eventId, kinds } = await show();
+        source.report({ eventId, total: 0, observedAt: at(1) });
+        source.report({ eventId, total: 2500, observedAt: at(2), baseline: true });
+        vi.advanceTimersByTime(DONATION_GRACE_MS + 1000);
+        expect(kinds()).toEqual([]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("celebrates a hand-entered source's first amount", async () => {
+      const { api, fake, eventId, kinds } = await show();
+      await fake.send("updateEvent", { eventId, patch: { source: { adapterId: "typed" } } });
+      const typed = api.registerSource("typed", { label: "Typed", handEntered: true });
+      typed.report({ eventId, total: 1500, observedAt: at(1) });
+      expect(kinds()).toEqual(["milestone"]);
+    });
+
+    it("doesn't thank or celebrate an undo that puts money back", async () => {
+      const { fake, source, eventId, kinds } = await show();
+      source.report({ eventId, total: 900, observedAt: at(1) });
+      await fake.send("nudgeAdjustment", { eventId, delta: -500 });
+      await fake.send("nudgeAdjustment", { eventId, delta: 700, quiet: true });
+      expect(kinds()).toEqual([]);
+    });
+
+    it("lets money taken off be reached again", async () => {
+      const { fake, source, eventId, kinds } = await show();
+      source.report({ eventId, total: 900, observedAt: at(1) });
+      await fake.send("nudgeAdjustment", { eventId, delta: 200 });
+      expect(kinds()).toEqual(["milestone", "total-increase"]);
+      await fake.send("nudgeAdjustment", { eventId, delta: -200 });
+      await fake.send("nudgeAdjustment", { eventId, delta: 200 });
+      expect(kinds()).toEqual(["milestone", "total-increase", "milestone", "total-increase"]);
+    });
+
+    it("clears the moments list", async () => {
+      const { fake, eventId } = await show();
+      await fake.send("nudgeAdjustment", { eventId, delta: 20 });
+      expect(fake.replicant<unknown[]>("moments").value).toHaveLength(1);
+      await fake.send("clearMoments", undefined);
+      expect(fake.replicant<unknown[]>("moments").value).toEqual([]);
+    });
+  });
 });

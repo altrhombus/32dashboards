@@ -67,7 +67,8 @@ describe("handlePush", () => {
 describe("source-external extension", () => {
   it("creates a token once, stores only its hash, and mounts the route", async () => {
     const fake = createFakeNodecg("source-external");
-    const secrets = new SecretStore(path.join(mkdtempSync(path.join(tmpdir(), "ext-")), "s.json"));
+    const dir = mkdtempSync(path.join(tmpdir(), "ext-"));
+    const secrets = new SecretStore(path.join(dir, "s.json"), path.join(dir, "s.key"));
     sourceExternal(fake.api, createFakeCore([testEvent(A, "external")]), secrets);
 
     const token = (await fake.send("rotateToken", undefined)) as string;

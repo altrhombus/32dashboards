@@ -29,6 +29,7 @@ const demoItems: SourceItem[] = [
   value: value as number,
   bidCount: bidCount as number,
   remaining: "2 hours",
+  url: "https://example.test/item",
 }));
 
 /** Two hours and ten minutes from now, so the sample countdown is running. */
