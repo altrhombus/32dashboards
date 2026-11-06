@@ -47,8 +47,9 @@ network.
 
 4. **Put the event on the TVs.** In the Live tab, pick the event at the top
    left, tap **Put on the TVs**, then tap again to confirm. Check the strip:
-   the source should say **receiving data** (manual-entry events say so
-   after the first entry). The preview shows exactly what the TV shows.
+   the source should say **receiving data**. **No data yet** means nothing
+   has arrived (normal for manual entry until the first entry; otherwise
+   tap **Fetch now**). The preview shows exactly what the TV shows.
 
 5. **Run the show.** Everything during the event happens in the Live tab:
    - **Scenes.** The scene with the red outline is on the TV. Tap another
@@ -67,25 +68,20 @@ network.
    - **Bid wars.** Tap +5, +25, or +100 next to an option, or type an amount.
    - **Incentives.** **Pin to info bar** keeps one on the TV until you
      unpin it.
-   - **Ask Me.** Big buttons and **Other** add to the round on now; on a
-     phone, the Ask Me tab opens when Ask Me goes on the TV. With Ask Me
-     rounds planned (Event tab, Show content, **Ask Me rounds**), the pad
-     shows where you are (**Ask Me 1 of 3 · Fund a kennel**) and each
-     round's result. **Finish round 1 · next: …** plays the round's
-     wrap-up on the TVs and puts the next round's title and message up at
-     $0; **Skip** moves on from a round that raised nothing. After the
-     last round, the TVs go back to the scene from before Ask Me, where
-     the wrap-up plays with tonight's Ask Me total (Undo brings Ask Me
-     back). Switching to another scene finishes the round on now (if it
-     has money in it), so the wrap-up is the transition.
-     Whether Ask Me money is added to the total on the TVs is the event's
-     choice (Show content, **Ask Me rounds**). It's off by default: when
-     Ask Me gifts are also entered in the auction, its total already has
-     them.
-     Each step has an Undo, which goes back one round. Without a plan, Ask
-     Me is one appeal you can finish and run again. Ask Me money is kept
-     apart from venue cash, so setting the counted venue total doesn't
-     touch it. **Clear this round** drops a round entered by mistake.
+   - **Ask Me.** Put Ask Me on the TVs (on a phone, the Ask Me tab opens
+     by itself). Tap the big buttons, or **Other**, as paddles go up:
+     each amount pops up on the TVs on its own. The pad shows where you
+     are (**Ask Me 1 of 3 · Fund a kennel**).
+     - **Finish round 1 · next: …** celebrates the round and brings up
+       the next appeal at $0. **Skip** moves on from a round that raised
+       nothing.
+     - After the last round, the TVs go back to the scene from before Ask
+       Me and celebrate there with tonight's Ask Me total.
+     - Switching to another scene also finishes the round on now.
+     - Every step has an Undo. **Clear this round** drops a round entered
+       by mistake.
+     - Without planned rounds, Ask Me is one appeal you can finish and
+       run again.
    - **Milestones** fill the TVs for a few seconds (the milestone
      spotlight), then the show carries on by itself.
    - **Bidding closing.** In the last 10 minutes the countdown glows, and
@@ -94,6 +90,13 @@ network.
      only if the event says so (Event details); otherwise you do.
    - **What the TV celebrated** lists every donation, bid, and milestone
      the TV showed.
+
+   **How the total on the TVs is worked out:** the source's total (for
+   32auctions, the auction's own total) plus cash and checks at the
+   venue, plus finished Ask Me rounds only if the event adds them (Show
+   content, **Ask Me rounds**; off by default, because Ask Me gifts are
+   usually entered in the auction too). The Money section shows the
+   breakdown.
 
    Editing content (bid war options, prizes, logos) is in the
    **Show content** panel on the **Event** tab. Changes show on the
@@ -129,8 +132,9 @@ ones:
 
 - _Not configured for this event_: fill in the source's settings in its
   panel on the **Sources** tab (for 32auctions, the **32auctions source** panel).
-- _HTTP 401/403_: the auction needs a fresh session cookie; see
-  [rotating secrets](rotating-secrets.md).
+- _Sign-in turned down_, or _HTTP 401/403_: the organizer sign-in in the
+  **32auctions source** panel is wrong or has ended. Save the email and
+  password again; see [rotating secrets](rotating-secrets.md#32auctions-sign-in).
 - _Total raised not found_: check the auction's public path, or the site
   layout changed. Keep the show going with cash and checks in the **Money** section.
 
