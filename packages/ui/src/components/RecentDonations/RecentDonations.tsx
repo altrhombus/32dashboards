@@ -19,7 +19,12 @@ export interface RecentDonationsProps {
 export function RecentDonations({ moments, label = "Latest" }: RecentDonationsProps) {
   return (
     <div className="recent-donations">
-      <span className="recent-donations__label">{label}</span>
+      {/* Stacked a word per line, so the bids get the width. */}
+      <span className="recent-donations__label">
+        {label.split(" ").map((word, i) => (
+          <span key={i}>{word}</span>
+        ))}
+      </span>
       <div className="recent-donations__row">
         {moments.map((m) => (
           // key: each one slides in once, when it arrives
@@ -31,9 +36,10 @@ export function RecentDonations({ moments, label = "Latest" }: RecentDonationsPr
                 {m.newBids > 1 && <span className="recent-donations__count">×{m.newBids}</span>}
               </>
             ) : (
+              // What, then how much: the amount is on the right, as for bids.
               <>
-                <span className="recent-donations__amount num">+{formatAmount(m.delta)}</span>
                 <span className="recent-donations__title">Thank you!</span>
+                <span className="recent-donations__amount num">+{formatAmount(m.delta)}</span>
               </>
             )}
           </span>

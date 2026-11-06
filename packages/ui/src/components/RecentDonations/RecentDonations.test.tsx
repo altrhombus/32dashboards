@@ -16,7 +16,7 @@ describe("RecentDonations", () => {
       />,
     );
     const chips = [...container.querySelectorAll(".recent-donations__chip")].map((c) => c.textContent);
-    expect(chips).toEqual(["+$25Thank you!", "Cookies$45×3"]);
-    expect(container.textContent).toContain("Latest bids");
+    expect(chips).toEqual(["Thank you!+$25", "Cookies$45×3"]);
+    expect(container.querySelector(".recent-donations__label")?.textContent).toBe("Latestbids");
   });
 });

@@ -8,6 +8,9 @@
 
 .recent-donations__label {
   flex: none;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
   font-size: 0.6em;
   font-weight: 700;
   letter-spacing: 0.12em;

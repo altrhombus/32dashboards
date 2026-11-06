@@ -7,6 +7,8 @@ import type { CelebrationMoment, InfoBarDisplay, RoundWrapMoment, ToastMoment } 
 import { buildSegments } from "./segments.js";
 
 export const CELEBRATION_MS = 8_000;
+/** Celebrations remembered for the info bar to show: far more than can queue up at once. */
+const MAX_CELEBRATIONS_KEPT = 20;
 export const TOAST_MS = 6_000;
 /** A toast's time on screen while others wait, so a burst of bids drains. */
 export const TOAST_BUSY_MS = 3_500;
@@ -55,6 +57,11 @@ export function useInfoBar(live: LiveStateReplicant | undefined, recentCount = 0
     (moment: CelebrationMoment) => {
       const key = `moment:${moment.id}`;
       celebrations.current.set(key, moment);
+      // Only the queued and showing ones are ever looked up; forget the rest, so a long night doesn't add up.
+      for (const old of celebrations.current.keys()) {
+        if (celebrations.current.size <= MAX_CELEBRATIONS_KEPT) break;
+        celebrations.current.delete(old);
+      }
       send({ type: "CELEBRATE", celebration: { key, durationMs: CELEBRATION_MS } });
     },
     [send],

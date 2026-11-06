@@ -343,6 +343,11 @@ describe("detectMoments", () => {
       expect.objectContaining({ kind: "new-bid", itemId: "a", amount: 80, newBids: 3 }),
     ]);
 
+    // A first bid at the opening price (shown as the current bid before anyone bid) is a bid, not a donation.
+    const opening = { ...result(eventId, 100), items: [bid("a", "Apple pie", 50, 0)] };
+    const firstBid = { ...result(eventId, 150), items: [bid("a", "Apple pie", 50, 1)] };
+    expect(core.detectMoments(opening, firstBid, event, deps).map((m) => m.kind)).toEqual(["new-bid"]);
+
     const bidOnly = { ...next, total: 135 };
     expect(core.detectMoments(previous, bidOnly, { ...event, filters: ["raffle"] }, deps).map((m) => m.kind)).toEqual([
       "new-bid",

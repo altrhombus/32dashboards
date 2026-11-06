@@ -16,9 +16,10 @@ export function MomentToast({ moment }: MomentToastProps) {
       {moment.kind === "total-increase" ? (
         <>
           <span className="moment-toast__kicker">Donation</span>
+          {/* What, then how much: the amount is on the right, as for bids. */}
           <span className="moment-toast__line">
-            <span className="moment-toast__amount num">+{formatAmount(moment.delta)}</span>
             <span className="moment-toast__text">Thank you!</span>
+            <span className="moment-toast__amount num">+{formatAmount(moment.delta)}</span>
           </span>
         </>
       ) : (
