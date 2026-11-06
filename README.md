@@ -47,6 +47,7 @@ infra/
 
 - [Setting up the presentation laptop](docs/runbooks/venue-setup.md) (once)
 - [Setting up a new event](docs/runbooks/onboarding-a-new-event.md)
+- [Event checklist](docs/runbooks/event-checklist.md): start to finish, with tick boxes
 - [Event day](docs/runbooks/event-day.md), including troubleshooting
 - [Backup and restore](docs/runbooks/backup-and-restore.md)
 - [Rotating secrets](docs/runbooks/rotating-secrets.md)

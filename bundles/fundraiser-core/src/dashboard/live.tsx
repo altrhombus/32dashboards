@@ -107,17 +107,8 @@ function TvStatus({ screens, outputs, now }: { screens: ScreensReplicant; output
         <strong>{what}</strong>
         <span>
           {named.length > 1 ? `${named.length - missing.length} of ${named.length} screens connected${extra}. ` : ""}
-          {missing.length === 1 ? (
-            <>
-              On the TV laptop, run <code>open-kiosk.ps1 -Screen {missing[0]!.screen.id}</code>.
-            </>
-          ) : missing.length > 1 ? (
-            <>On the TV laptop, run open-kiosk.ps1 for each (the Screens tab shows each command).</>
-          ) : (
-            <>
-              On the TV laptop, run <code>open-kiosk.ps1</code> to put the TV picture on that screen.
-            </>
-          )}
+          On the computer connected to {missing.length === 1 ? "that TV" : "each TV"}, open the dashboard's Screens tab
+          and tap <strong>Open on this computer</strong>.
         </span>
       </div>
     );

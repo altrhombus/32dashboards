@@ -250,3 +250,9 @@ body,
   font-size: 2.6em;
   color: var(--color-accent);
 }
+
+/* A mouse left on the TV disappears once it stops moving. */
+.pointer-idle,
+.pointer-idle * {
+  cursor: none !important;
+}

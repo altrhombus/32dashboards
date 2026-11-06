@@ -66,15 +66,15 @@ removing the distro removes the whole stack. The background is in
 
 7. **Log in once and open the kiosk.** Log in to the dashboard on the
    laptop (`http://127.0.0.1:9090`). That creates the key the kiosk URL
-   needs. Then run `infra/windows/open-kiosk.ps1` as in the
+   needs. Then show the TV picture as in the
    [event-day runbook](event-day.md), step 3.
 
 8. **Name the screens.** On the dashboard's **Screens** tab, add each TV (e.g. "Main room left", id `main-left`). For each
    scene you can keep the built-in layout or choose another one. To make
    your own, use the **Layouts** tab: start a new layout or copy a
-   built-in one, arrange it, and publish it. Then open each TV's kiosk
-   with `open-kiosk.ps1 -Screen <id>`. With one TV, you can skip this
-   step.
+   built-in one, arrange it, and publish it. Then, on each TV's computer,
+   click **Open on this computer** for its screen. With one TV, you can
+   skip this step.
 
 9. **Check it.** `pnpm check-env` should pass. Then close every WSL
    window, wait five minutes, and reload the dashboard from another

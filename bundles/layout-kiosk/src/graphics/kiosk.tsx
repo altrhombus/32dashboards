@@ -176,4 +176,24 @@ function Kiosk() {
   );
 }
 
+/*
+ * On a real TV: double-click toggles full screen (the browser's own, which,
+ * unlike F11, shows no toolbar when the mouse reaches the top), and the mouse
+ * pointer hides after a few seconds without moving.
+ */
+if (!isPreview) {
+  document.addEventListener("dblclick", () => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void document.documentElement.requestFullscreen?.().catch(() => {});
+  });
+  let idle: ReturnType<typeof setTimeout> | undefined;
+  const wake = () => {
+    document.documentElement.classList.remove("pointer-idle");
+    clearTimeout(idle);
+    idle = setTimeout(() => document.documentElement.classList.add("pointer-idle"), 3000);
+  };
+  document.addEventListener("mousemove", wake);
+  wake();
+}
+
 createRoot(document.getElementById("root")!).render(<Kiosk />);

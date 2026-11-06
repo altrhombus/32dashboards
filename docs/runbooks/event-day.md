@@ -1,5 +1,8 @@
 # Runbook: Event day
 
+For a tick-box version from a few days before to packing up, see the
+[event checklist](event-checklist.md).
+
 The presentation laptop runs everything: NodeCG inside WSL, and the kiosk
 full-screen on the TV. Operators control the show from the dashboard's
 **Live** tab, on the laptop or on any phone, tablet, or laptop on the same
@@ -28,29 +31,22 @@ network.
    the code, browse to `http://<laptop-ip>:9090` (`pnpm check-env` prints
    the address under "reachable at") and log in as `admin`.
 
-3. **Open the kiosk on the TV.** On the presentation laptop, with the TV
-   connected as its display, run in PowerShell:
+3. **Show the TV picture on each TV.** On the computer connected to the
+   TV (the laptop, or another computer that can reach the dashboard), open
+   the dashboard's **Screens** tab and click **Open on this computer** for
+   that TV's screen. Move the window onto the TV (drag it, or press
+   Windows+Shift+arrow) and double-click it to fill the screen. Within ten
+   seconds that screen says **Connected**, and the Live tab's status strip
+   counts it. The Screens tab also shows each screen's link, to open by
+   hand in Edge or Chrome on another computer.
 
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File \\wsl.localhost\Ubuntu\home\<you>\32dashboards\infra\windows\open-kiosk.ps1
-   ```
+   On the laptop, `infra/windows/open-kiosk.ps1 -Screen <id>` does the
+   same with a dedicated Edge profile in kiosk mode; add
+   `-Position 1920,0` to open it on a display to the right of a
+   1920-wide main display.
 
-   Edge opens the kiosk full-screen. Within ten seconds the Live tab's
-   status strip should say **TV connected**.
-
-   With named screens (see [venue setup](venue-setup.md), step 8), open
-   each one by its id, and say which display it goes on:
-
-   ```powershell
-   ...\open-kiosk.ps1 -Screen main-left
-   ...\open-kiosk.ps1 -Screen main-right -Position 1920,0
-   ```
-
-   The strip then says **2 screens connected**, or names the screen
-   that's missing.
-
-4. **Put the event on the TV.** In the Live tab, pick the event at the top
-   left, tap **Put on TV**, then tap again to confirm. Check the strip:
+4. **Put the event on the TVs.** In the Live tab, pick the event at the top
+   left, tap **Put on the TVs**, then tap again to confirm. Check the strip:
    the source should say **receiving data** (manual-entry events say so
    after the first entry). The preview shows exactly what the TV shows.
 
@@ -100,15 +96,15 @@ network.
    cd ~/32dashboards && pnpm backup
    ```
 
-   Close the kiosk with Alt+F4 on the TV.
+   Close each TV picture: click it and press Alt+F4.
 
 ## Troubleshooting
 
 **TV not connected** (or a screen's name, **not connected**). That
 screen's kiosk isn't open, or it lost its connection. Run step 3 again
 for it; opening it twice is harmless. If the **Screens** tab
-lists a TV as "open without a screen name", it was opened without
-`-Screen`, so it shows the built-in layouts.
+lists a TV as "open without a screen name", it was opened without a
+screen, so it shows the built-in layouts.
 
 **Changing what a screen shows mid-show.** In the Live tab, **On each
 screen now** lists the named screens; pick another finished layout for
@@ -117,8 +113,7 @@ edit layouts beforehand in the **Layouts** tab, not during the show.
 
 **A screen shows the built-in layout instead of the one chosen for it.**
 The chosen layout was deleted or can't be shown. The screen falls back
-rather than going blank; choose a layout for it again in **Screens and
-layouts**.
+rather than going blank; choose a layout for it again on the **Screens** tab.
 
 **The source needs a look.** The status strip shows the reason. Common
 ones:
@@ -128,7 +123,7 @@ ones:
 - _HTTP 401/403_: the auction needs a fresh session cookie; see
   [rotating secrets](rotating-secrets.md).
 - _Total raised not found_: check the auction's public path, or the site
-  layout changed. Keep the show going with **Add cash or checks**.
+  layout changed. Keep the show going with cash and checks in the **Money** section.
 
 Tap **Fetch now** after fixing it.
 

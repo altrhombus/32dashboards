@@ -29,8 +29,9 @@ keeps working: its key doesn't depend on the password.
 ## Kiosk key
 
 In the dashboard, open **Settings** and use **Reset Key**. Every keyed URL
-stops working at once, including the TV. Reopen the kiosk with
-`infra/windows/open-kiosk.ps1`, which picks up the new key.
+stops working at once, including the TV pictures. Sign in again, then on
+each TV's computer click **Open on this computer** on the **Screens** tab
+(or run `infra/windows/open-kiosk.ps1`), which picks up the new key.
 
 ## 32auctions sign-in
 
