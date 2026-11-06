@@ -15,6 +15,7 @@ const bid = (n: number): DonationMoment => ({
   amount: 10 * n,
   bidCount: 1,
   newBids: 1,
+  purchase: false,
 });
 
 describe("toasts", () => {

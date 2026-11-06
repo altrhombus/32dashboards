@@ -347,6 +347,13 @@ describe("compareResults", () => {
     expect(core.bidMoney(undefined, bid("a", "Pie", 30, 0))).toBe(0);
   });
 
+  it("counts Buy Now purchases as bids: each one bought adds its price", () => {
+    const tea = { ...bid("t", "Garden tour", 100, null), available: 11 };
+    const { bids, fromBids } = core.compareResults(at(100, [tea]), at(300, [{ ...tea, available: 9 }]), event, deps);
+    expect(fromBids).toBe(200);
+    expect(bids).toEqual([expect.objectContaining({ itemId: "t", amount: 100, newBids: 2, purchase: true })]);
+  });
+
   it("caps new-bid moments per result", () => {
     const items = Array.from({ length: 20 }, (_, i) => bid(String(i), `Item ${i}`, 10, 1));
     const previous = at(100, items);

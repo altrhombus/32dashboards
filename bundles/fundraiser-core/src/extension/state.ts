@@ -278,9 +278,19 @@ export function recordSourceResult(
 /** Caps new-bid moments per result, so a burst after an outage doesn't flood the screen. */
 export const MAX_BID_MOMENTS_PER_RESULT = 10;
 
+/** How many of a fixed-price ("Buy Now") item were bought between two snapshots of it. */
+export function boughtSince(old: SourceItem | undefined, item: SourceItem): number {
+  const was = old?.available;
+  const now = item.available;
+  return was != null && now != null && now < was ? was - now : 0;
+}
+
 /** What bids added to the total between two snapshots of one item (0 if nothing new). */
 export function bidMoney(old: SourceItem | undefined, item: SourceItem): number {
   const price = item.currentBid ?? 0;
+  // A Buy Now item with several to buy: each one bought adds its price.
+  const bought = boughtSince(old, item);
+  if (bought > 0) return bought * price;
   const count = item.bidCount ?? 0;
   // An item without bids shows its opening price as its current bid, but it's not in the total yet.
   if (!old || old.bidCount === 0 || old.bidCount === null) return count > 0 ? price : 0;
@@ -320,7 +330,8 @@ export function compareResults(
     if (!old) continue;
     const moreBids = item.bidCount !== null && old.bidCount !== null && item.bidCount > old.bidCount;
     const higherBid = item.currentBid !== null && old.currentBid !== null && item.currentBid > old.currentBid;
-    if (!moreBids && !higherBid) continue;
+    const bought = boughtSince(old, item);
+    if (!moreBids && !higherBid && !bought) continue;
     bids.push({
       kind: "new-bid",
       id: deps.newId(),
@@ -329,7 +340,8 @@ export function compareResults(
       itemTitle: item.title,
       amount: item.currentBid,
       bidCount: item.bidCount,
-      newBids: moreBids ? item.bidCount! - old.bidCount! : 1,
+      newBids: bought || (moreBids ? item.bidCount! - old.bidCount! : 1),
+      purchase: bought > 0,
     });
     if (bids.length >= MAX_BID_MOMENTS_PER_RESULT) break;
   }

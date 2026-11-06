@@ -53,7 +53,8 @@ export function RecentDonations({ moments, label = "Bids" }: RecentDonationsProp
               ) : (
                 <span className="recent-donations__amount num">+{formatAmount(m.delta)}</span>
               )}
-              {m.kind === "new-bid" && m.newBids > 1 && <span>{m.newBids} bids</span>}
+              {m.kind === "new-bid" && m.purchase && <span>{m.newBids} bought</span>}
+              {m.kind === "new-bid" && !m.purchase && m.newBids > 1 && <span>{m.newBids} bids</span>}
               <span className="recent-donations__ago">{timeAgo(m.at, now)}</span>
             </span>
           </span>

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkIntegrity, parseItemsPage, parseTotalRaised, ScrapeIntegrityError } from "../src/extension/parser.js";
-import { scrapeAuction, TotalNotShownError } from "../src/extension/scrape.js";
+import { normalizeCards, scrapeAuction, TotalNotShownError } from "../src/extension/scrape.js";
 import { itemsUrl, summaryUrl, type Config } from "../src/config.js";
 
 // Same fixtures (and assertions) as the legacy Python parser tests.
@@ -124,8 +124,27 @@ describe("scrapeAuction", () => {
       value: 100,
       bidCount: 3,
       remaining: "2 days",
+      available: null,
     });
     expect(result.items?.[2]?.title).toBe("Weekend Cabin Stay");
+  });
+
+  it("reads how many are left of a Buy Now item", () => {
+    const [item] = normalizeCards([
+      {
+        card: {
+          href: "/item/5",
+          title: "Garden tour for two",
+          pictureUrl: null,
+          price: "Buy Now: $100.00",
+          remaining: "11",
+          value: null,
+          bids: null,
+        },
+        pageUrl: `${BASE}/items`,
+      },
+    ]);
+    expect(item).toMatchObject({ currentBid: 100, available: 11, bidCount: null });
   });
 
   it("sends credentials as cookies", async () => {

@@ -150,6 +150,8 @@ export const DonationMomentSchema = z.discriminatedUnion("kind", [
     bidCount: z.number().int().nonnegative().nullable(),
     /** How many bids arrived on the item since the last result (several can between refreshes). */
     newBids: z.number().int().positive().default(1),
+    /** Bought at a fixed price ("Buy Now") rather than bid: newBids is how many were bought, amount the price of one. */
+    purchase: z.boolean().default(false),
   }),
 ]);
 export type DonationMoment = z.infer<typeof DonationMomentSchema>;

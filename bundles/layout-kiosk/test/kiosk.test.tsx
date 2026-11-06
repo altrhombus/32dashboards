@@ -78,6 +78,7 @@ describe("kiosk layouts", () => {
           amount: 99,
           bidCount: 9,
           newBids: 3,
+          purchase: false,
         },
       ],
     };
