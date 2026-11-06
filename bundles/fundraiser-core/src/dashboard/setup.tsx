@@ -796,6 +796,9 @@ function CelebrateStep({ event, update }: { event: FundraiserEvent; update: Upda
 
 // --- 6. Ask Me ------------------------------------------------------------------
 
+/** Past this many characters, an appeal's text shrinks on the TV to fit. */
+const LONG_APPEAL = 300;
+
 type DraftRound = FundraiserEvent["askMeRounds"][number];
 
 function AskMeStep(props: {
@@ -893,6 +896,11 @@ function AskMeStep(props: {
               value={round.message}
               onChange={(e) => edit(i, { message: e.target.value })}
             />
+            <span className="muted">
+              {round.message.length > LONG_APPEAL
+                ? `${round.message.length} characters: the TV shrinks the text to fit. Shorter reads better from across the room.`
+                : `${round.message.length} characters`}
+            </span>
           </li>
         ))}
       </ol>
@@ -979,7 +987,7 @@ function ExtrasStep({ event, update }: { event: FundraiserEvent; update: Update 
         <span className="muted">Shows in the info bar between items.</span>
       </label>
       <label className="field">
-        <span>Announcements, one per line</span>
+        <span>Announcements, one per line (**bold** and *italics* work)</span>
         <textarea
           rows={4}
           placeholder={"Dessert auction opens at 8:00\nThank you to our volunteers"}
@@ -988,7 +996,8 @@ function ExtrasStep({ event, update }: { event: FundraiserEvent; update: Update 
         />
       </label>
       <p className="muted">
-        Logos (sponsors, or the causes you help), prizes and bid wars are on the Event tab, under Show content.
+        Logos (sponsors, or the causes you help) are added on the Event tab: open Show content, then Look and logos, and
+        use Add logos. Prizes and bid wars are there too.
       </p>
     </Question>
   );
@@ -1046,6 +1055,20 @@ function ReadyStep(props: {
           ? `${fetched.items.length} items from 32auctions`
           : "Not checked yet: use Connect and check on the Money step"
         : "Added by hand in the Live tab",
+    ],
+    [
+      event.sponsors.length > 0,
+      "Logos",
+      event.sponsors.length
+        ? `${event.sponsors.length} under "${event.sponsorsTitle}"`
+        : "None yet: on the Event tab, open Show content, then Look and logos",
+    ],
+    [
+      event.askMeRounds.length > 0,
+      "Ask Me",
+      event.askMeRounds.length
+        ? `${event.askMeRounds.length} appeal${event.askMeRounds.length === 1 ? "" : "s"}, ${event.askMeInTotal ? "added to the total" : "counted by the auction"}`
+        : "No appeals planned (optional)",
     ],
     [connected > 0, "TVs", connected ? `${connected} connected` : "None open yet. See the Screens tab."],
   ];

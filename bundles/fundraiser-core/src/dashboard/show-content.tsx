@@ -583,7 +583,7 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
         onChange={(celebrateAtClose) => run(send("updateEvent", { eventId: event.id, patch: { celebrateAtClose } }))}
       />
       <label className="field">
-        <span>Announcements, one per line</span>
+        <span>Announcements, one per line (**bold** and *italics* work)</span>
         <textarea rows={4} {...field("announcements")} />
       </label>
       <label className="field">
@@ -752,7 +752,8 @@ function ShowContent() {
           <p className="muted">
             Plan each Ask Me appeal of the night, in order. Finishing one celebrates it and moves the TVs on to the
             next; after the last, the TVs go back to the scene from before Ask Me. With none planned, Ask Me is one
-            appeal (its title and message are in Event details) that you can run as many times as you like.
+            appeal (its title and message are in Event details) that you can run as many times as you like. Long
+            messages shrink to fit the TV; about 300 characters or fewer reads best from across the room.
           </p>
           <SaveToggle
             checked={event.askMeInTotal}

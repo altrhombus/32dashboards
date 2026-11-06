@@ -16,6 +16,7 @@ import {
   AskMeRoundWrap,
   MomentToast,
   PrizeCard,
+  InlineMarkdown,
   SponsorCarousel,
   TotalRaisedCounter,
 } from "@32dashboards/ui";
@@ -67,7 +68,8 @@ function lastCall(minutesLeft: number, event: KioskData["live"]["event"]) {
 function Segment({ content, total }: { content: SegmentContent; total: number }) {
   switch (content.kind) {
     case "items":
-      return <BottomMarquee items={content.items} />;
+      // Resumes where it left off, so each turn shows the next stretch of items, not the first ones again.
+      return <BottomMarquee items={content.items} resumeKey="info-bar" />;
     case "incentive":
       return <IncentiveTracker incentive={content.incentive} totalRaised={total} />;
     case "bidWar":
@@ -79,7 +81,7 @@ function Segment({ content, total }: { content: SegmentContent; total: number })
     case "announcement":
       return (
         <div className="kiosk-info-bar__text clamp-1" title={content.text}>
-          {content.text}
+          <InlineMarkdown text={content.text} />
         </div>
       );
     case "sponsor":

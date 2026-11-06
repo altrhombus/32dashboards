@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import DOMPurify from "dompurify";
-import { marked } from "marked";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import type { AskMeConfig } from "@32dashboards/schema";
 import { formatAmount } from "../../display/format.js";
+import { renderMarkdown } from "../../display/markdown.js";
 import { ConfettiBurst } from "../ConfettiBurst/ConfettiBurst.js";
 import "./AskMeOverlay.css";
 
@@ -16,7 +15,6 @@ export interface AskMeOverlayProps {
   kicker?: string;
 }
 
-const ALLOWED_TAGS = ["p", "strong", "em", "ul", "ol", "li", "br", "a", "h1", "h2", "h3", "blockquote", "code"];
 const ASK_ME_DELTA_DISPLAY_MS = 3_000;
 /** At most this many pop-ups at once; the oldest goes first. */
 const MAX_GIFTS = 5;
@@ -26,14 +24,42 @@ interface Gift {
   amount: number;
 }
 
+/** The smallest the message shrinks to (of its normal size) before it's allowed to be cut off. */
+const MIN_FIT = 0.4;
+
 /**
- * Markdown + DOMPurify allow-list sanitization -- the one place legacy
- * main.js got this right, now as pinned npm deps instead of unpinned CDN
- * scripts with no SRI hash and no offline fallback.
+ * Shrinks the message's text until it fits the space left between the
+ * title and the total, so a long appeal never pushes those off screen.
+ * Refits when the text, the screen size, or the fonts change.
  */
-function renderMarkdown(message: string): string {
-  const html = marked.parse(message, { async: false }) as string;
-  return DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR: ["href"] });
+function useFitText(box: RefObject<HTMLDivElement | null>, text: RefObject<HTMLDivElement | null>, content: string) {
+  useLayoutEffect(() => {
+    const outer = box.current;
+    const inner = text.current;
+    if (!outer || !inner) return;
+    const fit = () => {
+      let scale = 1;
+      inner.style.setProperty("--ask-me-fit", "1");
+      while (inner.scrollHeight > outer.clientHeight + 1 && scale > MIN_FIT) {
+        scale = Math.round((scale - 0.05) * 100) / 100;
+        inner.style.setProperty("--ask-me-fit", String(scale));
+      }
+    };
+    fit();
+    if (typeof ResizeObserver === "undefined") return;
+    // Only the outer box: watching the text too would refit on our own changes.
+    let width = outer.clientWidth;
+    let height = outer.clientHeight;
+    const observer = new ResizeObserver(() => {
+      if (outer.clientWidth === width && outer.clientHeight === height) return;
+      width = outer.clientWidth;
+      height = outer.clientHeight;
+      fit();
+    });
+    observer.observe(outer);
+    void document.fonts?.ready.then(fit);
+    return () => observer.disconnect();
+  }, [box, text, content]);
 }
 
 export function AskMeOverlay({ askMe, visible = askMe.enabled, logoUrl, kicker }: AskMeOverlayProps) {
@@ -62,6 +88,9 @@ export function AskMeOverlay({ askMe, visible = askMe.enabled, logoUrl, kicker }
   }, []);
 
   const newest = gifts[gifts.length - 1];
+  const messageBox = useRef<HTMLDivElement>(null);
+  const messageText = useRef<HTMLDivElement>(null);
+  useFitText(messageBox, messageText, `${askMe.title}\n${askMe.message}\n${visible}`);
 
   if (!visible) return null;
 
@@ -75,7 +104,13 @@ export function AskMeOverlay({ askMe, visible = askMe.enabled, logoUrl, kicker }
       <div key={askMe.title} className="ask-me-overlay__title">
         {askMe.title}
       </div>
-      <div className="ask-me-overlay__message" dangerouslySetInnerHTML={{ __html: renderMarkdown(askMe.message) }} />
+      <div ref={messageBox} className="ask-me-overlay__message">
+        <div
+          ref={messageText}
+          className="ask-me-overlay__message-text"
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(askMe.message) }}
+        />
+      </div>
       <div className="ask-me-overlay__total-wrapper">
         {/* A reserved line above the total, so the pop-up never covers it and the total doesn't move. */}
         <div className="ask-me-overlay__delta-slot" aria-live="polite">

@@ -3,13 +3,11 @@ import { render, screen } from "@testing-library/react";
 import { AnnouncementsList } from "./AnnouncementsList.js";
 
 describe("AnnouncementsList", () => {
-  it("renders announcement strings as literal text, not HTML", () => {
-    const malicious = '<img src="x" onerror="window.__xss = true">';
+  it("never turns typed HTML into markup (Markdown is sanitized)", () => {
+    const malicious = 'Doors at 6 <img src="x" onerror="window.__xss = true">';
     render(<AnnouncementsList announcements={[malicious]} />);
 
-    // The literal markup text should appear on the page...
-    expect(screen.getByText(malicious)).toBeInTheDocument();
-    // ...but no actual <img> element should have been created from it.
+    expect(screen.getByText(/Doors at 6/)).toBeInTheDocument();
     expect(document.querySelector("img")).toBeNull();
     expect((window as unknown as { __xss?: boolean }).__xss).toBeUndefined();
   });

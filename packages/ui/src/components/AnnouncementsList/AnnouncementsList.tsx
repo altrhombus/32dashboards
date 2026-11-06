@@ -1,3 +1,4 @@
+import { InlineMarkdown } from "../../display/markdown.js";
 import "./AnnouncementsList.css";
 
 export interface AnnouncementsListProps {
@@ -5,9 +6,8 @@ export interface AnnouncementsListProps {
 }
 
 /**
- * Announcement text is rendered as plain JSX children (not
- * dangerouslySetInnerHTML), so React escapes it automatically -- this is
- * the fix for legacy main.js's unescaped innerHTML interpolation.
+ * Each announcement is one line of Markdown (**bold**, *italics*), sanitized
+ * by renderInlineMarkdown, so typed text can't inject markup into the TV.
  */
 export function AnnouncementsList({ announcements }: AnnouncementsListProps) {
   if (announcements.length === 0) {
@@ -18,7 +18,7 @@ export function AnnouncementsList({ announcements }: AnnouncementsListProps) {
     <ul className="announcements-list">
       {announcements.map((announcement, index) => (
         <li key={index} className="announcements-list__item">
-          {announcement}
+          <InlineMarkdown text={announcement} />
         </li>
       ))}
     </ul>

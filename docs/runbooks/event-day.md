@@ -82,6 +82,10 @@ network.
        by mistake.
      - Without planned rounds, Ask Me is one appeal you can finish and
        run again.
+   - **Pop-ups.** Each new bid on an item pops up on its own ("New bid",
+     or "3 new bids" if several came in between refreshes), and money the
+     bids don't explain (a donation) gets a "Thank you". In a rush they
+     queue up and come in one by one, a few on screen at a time.
    - **Milestones** fill the TVs for a few seconds (the milestone
      spotlight), then the show carries on by itself.
    - **Bidding closing.** In the last 10 minutes the countdown glows, and
