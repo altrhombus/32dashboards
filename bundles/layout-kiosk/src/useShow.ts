@@ -1,5 +1,5 @@
 /// <reference types="nodecg/types/augment-window" />
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useMachine } from "@xstate/react";
 import { infoBarMachine, selectInfoBarView } from "@32dashboards/incentive-machine";
 import type { DonationMoment, LiveStateReplicant } from "@32dashboards/schema/core";
@@ -15,6 +15,14 @@ export const MAX_TOASTS = 3;
 export const TOAST_GAP_MS = 1_000;
 /** Toasts waiting beyond this are dropped, oldest first: a backlog would only show stale bids. */
 export const MAX_WAITING_TOASTS = 12;
+/** How many of the latest bids and donations are kept for the info bar (more than fit). */
+export const MAX_RECENT = 12;
+
+/** `newer` first, then `older`, without repeats, at most MAX_RECENT. */
+function mergeRecent(newer: ToastMoment[], older: ToastMoment[]): ToastMoment[] {
+  const seen = new Set<string>();
+  return [...newer, ...older].filter((m) => !seen.has(m.id) && seen.add(m.id)).slice(0, MAX_RECENT);
+}
 /** How long an Ask Me round's wrap-up stays on screen. */
 export const ROUND_WRAP_MS = 7_000;
 
@@ -23,10 +31,14 @@ export const ROUND_WRAP_MS = 7_000;
  * returns what it says to show. `celebrate` queues a milestone or met
  * incentive, which interrupts the rotation.
  */
-export function useInfoBar(live: LiveStateReplicant | undefined) {
+export function useInfoBar(live: LiveStateReplicant | undefined, recentCount = 0) {
   const [snapshot, send] = useMachine(infoBarMachine, { input: {} });
   const celebrations = useRef(new Map<string, CelebrationMoment>());
-  const plan = useMemo(() => (live ? buildSegments(live) : { segments: [], pinned: null }), [live]);
+  const hasRecent = recentCount > 0;
+  const plan = useMemo(
+    () => (live ? buildSegments(live, hasRecent ? 1 : 0) : { segments: [], pinned: null }),
+    [live, hasRecent],
+  );
 
   // Only resend when the rotation itself changes, not on every total update.
   const signature = JSON.stringify([plan.segments.map((s) => [s.key, s.durationMs]), plan.pinned?.key]);
@@ -69,8 +81,22 @@ export function useInfoBar(live: LiveStateReplicant | undefined) {
  * for less time while others wait); a finished Ask Me round becomes its
  * wrap-up (`roundWrap`) for ROUND_WRAP_MS.
  */
-export function useDonationMoments(eventId: string | null, celebrate: (moment: CelebrationMoment) => void) {
+export function useDonationMoments(
+  eventId: string | null,
+  celebrate: (moment: CelebrationMoment) => void,
+  options: {
+    /** Earlier moments (the core's `moments` Replicant), to start the latest-bids list from. */
+    history?: DonationMoment[];
+    /** True while the info bar shows the latest bids: no toasts then, since the bar shows each one. */
+    quiet?: RefObject<boolean>;
+  } = {},
+) {
   const [toasts, setToasts] = useState<ToastMoment[]>([]);
+  const [recent, setRecent] = useState<ToastMoment[]>([]);
+  // Held in a ref so the listener below always sees the current one without resubscribing.
+  const quietRef = useRef(options.quiet);
+  quietRef.current = options.quiet;
+  const seededFor = useRef<string | null>(null);
   const [roundWrap, setRoundWrap] = useState<RoundWrapMoment | null>(null);
   const eventRef = useRef(eventId);
   eventRef.current = eventId;
@@ -83,7 +109,21 @@ export function useDonationMoments(eventId: string | null, celebrate: (moment: C
     setToasts([]);
     setRoundWrap(null);
     waiting.current = [];
+    setRecent([]);
+    seededFor.current = null;
   }, [eventId]);
+
+  // The latest-bids list starts from what already happened, once per event.
+  const history = options.history;
+  useEffect(() => {
+    if (!eventId || !history || seededFor.current === eventId) return;
+    seededFor.current = eventId;
+    const earlier = history
+      .filter((m): m is ToastMoment => m.eventId === eventId && (m.kind === "new-bid" || m.kind === "total-increase"))
+      .reverse()
+      .slice(0, MAX_RECENT);
+    setRecent((current) => mergeRecent(current, earlier));
+  }, [eventId, history]);
 
   useEffect(() => {
     const timers = new Set<ReturnType<typeof setTimeout>>();
@@ -100,6 +140,8 @@ export function useDonationMoments(eventId: string | null, celebrate: (moment: C
 
     // Moves the next waiting toast on screen when there's room, one at a time.
     const pump = () => {
+      // While the info bar lists the latest bids, toasts would repeat it: let them go.
+      if (quietRef.current?.current) waiting.current = [];
       if (pumpQueued || waiting.current.length === 0 || shown >= MAX_TOASTS) return;
       const wait = lastShownAt + TOAST_GAP_MS - Date.now();
       if (wait > 0) {
@@ -133,6 +175,7 @@ export function useDonationMoments(eventId: string | null, celebrate: (moment: C
         later(ROUND_WRAP_MS, () => setRoundWrap((current) => (current?.id === moment.id ? null : current)));
         return;
       }
+      setRecent((current) => mergeRecent([moment], current));
       waiting.current = [...waiting.current, moment].slice(-MAX_WAITING_TOASTS);
       pump();
     };
@@ -143,5 +186,5 @@ export function useDonationMoments(eventId: string | null, celebrate: (moment: C
     };
   }, []);
 
-  return { toasts, roundWrap };
+  return { toasts, roundWrap, recent };
 }

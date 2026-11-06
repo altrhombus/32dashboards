@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { LayoutRenderer, contentScale, type Slot } from "@32dashboards/layout-engine";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { newId, useReplicant } from "@32dashboards/nodecg-react";
 import {
   EventThemeSchema,
@@ -10,6 +10,7 @@ import {
   liveStateFor,
   type EventsReplicant,
   type LiveStateReplicant,
+  type MomentsReplicant,
   type SceneReplicant,
   type ScreensReplicant,
   type SourceResultsReplicant,
@@ -22,6 +23,7 @@ import { resolveLayout, resolvePreview, type LayoutsReplicant } from "../library
 import { PREVIEW_THEME_MESSAGE } from "../preview.js";
 import { sampleLive, type SampleKind } from "../samples.js";
 import { kioskRegistry } from "../registry.js";
+import type { CelebrationMoment } from "../data.js";
 import { useDonationMoments, useInfoBar } from "../useShow.js";
 import "./kiosk.css";
 
@@ -197,8 +199,21 @@ function Kiosk() {
     };
   }, [realScene]);
   const previewTheme = usePreviewTheme();
-  const { display, celebrate } = useInfoBar(live);
-  const { toasts, roundWrap } = useDonationMoments(live?.event?.id ?? null, celebrate);
+  // Moments feed both the toasts and the info bar's latest bids, and celebrations go to the info
+  // bar: the two hooks reach each other through refs, set below once the info bar has its say.
+  const moments = useReplicant<MomentsReplicant>("moments", CORE);
+  const celebrateRef = useRef<(moment: CelebrationMoment) => void>(() => {});
+  const relayCelebrate = useCallback((moment: CelebrationMoment) => celebrateRef.current(moment), []);
+  const quietRef = useRef(false);
+  const { toasts, roundWrap, recent } = useDonationMoments(live?.event?.id ?? null, relayCelebrate, {
+    history: moments,
+    quiet: quietRef,
+  });
+  const { display, celebrate } = useInfoBar(live, recent.length);
+  celebrateRef.current = celebrate;
+  // While the info bar lists the latest bids, toasts would only repeat it.
+  const quiet = display.type === "segment" && display.segment.content.kind === "recent";
+  quietRef.current = quiet;
   useHeartbeat();
 
   const view = preview?.view ?? (live?.event ? (scene?.id ?? "main") : "standby");
@@ -225,7 +240,7 @@ function Kiosk() {
         <LayoutRenderer
           layout={layout}
           registry={kioskRegistry}
-          data={{ live, scene, infoBar: display, toasts, roundWrap }}
+          data={{ live, scene, infoBar: display, toasts: quiet ? [] : toasts, roundWrap, recent }}
           slotScale={slotScale}
         />
       </div>

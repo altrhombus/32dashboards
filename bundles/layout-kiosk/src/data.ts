@@ -17,4 +17,6 @@ export interface KioskData {
   toasts: ToastMoment[];
   /** An Ask Me round that just finished, while its wrap-up is on screen. */
   roundWrap: RoundWrapMoment | null;
+  /** The latest bids and donations, newest first, for the info bar's Latest bids. */
+  recent: ToastMoment[];
 }

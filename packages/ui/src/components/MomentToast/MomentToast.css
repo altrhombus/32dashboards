@@ -1,7 +1,7 @@
 .moment-toast {
   display: flex;
-  align-items: baseline;
-  gap: var(--spacing-sm);
+  flex-direction: column;
+  gap: 2px;
   max-width: 32rem;
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-md);
@@ -18,8 +18,25 @@
   white-space: nowrap;
 }
 
-.moment-toast__title {
+/* What kind of moment, small, above what happened. */
+.moment-toast__kicker {
+  font-size: 0.6em;
   font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-secondary);
+}
+
+.moment-toast__line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  min-width: 0;
+}
+
+.moment-toast__title {
+  min-width: 0;
+  font-weight: 600;
 }
 
 @keyframes moment-toast-in {

@@ -402,6 +402,11 @@ body,
   min-height: 0;
 }
 
+/* Pop-ups have TV-sized text, so they get room for an item's name. */
+.kiosk-toasts .moment-toast {
+  max-width: 820px;
+}
+
 .kiosk-info-bar .bottom-marquee__item {
   font-size: 2rem;
 }

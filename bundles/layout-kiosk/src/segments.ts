@@ -23,7 +23,8 @@ export type SegmentContent =
   | { kind: "prize"; prize: Prize }
   | { kind: "callToAction"; text: string }
   | { kind: "announcement"; text: string }
-  | { kind: "sponsor"; sponsor: Sponsor; title: string };
+  | { kind: "sponsor"; sponsor: Sponsor; title: string }
+  | { kind: "recent" };
 
 export type Segment = InfoBarSegment & { content: SegmentContent };
 
@@ -33,7 +34,8 @@ export interface SegmentPlan {
   pinned: Segment | null;
 }
 
-export function buildSegments(live: LiveStateReplicant): SegmentPlan {
+/** `recentCount`: how many latest bids there are; Latest bids is left out until there's one. */
+export function buildSegments(live: LiveStateReplicant, recentCount = 0): SegmentPlan {
   const event = live.event;
   if (!event) return { segments: [], pinned: null };
   const ms = event.infoBar.segmentSeconds * 1000;
@@ -66,6 +68,9 @@ export function buildSegments(live: LiveStateReplicant): SegmentPlan {
         event.announcements.forEach(
           (text, i) => text.trim() && add(`announcement:${i}:${text}`, { kind: "announcement", text }),
         );
+        break;
+      case "recent":
+        if (recentCount > 0) add("recent", { kind: "recent" });
         break;
       case "sponsors":
         for (const sponsor of event.sponsors)

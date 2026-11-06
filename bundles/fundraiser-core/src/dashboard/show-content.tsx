@@ -31,6 +31,7 @@ const SEGMENT_LABELS: Record<InfoBarSegmentKind, string> = {
   callToAction: "Call to action",
   announcements: "Announcements",
   sponsors: "Logos",
+  recent: "Latest bids",
 };
 
 /** A local copy of `value` that resets whenever the saved value changes. */
@@ -242,6 +243,7 @@ function segmentCounts(event: FundraiserEvent): Record<InfoBarSegmentKind, numbe
     callToAction: event.callToAction.trim() ? 1 : 0,
     announcements: event.announcements.filter((a) => a.trim()).length,
     sponsors: event.sponsors.length,
+    recent: 1,
   };
 }
 
@@ -312,7 +314,9 @@ function InfoBarEditor({ event, run }: { event: FundraiserEvent; run: Run }) {
         />
       </label>
       <p className="muted" style={{ margin: 0 }}>
-        Blank rows use that (the item marquee gets twice as long). One full turn takes about {turn} seconds
+        Blank rows use that (the item marquee and Latest bids get twice as long). While Latest bids is up, pop-ups
+        pause, since the bar shows each bid; they come back with the other segments. One full turn takes about {turn}{" "}
+        seconds
         {marquee > 0 && turn > 0 && `; the item marquee is ${Math.round((marquee / turn) * 100)}% of it`}. The marquee
         picks up where it left off each time.
       </p>
