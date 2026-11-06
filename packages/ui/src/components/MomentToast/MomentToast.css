@@ -5,7 +5,7 @@
   max-width: 32rem;
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-md);
-  background: rgba(10, 12, 24, 0.9);
+  background: color-mix(in srgb, var(--color-band) 94%, transparent);
   border: 2px solid var(--color-accent);
   animation: moment-toast-in 0.5s var(--ease-overshoot);
 }

@@ -93,3 +93,16 @@ code {
     grid-template-columns: 1fr;
   }
 }
+
+.open-tv {
+  display: grid;
+  gap: 8px;
+}
+
+.open-tv input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+}

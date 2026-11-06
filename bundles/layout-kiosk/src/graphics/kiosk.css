@@ -33,7 +33,7 @@ body,
   box-sizing: border-box;
   padding: var(--spacing-md);
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-surface);
   overflow: hidden;
 }
 
@@ -60,7 +60,7 @@ body,
   box-sizing: border-box;
   padding: 0 var(--spacing-lg);
   border-radius: var(--radius-lg);
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--color-band);
   border-top: 3px solid var(--color-accent);
   font-size: 1.4rem;
   overflow: hidden;
@@ -77,8 +77,20 @@ body,
 }
 
 .kiosk-info-bar--celebrating {
-  background: rgba(0, 0, 0, 0.55);
+  background: color-mix(in srgb, var(--color-band) 85%, var(--color-text) 8%);
   font-size: 1.8rem;
+}
+
+.kiosk-info-bar__logo {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.kiosk-info-bar__logo-title {
+  font-weight: 700;
+  opacity: 0.85;
 }
 
 .kiosk-info-bar__text {
@@ -200,6 +212,10 @@ body,
   max-height: 160px;
 }
 
+[data-component="askMe"] .ask-me-overlay__kicker {
+  font-size: 2rem;
+}
+
 [data-component="askMe"] .ask-me-overlay__title {
   font-size: 5rem;
 }
@@ -245,4 +261,39 @@ body,
   font-family: var(--font-mono);
   font-size: 2.6em;
   color: var(--color-accent);
+}
+
+/* A mouse left on the TV disappears once it stops moving. */
+.pointer-idle,
+.pointer-idle * {
+  cursor: none !important;
+}
+
+/* Switching scenes: the new one fades in over the background (which stays). */
+.kiosk-scene {
+  height: 100%;
+  animation: kiosk-scene-in 0.9s var(--ease-standard, ease-out) both;
+}
+
+@keyframes kiosk-scene-in {
+  from {
+    opacity: 0;
+    transform: scale(1.015);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-scene {
+    animation-name: kiosk-scene-fade;
+  }
+
+  @keyframes kiosk-scene-fade {
+    from {
+      opacity: 0;
+    }
+  }
 }

@@ -51,6 +51,7 @@ const screenId = (() => {
  *   view=<scene>       show this scene (or standby) whatever is on air
  *   sample=demo|worst  made-up show data, wearing the on-screen event's look
  *   event=<id>         that event's own content and look, on screen or not (for setting one up)
+ *   askMeRound=<n>     show planned Ask Me round n (0-based), e.g. the one being written
  */
 const preview = isPreview
   ? {
@@ -59,6 +60,7 @@ const preview = isPreview
       view: ScreenViewSchema.safeParse(params.get("view")).data ?? null,
       sample: (["demo", "worst"] as const).find((k) => k === params.get("sample")) ?? null,
       event: params.get("event"),
+      askMeRound: /^\d+$/.test(params.get("askMeRound") ?? "") ? Number(params.get("askMeRound")) : null,
     }
   : null;
 
@@ -125,7 +127,13 @@ function Kiosk() {
       previewed !== undefined ? liveStateFor(previewed, previewed ? results?.[previewed.id] : undefined) : realLive,
     [previewed, results, realLive],
   );
-  const live = useMemo(() => onAir && withSample(onAir, preview?.sample), [onAir]);
+  const live = useMemo(() => {
+    const shown = onAir && withSample(onAir, preview?.sample);
+    const round = preview?.askMeRound;
+    return shown && shown.event && round !== null && round !== undefined
+      ? { ...shown, event: { ...shown.event, askMeCurrent: round } }
+      : shown;
+  }, [onAir]);
   const scene = useMemo<SceneReplicant | undefined>(() => {
     const forced = preview?.view && preview.view !== "standby" ? preview.view : null;
     if (!realScene || !forced || forced === realScene.id) return realScene;
@@ -138,7 +146,7 @@ function Kiosk() {
   }, [realScene]);
   const previewTheme = usePreviewTheme();
   const { display, celebrate } = useInfoBar(live);
-  const toasts = useDonationMoments(live?.event?.id ?? null, celebrate);
+  const { toasts, roundWrap } = useDonationMoments(live?.event?.id ?? null, celebrate);
   useHeartbeat();
 
   const view = preview?.view ?? (live?.event ? (scene?.id ?? "main") : "standby");
@@ -158,14 +166,37 @@ function Kiosk() {
 
   return (
     <ThemeProvider theme={previewTheme ?? live.event?.theme ?? DEFAULT_THEME}>
-      <LayoutRenderer
-        layout={layout}
-        registry={kioskRegistry}
-        data={{ live, scene, infoBar: display, toasts }}
-        slotScale={slotScale}
-      />
+      {/* Keyed by scene, so each switch fades the new scene in. */}
+      <div className="kiosk-scene" key={view}>
+        <LayoutRenderer
+          layout={layout}
+          registry={kioskRegistry}
+          data={{ live, scene, infoBar: display, toasts, roundWrap }}
+          slotScale={slotScale}
+        />
+      </div>
     </ThemeProvider>
   );
+}
+
+/*
+ * On a real TV: double-click toggles full screen (the browser's own, which,
+ * unlike F11, shows no toolbar when the mouse reaches the top), and the mouse
+ * pointer hides after a few seconds without moving.
+ */
+if (!isPreview) {
+  document.addEventListener("dblclick", () => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void document.documentElement.requestFullscreen?.().catch(() => {});
+  });
+  let idle: ReturnType<typeof setTimeout> | undefined;
+  const wake = () => {
+    document.documentElement.classList.remove("pointer-idle");
+    clearTimeout(idle);
+    idle = setTimeout(() => document.documentElement.classList.add("pointer-idle"), 3000);
+  };
+  document.addEventListener("mousemove", wake);
+  wake();
 }
 
 createRoot(document.getElementById("root")!).render(<Kiosk />);

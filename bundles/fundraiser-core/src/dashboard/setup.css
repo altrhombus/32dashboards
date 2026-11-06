@@ -311,6 +311,39 @@ body {
   font-size: 1.05rem;
 }
 
+/* Ask Me appeals: one card each; the one being edited is what the preview shows. */
+.appeals {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.appeal {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.appeal--editing {
+  border-color: var(--action);
+  background: color-mix(in srgb, var(--action) 8%, transparent);
+}
+
+.appeal__head {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.appeal__head button {
+  min-height: 32px;
+  padding: 2px 10px;
+}
+
 .checks {
   display: grid;
   gap: 2px;

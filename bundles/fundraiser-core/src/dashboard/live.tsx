@@ -18,7 +18,7 @@ import type {
   ScreensReplicant,
   ScreenView,
 } from "@32dashboards/schema/core";
-import { screenPresence } from "@32dashboards/schema/core";
+import { askMeProgress, screenPresence } from "@32dashboards/schema/core";
 import { formatAmount, formatTotal } from "@32dashboards/ui";
 import "@32dashboards/nodecg-react/panel.css";
 import "./live.css";
@@ -107,7 +107,8 @@ function TvStatus({ screens, outputs, now }: { screens: ScreensReplicant; output
         <strong>{what}</strong>
         <span>
           {named.length > 1 ? `${named.length - missing.length} of ${named.length} screens connected${extra}. ` : ""}
-          Open the kiosk on the TV laptop (Event-day runbook, step 3).
+          On the computer connected to {missing.length === 1 ? "that TV" : "each TV"}, open the dashboard's Screens tab
+          and tap <strong>Open on this computer</strong>.
         </span>
       </div>
     );
@@ -146,17 +147,26 @@ function SourceStatus({
     return (
       <div className="status status--caution">
         <strong>{adapterId} isn't running</strong>
-        <span>Restart NodeCG (Event-day runbook, troubleshooting).</span>
+        <span>
+          The dashboard service needs a restart: in WSL, run <code>sudo systemctl restart 32dashboards-nodecg</code>.
+        </span>
       </div>
     );
   }
   const failing = source.status.state === "error";
+  const waiting = !failing && !source.lastResultAt;
   return (
-    <div className={`status ${failing ? "status--caution" : "status--go"}`}>
+    <div className={`status ${failing || waiting ? "status--caution" : "status--go"}`}>
       <strong>
-        {source.label}: {failing ? "needs a look" : "receiving data"}
+        {source.label}: {failing ? "needs a look" : waiting ? "no data yet" : "receiving data"}
       </strong>
-      <span>{failing ? source.status.message : `Last data ${ago(source.lastResultAt, now)}`}</span>
+      <span>
+        {failing
+          ? source.status.message
+          : waiting
+            ? "Nothing has come in yet. Fetch now to try, or check the source in the Sources tab."
+            : `Last data ${ago(source.lastResultAt, now)}`}
+      </span>
       <button
         type="button"
         className="status__action"
@@ -188,8 +198,8 @@ function EventSwitcher({ events, activeId, act }: { events: EventsReplicant; act
       {changed && (
         <ConfirmButton
           className="primary"
-          label={target ? "Put on TV" : "Take off TV"}
-          confirmLabel="Tap again to switch the TV"
+          label={target ? "Put on the TVs" : "Take off the TVs"}
+          confirmLabel="Tap again to switch the TVs"
           onConfirm={() =>
             act(
               send("activateEvent", { eventId: choice || null }),
@@ -212,7 +222,7 @@ const SCENES: { id: SceneId; name: string; what: string }[] = [
   { id: "celebration", name: "Celebration", what: "Thank-you screen with the final total" },
 ];
 
-function Scenes({ scene, act }: { scene: SceneReplicant; act: Act }) {
+function Scenes({ scene, event, act }: { scene: SceneReplicant; event: FundraiserEvent | null; act: Act }) {
   const [message, setMessage] = useState("");
   const [minutes, setMinutes] = useState<number | null>(10);
 
@@ -228,6 +238,10 @@ function Scenes({ scene, act }: { scene: SceneReplicant; act: Act }) {
         : { id };
     const previous = { id: scene.id, message: scene.message, countdownTo: scene.countdownTo };
     act(send("switchScene", payload), `${name} is on the TV.`, () => void send("switchScene", previous));
+    // Leaving Ask Me finishes its round: assume yes, with Undo.
+    if (scene.id === "askMe" && id !== "askMe" && event && event.askMe.total > 0 && !askMeProgress(event).done) {
+      finishRound(event, act);
+    }
   };
 
   return (
@@ -363,18 +377,32 @@ function ScreenLayouts(props: {
   );
 }
 
-/** A typed-in amount beside the preset buttons ("Other amount" + Add). */
-function AmountForm({ label, onAdd, compact }: { label: string; onAdd: (amount: number) => void; compact?: boolean }) {
+/** A typed-in amount beside the preset buttons ("Other amount" + Add, and optionally Take off). */
+function AmountForm({
+  label,
+  onAdd,
+  onSubtract,
+  compact,
+}: {
+  label: string;
+  onAdd: (amount: number) => void;
+  /** Offers "Take off" for the same amount, to fix a total without negative numbers. */
+  onSubtract?: (amount: number) => void;
+  compact?: boolean;
+}) {
   const [text, setText] = useState("");
   const amount = parseAmount(text);
+  const done = (run: (amount: number) => void) => {
+    if (amount === null) return;
+    run(amount);
+    setText("");
+  };
   return (
     <form
       className={`row amount-form${compact ? " amount-form--compact" : ""}`}
       onSubmit={(e) => {
         e.preventDefault();
-        if (amount === null) return;
-        onAdd(amount);
-        setText("");
+        done(onAdd);
       }}
     >
       <input
@@ -388,6 +416,11 @@ function AmountForm({ label, onAdd, compact }: { label: string; onAdd: (amount: 
       <button type="submit" className="primary" disabled={amount === null}>
         Add
       </button>
+      {onSubtract && (
+        <button type="button" disabled={amount === null} onClick={() => done(onSubtract)}>
+          Take off
+        </button>
+      )}
     </form>
   );
 }
@@ -420,12 +453,15 @@ function Money({
       <div className="money__total">
         <span className="money__amount">{formatTotal(live.total)}</span>
         <span className="muted">
-          {formatTotal(live.rawTotal)} from {sourceLabel} and {formatAmount(live.adjustment)} at the venue
+          {formatTotal(live.rawTotal)} from {sourceLabel}, {formatAmount(live.adjustment)} at the venue
+          {live.askMeRaised > 0 && live.event?.askMeInTotal && `, ${formatAmount(live.askMeRaised)} from Ask Me`}
         </span>
       </div>
       <div className="money__add">
         <span className="money__label">Cash and checks at the venue: {formatAmount(live.adjustment)} so far</span>
-        <span className="muted">Each one you add is added to that, and thanked on the TV.</span>
+        <span className="muted">
+          Each one you add is added to that, and thanked on the TV. Take off fixes a mistake, without a thank-you.
+        </span>
         <div className="chips">
           {VENUE_AMOUNTS.map((a) => (
             <button key={a} type="button" className="chip chip--money" onClick={() => add(a)}>
@@ -433,7 +469,17 @@ function Money({
             </button>
           ))}
         </div>
-        <AmountForm label="Other venue amount" onAdd={add} />
+        <AmountForm
+          label="Other venue amount"
+          onAdd={add}
+          onSubtract={(amount) =>
+            act(
+              send("nudgeAdjustment", { eventId: event.id, delta: -amount }),
+              `Took ${formatAmount(amount)} off the venue total.`,
+              () => void send("nudgeAdjustment", { eventId: event.id, delta: amount }),
+            )
+          }
+        />
       </div>
       <details>
         <summary className="muted">Counted the cash box? Set the exact venue total</summary>
@@ -473,6 +519,41 @@ function Money({
 
 const ASK_ME_AMOUNTS = [10, 25, 50, 100, 250, 500];
 
+/**
+ * Finishes the Ask Me round on now (the TV wraps it up, and adds it to the
+ * total if the event does) and moves on to the next planned round, with
+ * Undo. A planned round that raised nothing is skipped without a
+ * celebration. When that was the last one and Ask Me is on the TVs
+ * (`onAir`), the server puts back the scene from before Ask Me; Undo brings
+ * Ask Me back too.
+ */
+function finishRound(event: FundraiserEvent, act: Act, onAir = false) {
+  const progress = askMeProgress(event);
+  const amount = event.askMe.total;
+  if (progress.done || (amount <= 0 && progress.count === 0)) return;
+  const which = progress.count ? `Ask Me ${progress.number} of ${progress.count}` : "the Ask Me round";
+  const last = progress.count === 0 || !progress.next;
+  const returning = onAir && last;
+  const then =
+    (progress.count ? (progress.next ? ` Next: ${progress.next.title}.` : " That was the last one.") : "") +
+    (returning ? " The TVs are going back to the scene before Ask Me." : "");
+  const done =
+    amount > 0
+      ? event.askMeInTotal
+        ? `Added ${which} (${formatAmount(amount)}) to the total.`
+        : `Finished ${which} (${formatAmount(amount)}).`
+      : `Skipped ${which}.`;
+  act(
+    send("finishAskMeRound", { eventId: event.id, amount, roundId: progress.roundId ?? undefined }),
+    `${done}${then}`,
+    () => {
+      void send("reopenAskMeRound", { eventId: event.id, amount, roundId: progress.roundId ?? undefined });
+      if (returning) void send("switchScene", { id: "askMe" });
+    },
+    "askMe",
+  );
+}
+
 /** Ask Me: big buttons for the amounts called out, the running total, and the last few taps to undo. */
 function AskMePad(props: {
   event: FundraiserEvent;
@@ -490,10 +571,15 @@ function AskMePad(props: {
       "askMe",
     );
   const taps = props.history.filter((a) => a.tag === "askMe").slice(0, 5);
+  const progress = askMeProgress(event);
+  const amount = event.askMe.total;
   return (
     <section className="block askme" aria-label="Ask Me">
       <div className="askme__head">
-        <h2>Ask Me</h2>
+        <h2>
+          {progress.count ? `Ask Me ${Math.min(progress.number, progress.count)} of ${progress.count}` : "Ask Me"}
+          {!progress.done && progress.count > 0 && <span className="askme__title"> · {progress.title}</span>}
+        </h2>
         {props.onAir ? (
           <span className="badge">On TV</span>
         ) : (
@@ -514,23 +600,61 @@ function AskMePad(props: {
         ))}
       </div>
       <AmountForm label="Other Ask Me amount" onAdd={add} />
-      <div className="row askme__round">
-        <span className="muted">The Ask Me total runs all night.</span>
+      {progress.count > 0 && (
+        <ol className="askme__plan" aria-label="Tonight's Ask Me rounds">
+          {event.askMeRounds.map((round, i) => (
+            <li key={round.id} data-state={round.raised !== null ? "done" : i === event.askMeCurrent ? "now" : "later"}>
+              <span className="clamp-1">{round.title || `Ask Me ${i + 1}`}</span>
+              <span className="num">
+                {round.raised !== null ? formatAmount(round.raised) : i === event.askMeCurrent ? "now" : ""}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+      <button
+        type="button"
+        className="primary askme__finish"
+        disabled={progress.done || (amount === 0 && progress.count === 0)}
+        onClick={() => finishRound(event, act, props.onAir)}
+      >
+        {progress.done
+          ? "All Ask Me rounds are done"
+          : progress.count === 0
+            ? amount > 0
+              ? event.askMeInTotal
+                ? `Finish this round: add ${formatAmount(amount)} to the total`
+                : `Finish this round (${formatAmount(amount)})`
+              : "Finish this round"
+            : `${amount > 0 ? `Finish round ${progress.number} (${formatAmount(amount)})` : `Skip round ${progress.number}`}${
+                progress.next ? ` · next: ${progress.next.title}` : " · the last one"
+              }`}
+      </button>
+      <p className="muted">
+        {progress.count === 0
+          ? "Finishing puts the TVs back on the scene from before Ask Me, where the wrap-up plays. Switching to another scene finishes the round too. "
+          : "After the last round, the TVs go back to the scene from before Ask Me, where the wrap-up plays. Switching to another scene finishes this round too (unless it's still at $0). "}
+        {event.askMeInTotal
+          ? `So far, Ask Me has added ${formatAmount(event.askMeRaised)} to the total.`
+          : `Ask Me so far: ${formatAmount(event.askMeRaised)}. Shown on the TVs, but not added to the total, because the auction counts it (change this on the Event tab, under Ask Me rounds).`}
+      </p>
+      <details>
+        <summary className="muted">Made a mistake? Clear this round without adding it</summary>
         <ConfirmButton
-          label="Start a new round"
-          confirmLabel={`Tap again: back to $0 from ${formatAmount(event.askMe.total)}`}
+          label="Clear this round"
+          confirmLabel={`Tap again: drop ${formatAmount(event.askMe.total)} without adding it`}
           disabled={event.askMe.total === 0}
           onConfirm={() => {
             const previous = event.askMe.total;
             act(
               send("updateEvent", { eventId: event.id, patch: { askMe: { total: 0 } } }),
-              `New Ask Me round: $0 (was ${formatAmount(previous)}).`,
+              `Cleared the Ask Me round (was ${formatAmount(previous)}); nothing added.`,
               () => void send("nudgeAskMe", { eventId: event.id, delta: previous }),
               "askMe",
             );
           }}
         />
-      </div>
+      </details>
       {taps.length > 0 && (
         <ol className="recent recent--compact" aria-label="Recent Ask Me taps">
           {taps.map((a) => (
@@ -626,6 +750,12 @@ function describeMoment(m: DonationMoment): string {
       return `Milestone ${formatAmount(m.amount)} reached${m.label ? `: ${m.label}` : ""}`;
     case "incentive-met":
       return `Incentive met: ${m.name}`;
+    case "askme-round":
+      return `${m.count ? `Ask Me ${m.number} of ${m.count}` : "Ask Me round"}${m.title ? ` (${m.title})` : ""}: ${formatAmount(m.amount)} raised`;
+    case "last-call":
+      return m.minutesLeft === 0
+        ? "Bidding closed"
+        : `Last call: ${m.minutesLeft} minute${m.minutesLeft === 1 ? "" : "s"} left to bid`;
   }
 }
 
@@ -968,7 +1098,7 @@ function Console() {
           ) : tab === "scenes" ? (
             <>
               {preview}
-              <Scenes scene={scene} act={act} />
+              <Scenes scene={scene} event={event} act={act} />
               <ScreenLayouts screens={screens} layouts={layouts} view={view} connected={connected} act={act} />
             </>
           ) : (
@@ -1007,7 +1137,7 @@ function Console() {
       <div className="stage">
         {preview}
         <div className="stage__side">
-          <Scenes scene={scene} act={act} />
+          <Scenes scene={scene} event={event} act={act} />
           <ScreenLayouts screens={screens} layouts={layouts} view={view} connected={connected} act={act} />
         </div>
       </div>

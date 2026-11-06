@@ -13,7 +13,7 @@ beside a live preview of the TV that fills in as you answer:
 1. **Start:** paste the auction's public link (the one bidders get). It finds
    the auction's ids, its title, and the organization's name and picture,
    and fills them in. You can also copy an earlier event's look, goals and
-   sponsors, or set up an event without an auction.
+   logos, or set up an event without an auction.
 2. **Name:** the name, the cause, and when bidding closes.
 3. **Money:** where the total comes from, the organizer sign-in, and
    **Connect and check**, which fetches the auction once and shows what it
@@ -22,8 +22,12 @@ beside a live preview of the TV that fills in as you answer:
    photo), colors picked from it, and fonts.
 5. **Celebrations:** every $1,000 (or any step) up to a limit, plus one big
    goal.
-6. **Extras:** how to give, and announcements.
-7. **Ready:** what's set, then **Put it on the TVs**.
+6. **Ask Me:** each appeal of the night, in order, with a title and a
+   message (bold, italics, lists and headings work). The preview shows the
+   appeal you're editing as the TV will. It also asks whether Ask Me money
+   goes into the auction too (then it isn't added to the total again).
+7. **Extras:** how to give, and announcements.
+8. **Ready:** what's set, then **Put it on the TVs**.
 
 Every step can be skipped and changed later. If you leave partway, the
 guide picks up where you left off. The rest of this runbook is the same
@@ -33,7 +37,7 @@ setup done by hand, panel by panel, which is quicker once you know it.
 
 1. **Create the event.** On the dashboard's **Event** tab, in the **Events** panel, either type
    a name and tap **Create**, or tap **Duplicate** on a past event.
-   Duplicating copies the look, sponsors, incentives, milestones, bid
+   Duplicating copies the look, logos, incentives, milestones, bid
    wars, prizes, announcements, filters, and source settings, and resets
    anything that describes how that event went (venue money, bid war
    totals, the Ask Me total). Nothing goes on the TV until you put it
@@ -46,11 +50,13 @@ setup done by hand, panel by panel, which is quicker once you know it.
      `bundles/source-external/src/extension/index.ts` for the format).
 
 3. **Configure the source** in its panel on the **Sources** tab:
-   - **32auctions source**: the organization ID and auction ID (both from
-     the auction's admin URL, `/organizations/<org>/auctions/<auction>`),
-     the public path (`32auctions.com/<path>`, where the total raised is
-     shown), and, for private auctions, the session cookie and auth token
-     from a logged-in browser.
+   - **32auctions source**: paste the auction's public link (the one
+     bidders get) and tap **Fill in**; it finds the ids and path. Choose
+     where the total comes from, then save the organizer's email and
+     password under **Sign in automatically**: auctions that hide their
+     total from the public need it. Details, and the fallback for
+     "Sign in with Google" accounts, are in
+     [rotating secrets](rotating-secrets.md#32auctions-sign-in).
    - **Manual source**: nothing to set up; enter the total during the
      event.
    - **External source**: create a token and give it, with the event's
@@ -58,14 +64,24 @@ setup done by hand, panel by panel, which is quicker once you know it.
 
 4. **Set up the show** in the **Show content** panel on the **Event** tab:
    - _Event details_: the name and cause shown on the TV, when bidding
-     closes (the TV counts down to it), announcements, and the Ask Me
-     title and message.
-   - _Look and sponsors_: sponsors with logos. **Edit the look** opens
+     closes (the TV counts down to it and announces the last minutes),
+     whether the TVs switch to Celebration on their own at that moment
+     (off by default), announcements, and the Ask Me title and message
+     for an event without planned rounds.
+   - _Ask Me rounds_: each appeal of the night, and whether Ask Me money
+     is added to the total (off by default; leave it off if Ask Me gifts
+     also go into the auction, or they're counted twice).
+   - _Look and logos_: the logos the TVs rotate through, under a heading
+     you choose: sponsors ("Thank you to our sponsors"), or the causes the
+     event helps ("Who we're helping"). **Add logos** uploads one or
+     several images at once and adds each straight away; rename, reorder
+     or remove them, then **Save logos**. **Edit the look** opens
      the event's colors, logo and fonts in the **Layouts** tab, beside a
      live preview of each scene: start from a palette, adjust it to the
      brand (each color warns if it's hard to read or broadcast-unsafe),
-     pick fonts that ship with the kiosk, and save. Upload logos first in
-     the dashboard's **Assets** tab.
+     pick a background (gradient, solid, or a soft glow behind the
+     total, optionally slowly moving), pick fonts that ship with the
+     kiosk, and save. Light palettes (Paper, Daylight) suit bright rooms.
    - _Call to action_: how people give, e.g. "Bid at 32auctions.com/gala".
    - _Hidden items_: words that keep matching items (e.g. "raffle") off
      the TV.

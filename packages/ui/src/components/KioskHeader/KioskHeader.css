@@ -16,7 +16,7 @@
 .kiosk-header__clock {
   font-family: var(--font-mono);
   font-size: 1.25rem;
-  color: #f4f6ff;
+  color: var(--color-text);
 }
 
 .kiosk-header__brand {

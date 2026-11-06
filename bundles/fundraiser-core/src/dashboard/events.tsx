@@ -53,7 +53,7 @@ function Events() {
 
       {activeId && (
         <button type="button" onClick={() => run(send("activateEvent", { eventId: null }))}>
-          Take event off screen
+          Take it off the TVs (show standby)
         </button>
       )}
 
@@ -91,10 +91,10 @@ function EventRow(props: {
     <div className="event">
       <div className="row">
         <strong>{event.name}</strong>
-        {active && <span className="badge">On screen</span>}
+        {active && <span className="badge">On the TVs</span>}
       </div>
       <label className="row">
-        <span className="muted">Source</span>
+        <span className="muted">Money comes from</span>
         <select
           value={adapterId ?? ""}
           onChange={(e) =>
@@ -111,7 +111,7 @@ function EventRow(props: {
       </label>
       <div className="row">
         <button type="button" disabled={active} onClick={() => run(send("activateEvent", { eventId: event.id }))}>
-          Put on screen
+          Put on the TVs
         </button>
         <button type="button" onClick={() => run(send("duplicateEvent", { eventId: event.id }))}>
           Duplicate

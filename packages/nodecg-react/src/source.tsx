@@ -65,20 +65,36 @@ export function EventPicker(props: {
 }
 
 /** One line: the adapter's state, message, and when it last delivered data. */
+/** What each source state means, in plain words. */
+const STATE_WORDS: Record<string, string> = {
+  idle: "Not in use right now",
+  working: "Fetching…",
+  ok: "Connected",
+  error: "Needs a look",
+};
+
 export function SourceStatusLine({ sourceId }: { sourceId: string }) {
   const sources = useReplicant<RegisteredSourcesReplicant>("sources", CORE);
   const source = sources?.find((s) => s.id === sourceId);
   if (!sources) return null;
-  if (!source) return <p className="status-error">Source "{sourceId}" isn't running.</p>;
+  if (!source) {
+    return (
+      <p className="status-error">
+        This source isn't running. In WSL, run <code>sudo systemctl restart 32dashboards-nodecg</code>.
+      </p>
+    );
+  }
   const { state, message } = source.status;
   return (
-    <p className={`status-${state}`}>
-      {state.toUpperCase()}
-      {message && ` · ${message}`}
+    <div className={`source-status status-${state}`} role="status">
+      <strong>{STATE_WORDS[state] ?? state}</strong>
+      {message && <span>{message}</span>}
       {source.lastResultAt && (
-        <span className="muted"> · last data {new Date(source.lastResultAt).toLocaleTimeString()}</span>
+        <span className="muted">
+          Last data at {new Date(source.lastResultAt).toLocaleTimeString([], { timeStyle: "short" })}
+        </span>
       )}
-    </p>
+    </div>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  BackgroundOptions,
   ColorFields,
   FontPicker,
   PaletteSwatches,
@@ -47,7 +48,14 @@ export function LookEditor({ layoutId, layoutView, run }: { layoutId: string; la
 
   if (!events) return <p className="muted">Waiting for events…</p>;
   if (events.length === 0) {
-    return <p className="look-empty">Looks belong to events. Create one in the Events panel on the Event tab first.</p>;
+    return (
+      <div className="look-empty">
+        <p>A look belongs to an event, and there are no events yet.</p>
+        <button type="button" className="primary" onClick={() => (window.top!.location.hash = "fullbleed/setup")}>
+          Set up your first event
+        </button>
+      </div>
+    );
   }
   const sorted = [...events].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const event = sorted.find((e) => e.id === eventId) ?? sorted.find((e) => e.id === activeId) ?? sorted[0]!;
@@ -139,6 +147,8 @@ function EventLook(props: {
           <h2>Colors</h2>
           <ColorFields theme={theme} onChange={set} />
         </section>
+
+        <BackgroundOptions theme={theme} onChange={set} />
 
         <section className="look__group">
           <h2>Logo</h2>

@@ -16,7 +16,7 @@
 }
 
 .featured-items-grid__card {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-surface);
   border-radius: var(--radius-md);
   padding: var(--spacing-sm);
   display: flex;
@@ -35,7 +35,7 @@
   min-height: 0;
   overflow: hidden;
   border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--color-surface-strong);
 }
 
 .featured-items-grid__backdrop {

@@ -708,6 +708,45 @@ h2 {
   flex: 1;
 }
 
-.askme__round {
-  justify-content: space-between;
+.askme__finish {
+  min-height: var(--target);
+  font-size: 1.05rem;
+}
+
+.askme details {
+  display: grid;
+  gap: 8px;
+}
+
+.askme__title {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Tonight's Ask Me rounds: done, now, later. */
+.askme__plan {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.askme__plan li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--muted);
+}
+
+.askme__plan li[data-state="done"] {
+  color: var(--go);
+}
+
+.askme__plan li[data-state="now"] {
+  background: color-mix(in srgb, var(--tally) 14%, transparent);
+  color: var(--text);
+  font-weight: 700;
 }

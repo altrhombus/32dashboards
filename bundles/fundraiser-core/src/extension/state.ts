@@ -118,6 +118,9 @@ export function duplicateEvent(
     })),
     askMe: { ...source.askMe, enabled: false, total: 0 },
     adjustment: 0,
+    askMeRaised: 0,
+    askMeRounds: source.askMeRounds.map((round) => ({ ...round, id: deps.newId(), raised: null })),
+    askMeCurrent: 0,
     createdAt: now,
     updatedAt: now,
   });
@@ -148,6 +151,71 @@ export function setAdjustment(state: CoreState, eventId: string, amount: number,
 
 export function nudgeAdjustment(state: CoreState, eventId: string, delta: number, deps: Deps): CoreState {
   return editEvent(state, eventId, deps, (event) => ({ adjustment: roundCents(event.adjustment + delta) }));
+}
+
+/**
+ * Finishes the Ask Me round that's on now: adds `amount` to the total
+ * (askMeRaised) and starts the next at $0. With planned rounds, records what
+ * the round raised and moves on to the next one. `amount` must equal the
+ * round's total and `roundId` the round on now, so a round that was already
+ * finished (from another phone, say) isn't finished again.
+ */
+export function finishAskMeRound(
+  state: CoreState,
+  eventId: string,
+  amount: number,
+  roundId: string | undefined,
+  deps: Deps,
+): CoreState {
+  const event = findEvent(state, eventId);
+  const planned = event.askMeRounds.length > 0;
+  const current = planned ? event.askMeRounds[event.askMeCurrent] : undefined;
+  if (planned && (!current || current.id !== roundId)) {
+    throw new CommandError("That Ask Me round was already finished.");
+  }
+  if (roundCents(event.askMe.total) !== roundCents(amount)) {
+    throw new CommandError(
+      event.askMe.total === 0 && !planned
+        ? "That Ask Me round was already added to the total."
+        : `The Ask Me round is now ${event.askMe.total}, not ${amount}; try again.`,
+    );
+  }
+  if (!planned && amount <= 0) throw new CommandError("There's nothing in this Ask Me round to add.");
+  return editEvent(state, eventId, deps, (e) => ({
+    askMe: { ...e.askMe, total: 0 },
+    askMeRaised: roundCents(e.askMeRaised + amount),
+    ...(planned && {
+      askMeRounds: e.askMeRounds.map((r, i) => (i === e.askMeCurrent ? { ...r, raised: roundCents(amount) } : r)),
+      askMeCurrent: e.askMeCurrent + 1,
+    }),
+  }));
+}
+
+/** Undoes finishAskMeRound: takes `amount` back out of the total and goes back to that round. */
+export function reopenAskMeRound(
+  state: CoreState,
+  eventId: string,
+  amount: number,
+  roundId: string | undefined,
+  deps: Deps,
+): CoreState {
+  const event = findEvent(state, eventId);
+  const planned = event.askMeRounds.length > 0;
+  if (event.askMeRaised + 0.005 < amount) throw new CommandError("That Ask Me round isn't in the total any more.");
+  if (planned) {
+    const index = event.askMeRounds.findIndex((r) => r.id === roundId);
+    if (index === -1 || index !== event.askMeCurrent - 1) {
+      throw new CommandError("Only the most recently finished Ask Me round can be reopened.");
+    }
+  }
+  return editEvent(state, eventId, deps, (e) => ({
+    askMe: { ...e.askMe, total: roundCents(e.askMe.total + amount) },
+    askMeRaised: roundCents(Math.max(0, e.askMeRaised - amount)),
+    ...(planned && {
+      askMeRounds: e.askMeRounds.map((r, i) => (i === e.askMeCurrent - 1 ? { ...r, raised: null } : r)),
+      askMeCurrent: e.askMeCurrent - 1,
+    }),
+  }));
 }
 
 /** Adds to the Ask Me total, never below zero. */

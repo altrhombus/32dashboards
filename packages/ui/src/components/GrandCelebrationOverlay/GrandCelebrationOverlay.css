@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(8, 10, 20, 0.85);
+  background: color-mix(in srgb, var(--color-bg-from) 88%, transparent);
 }
 
 .grand-celebration-overlay__message {
@@ -22,7 +22,7 @@
 .grand-celebration-overlay__message h2 {
   font-size: 1.5rem;
   font-weight: 400;
-  color: #f4f6ff;
+  color: var(--color-text);
 }
 
 @keyframes grand-celebration-pop {

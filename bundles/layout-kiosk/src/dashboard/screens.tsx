@@ -181,10 +181,7 @@ function ScreenCard(props: {
           {connected ? `Connected since ${clock(since!)}` : "Not connected"}
         </span>
       </div>
-      <p className="muted">
-        Open it on its TV with <code>pnpm -s kiosk-url {screen.id}</code> in WSL, or{" "}
-        <code>open-kiosk.ps1 -Screen {screen.id}</code>.
-      </p>
+      <OpenOnTv screenId={screen.id} />
       <div className="views">
         {SCREEN_VIEWS.map((view) => (
           <label key={view} className="field">
@@ -203,6 +200,64 @@ function ScreenCard(props: {
           onConfirm={() => run(sendCore("deleteScreen", { id: screen.id }), `Removed ${screen.name}.`)}
         />
       </div>
+    </div>
+  );
+}
+
+/** The socketToken cookie NodeCG sets after sign-in; as `?key=` it lets a TV page in without a login. */
+function signInKey(): string | null {
+  const match = /(?:^|;\s*)socketToken=([^;]+)/.exec(document.cookie);
+  return match ? decodeURIComponent(match[1]!) : null;
+}
+
+const LOOPBACK = /^(127\.|localhost$|\[?::1\]?$)/;
+
+/**
+ * How to show a screen's TV picture: on this computer in one click, or by
+ * its link on another computer (with this laptop's network address in it).
+ */
+function OpenOnTv({ screenId }: { screenId: string }) {
+  const key = signInKey();
+  const [address, setAddress] = useState<string | null>(LOOPBACK.test(location.hostname) ? null : location.host);
+  useEffect(() => {
+    if (address) return;
+    sendCore("connectionInfo", undefined).then(
+      (reply) => {
+        const { port, addresses } = reply as { port: number; addresses: string[] };
+        if (addresses[0]) setAddress(`${addresses[0]}:${port}`);
+      },
+      () => {},
+    );
+  }, [address]);
+  if (!key) return <p className="warning">Sign in to the dashboard to get this screen's TV link.</p>;
+  const path = `/bundles/layout-kiosk/graphics/kiosk.html?key=${encodeURIComponent(key)}&screen=${screenId}`;
+  return (
+    <div className="open-tv">
+      <div className="row">
+        <button
+          type="button"
+          className="primary"
+          onClick={() => window.open(path, `kiosk-${screenId}`, "popup,width=1280,height=720")}
+        >
+          Open on this computer
+        </button>
+        <span className="muted">
+          Drag the window onto the TV (or press Windows+Shift+arrow), then double-click it to fill the screen.
+        </span>
+      </div>
+      {address && (
+        <label className="field">
+          <span className="muted">
+            Or, on another computer on the same network, open this link in Edge or Chrome, then double-click the
+            picture:
+          </span>
+          <input readOnly value={`http://${address}${path}`} onFocus={(e) => e.currentTarget.select()} />
+        </label>
+      )}
+      <p className="warning" style={{ margin: 0 }}>
+        The link includes the dashboard's key: anyone who has it can see the TV and run the show. Share it only with
+        your own computers.
+      </p>
     </div>
   );
 }

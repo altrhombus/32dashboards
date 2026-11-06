@@ -40,6 +40,20 @@ const CATEGORY_NAMES = { money: "Money", items: "Items", show: "Show", brand: "B
 
 type PreviewData = "event" | "demo" | "worst";
 
+/** True while the viewport is phone-sized. */
+function useNarrow(maxWidth: number): boolean {
+  const query = `(max-width: ${maxWidth}px)`;
+  const [narrow, setNarrow] = useState(() => window.matchMedia?.(query).matches ?? false);
+  useEffect(() => {
+    const list = window.matchMedia?.(query);
+    if (!list) return;
+    const onChange = () => setNarrow(list.matches);
+    list.addEventListener("change", onChange);
+    return () => list.removeEventListener("change", onChange);
+  }, [query]);
+  return narrow;
+}
+
 interface Note {
   text: string;
   error?: boolean;
@@ -52,6 +66,7 @@ function Builder() {
   const [selectedId, setSelectedId] = useState(() => readStored(SELECTED_KEY) ?? builtInLayouts.main.id);
   const [note, setNote] = useState<Note | null>(null);
   const [creating, setCreating] = useState(false);
+  const narrow = useNarrow(700);
   const [mode, setMode] = useState<"arrange" | "look">(() =>
     readStored(BUILDER_MODE_KEY) === "look" ? "look" : "arrange",
   );
@@ -170,7 +185,23 @@ function Builder() {
         />
       )}
 
-      {mode === "look" ? (
+      {mode === "arrange" && narrow ? (
+        <section className="narrow-note">
+          <h2>Arranging layouts needs a bigger screen</h2>
+          <p className="muted">
+            Use a tablet or laptop to drag and resize parts of the TV screen. From here you can still change the event's
+            look, or pick which finished layout each TV shows.
+          </p>
+          <div className="row">
+            <button type="button" className="primary" onClick={() => switchMode("look")}>
+              Change the event's look
+            </button>
+            <button type="button" onClick={() => (window.top!.location.hash = "workspace/screens")}>
+              Pick layouts for each TV
+            </button>
+          </div>
+        </section>
+      ) : mode === "look" ? (
         <LookEditor layoutId={saved?.id ?? builtIn!.id} layoutView={saved?.view ?? builtIn!.view} run={run} />
       ) : saved ? (
         <Editor

@@ -32,10 +32,11 @@ const COLOR_FIELDS = [
   ["secondaryColor", "Secondary", "Headings and bars"],
   ["backgroundFrom", "Background, top", "Where the background gradient starts"],
   ["backgroundTo", "Background, bottom", "Where it ends"],
+  ["textColor", "Text", "Words on the background"],
 ] as const;
 
 const sameColors = (theme: Colors, colors: Colors) =>
-  (Object.keys(colors) as (keyof Colors)[]).every((k) => theme[k].toLowerCase() === colors[k].toLowerCase());
+  (Object.keys(colors) as (keyof Colors)[]).every((k) => (theme[k] ?? "").toLowerCase() === colors[k].toLowerCase());
 
 /** Starting palettes as swatches; `suggested` (e.g. from the logo) comes first. */
 export function PaletteSwatches(props: {
@@ -53,7 +54,10 @@ export function PaletteSwatches(props: {
           className={`palette-swatch${p === props.suggested ? " palette-swatch--suggested" : ""}`}
           aria-pressed={sameColors(props.theme, p.colors)}
           onClick={() => props.onPick(p.colors)}
-          style={{ background: `linear-gradient(160deg, ${p.colors.backgroundFrom}, ${p.colors.backgroundTo})` }}
+          style={{
+            background: `linear-gradient(160deg, ${p.colors.backgroundFrom}, ${p.colors.backgroundTo})`,
+            color: p.colors.textColor,
+          }}
         >
           <span className="palette-swatch__dots" aria-hidden="true">
             <span style={{ background: p.colors.accentColor }} />
@@ -142,6 +146,55 @@ export function FontPicker(props: {
           </span>
         </label>
       ))}
+    </fieldset>
+  );
+}
+
+const BACKGROUND_STYLES = [
+  ["gradient", "Gradient", "The two background colors, blended"],
+  ["solid", "Solid", "Just the top color"],
+  ["glow", "Glow", "A soft light of the accent behind the total"],
+] as const;
+
+/** Background style, and the optional slow-moving background. */
+export function BackgroundOptions(props: { theme: EventTheme; onChange: (patch: Partial<EventTheme>) => void }) {
+  const { theme } = props;
+  const swatch = (style: (typeof BACKGROUND_STYLES)[number][0]) =>
+    style === "solid"
+      ? theme.backgroundFrom
+      : style === "glow"
+        ? `radial-gradient(ellipse 70% 60% at 50% 30%, color-mix(in srgb, ${theme.accentColor} 35%, transparent), transparent 70%), linear-gradient(160deg, ${theme.backgroundFrom}, ${theme.backgroundTo})`
+        : `linear-gradient(160deg, ${theme.backgroundFrom}, ${theme.backgroundTo})`;
+  return (
+    <fieldset className="look-group">
+      <legend>
+        <h2>Background</h2>
+      </legend>
+      <div className="bg-styles">
+        {BACKGROUND_STYLES.map(([value, label, hint]) => (
+          <label key={value} className="bg-style">
+            <input
+              type="radio"
+              name="backgroundStyle"
+              checked={(theme.backgroundStyle ?? "gradient") === value}
+              onChange={() => props.onChange({ backgroundStyle: value })}
+            />
+            <span className="bg-style__swatch" style={{ background: swatch(value) }} aria-hidden="true" />
+            <strong>{label}</strong>
+            <span className="muted">{hint}</span>
+          </label>
+        ))}
+      </div>
+      <label className="row toggle">
+        <input
+          type="checkbox"
+          checked={Boolean(theme.backgroundMotion)}
+          onChange={(e) => props.onChange({ backgroundMotion: e.target.checked })}
+        />
+        <span>
+          Slowly moving background <span className="muted">(very subtle; good for screens that stay on all night)</span>
+        </span>
+      </label>
     </fieldset>
   );
 }

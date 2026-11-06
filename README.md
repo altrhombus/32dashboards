@@ -3,9 +3,10 @@
 A reusable, config-driven presentation suite for silent-auction dashboards
 (inspired by Games Done Quick's marathon donation displays), built to scrape
 [32auctions](https://www.32auctions.com) and present live stats — featured
-items, a countdown, sponsor logos, a bottom-scrolling item marquee, the
-running total raised, tiered fundraising incentives with celebration
-animations, and an interactive "Ask Me" spotlight mode.
+items, a countdown, logos (sponsors, or the causes an event helps), a
+bottom-scrolling item marquee, the running total raised, tiered
+fundraising incentives with celebration animations, and an interactive
+"Ask Me" spotlight mode.
 
 One install serves **any number of events over time**: a new event is set
 up in the dashboard, not in code. See
@@ -13,10 +14,11 @@ up in the dashboard, not in code. See
 
 ## How it runs
 
-One presentation laptop drives the venue TV. [NodeCG](https://www.nodecg.dev)
-runs inside WSL on that laptop and holds all state; the TV shows the kiosk
-graphic full-screen in Edge; operators run the show from the NodeCG
-dashboard on any device on the same network. The decision and its
+One presentation laptop runs everything. [NodeCG](https://www.nodecg.dev)
+runs inside WSL on that laptop and holds all state. Each TV shows the kiosk
+graphic full-screen in a browser, on the laptop or on any other computer on
+the same network. Operators run the show from the NodeCG dashboard on any
+device on that network, usually a phone. The decision and its
 trade-offs are in [ADR-0001](docs/adr/0001-rearchitect-on-nodecg.md).
 
 ```
@@ -45,8 +47,13 @@ infra/
 
 ## Running an event
 
+New here? Start with the [event checklist](docs/runbooks/event-checklist.md):
+it walks through an event from a few days before to packing up, and links
+to the rest.
+
 - [Setting up the presentation laptop](docs/runbooks/venue-setup.md) (once)
 - [Setting up a new event](docs/runbooks/onboarding-a-new-event.md)
+- [Event checklist](docs/runbooks/event-checklist.md): start to finish, with tick boxes
 - [Event day](docs/runbooks/event-day.md), including troubleshooting
 - [Backup and restore](docs/runbooks/backup-and-restore.md)
 - [Rotating secrets](docs/runbooks/rotating-secrets.md)

@@ -37,6 +37,10 @@ export const UpdateEventMessageSchema = z
       prizes: true,
       callToAction: true,
       source: true,
+      askMeRounds: true,
+      askMeInTotal: true,
+      celebrateAtClose: true,
+      sponsorsTitle: true,
     })
       .extend({
         theme: EventThemeSchema.partial(),
@@ -132,6 +136,29 @@ export type ImportAssetMessage = z.infer<typeof ImportAssetMessageSchema>;
 /** Asks for the laptop's network addresses and port, for opening the dashboard on a phone. */
 export const ConnectionInfoMessageSchema = z.object({}).strict().optional();
 
+/**
+ * Adds a finished Ask Me round to the total and starts the next at $0 (the
+ * next planned round, if there's a plan). `amount` (and `roundId`) must
+ * match what's on now, so the same round can't be finished twice (from two
+ * phones, say). Celebrated on the TV.
+ */
+export const FinishAskMeRoundMessageSchema = z
+  .object({
+    eventId,
+    /** May be 0 to move on from a planned round that raised nothing. */
+    amount: z.number().nonnegative(),
+    /** With planned rounds: the round being finished, which must be the one on now. */
+    roundId: z.string().uuid().optional(),
+  })
+  .strict();
+export type FinishAskMeRoundMessage = z.infer<typeof FinishAskMeRoundMessageSchema>;
+
+/** Undoes finishAskMeRound: takes `amount` back out of the total, and goes back to that round. */
+export const ReopenAskMeRoundMessageSchema = z
+  .object({ eventId, amount: z.number().nonnegative(), roundId: z.string().uuid().optional() })
+  .strict();
+export type ReopenAskMeRoundMessage = z.infer<typeof ReopenAskMeRoundMessageSchema>;
+
 /** Message name -> payload schema. */
 export const coreMessageSchemas = {
   createEvent: CreateEventMessageSchema,
@@ -151,6 +178,8 @@ export const coreMessageSchemas = {
   deleteScreen: DeleteScreenMessageSchema,
   importAsset: ImportAssetMessageSchema,
   connectionInfo: ConnectionInfoMessageSchema,
+  finishAskMeRound: FinishAskMeRoundMessageSchema,
+  reopenAskMeRound: ReopenAskMeRoundMessageSchema,
 } as const;
 export type CoreMessageName = keyof typeof coreMessageSchemas;
 export type CoreMessagePayload<N extends CoreMessageName> = z.input<(typeof coreMessageSchemas)[N]>;

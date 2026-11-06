@@ -285,12 +285,49 @@ h3 {
     grid-template-columns: minmax(0, 1fr) 280px;
   }
 
+  /* The parts become a wrapping row of compact buttons above the canvas. */
   .palette {
     grid-column: 1 / -1;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(160px, 1fr);
-    overflow-x: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    align-items: center;
   }
+
+  .palette > h2,
+  .palette > p {
+    flex-basis: 100%;
+  }
+
+  .palette__group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .palette__item {
+    min-height: 36px;
+    padding: 2px 12px;
+  }
+
+  .palette__item .muted {
+    display: none;
+  }
+}
+
+.narrow-note {
+  display: grid;
+  gap: 12px;
+  max-width: 560px;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--raise);
+}
+
+.narrow-note h2,
+.narrow-note p {
+  margin: 0;
 }
 
 @media (max-width: 860px) {

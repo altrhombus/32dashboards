@@ -9,6 +9,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
+    "lint:scripts": "eslint --max-warnings 0 scripts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "turbo run test",

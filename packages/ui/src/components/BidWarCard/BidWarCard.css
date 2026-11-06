@@ -24,7 +24,7 @@
 .bid-war-card__bar {
   height: 0.6rem;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--color-surface-strong);
   overflow: hidden;
 }
 

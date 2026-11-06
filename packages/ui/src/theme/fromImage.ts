@@ -1,5 +1,5 @@
 import type { Theme } from "@32dashboards/schema";
-import { PALETTES, type Palette } from "./palettes.js";
+import { LIGHT_TEXT, PALETTES, type Palette } from "./palettes.js";
 import { validateTheme } from "./validateTheme.js";
 
 /*
@@ -99,6 +99,7 @@ export function themeFromPixels(rgba: ArrayLike<number>): Colors | null {
   const backgrounds = {
     backgroundFrom: hslToHex({ h: main.h, s: 0.45, l: 0.1 }),
     backgroundTo: hslToHex({ h: main.h, s: 0.45, l: 0.17 }),
+    textColor: LIGHT_TEXT,
   };
   const saturation = (s: number) => Math.min(0.85, Math.max(0.55, s));
   const accent = readableOn({ h: main.h, s: saturation(main.s || 0.7), l: 0.55 }, backgrounds, "accentColor");
@@ -109,5 +110,13 @@ export function themeFromPixels(rgba: ArrayLike<number>): Colors | null {
   );
   if (!accent || !secondary) return null;
   const colors = { accentColor: accent, secondaryColor: secondary, ...backgrounds };
-  return validateTheme({ ...colors, logoUrl: null, fontDisplay: "", fontMono: "" }).length === 0 ? colors : null;
+  const check = {
+    ...colors,
+    logoUrl: null,
+    fontDisplay: "",
+    fontMono: "",
+    backgroundStyle: "gradient",
+    backgroundMotion: false,
+  } as const;
+  return validateTheme(check).length === 0 ? colors : null;
 }
