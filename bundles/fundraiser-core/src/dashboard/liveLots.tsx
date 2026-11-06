@@ -121,9 +121,11 @@ export function LiveLotsEditor({ event, save }: { event: FundraiserEvent; save: 
               />
               <textarea
                 aria-label={`Item ${i + 1} description`}
-                rows={3}
+                rows={4}
                 maxLength={400}
-                placeholder="A line or two on why it's worth having"
+                placeholder={
+                  "Why it's worth having, e.g.\nSeven nights, **boat included**.\n- Sleeps eight\n- On the water"
+                }
                 value={lot.description}
                 onChange={(e) => edit(i, { description: e.target.value })}
               />
@@ -174,7 +176,10 @@ export function LiveLotsEditor({ event, save }: { event: FundraiserEvent; save: 
       <button type="button" disabled={lots.length >= 30} onClick={() => setLots((ls) => [...ls, blankLot()])}>
         {lots.length ? "Add another item" : "Add an item"}
       </button>
-      <p className="muted">Saved as you type.</p>
+      <p className="muted">
+        Saved as you type. Descriptions can use **bold**, *italics* and lists (start lines with "- "). A few short lines
+        read best from across the room.
+      </p>
     </>
   );
 }

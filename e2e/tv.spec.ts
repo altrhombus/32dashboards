@@ -119,7 +119,17 @@ test.describe("the live auction on the TV", () => {
     const lotId = crypto.randomUUID();
     await send(page, "updateEvent", "fundraiser-core", {
       eventId,
-      patch: { liveLots: [{ id: lotId, title: "Week at the lake house", startingBid: 500, value: 2000 }] },
+      patch: {
+        liveLots: [
+          {
+            id: lotId,
+            title: "Week at the lake house",
+            description: "Seven nights, **boat included**.\n\n- Sleeps eight\n- On the water",
+            startingBid: 500,
+            value: 2000,
+          },
+        ],
+      },
     });
     await send(page, "switchScene", "fundraiser-core", { id: "liveAuction" });
     const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
@@ -127,6 +137,8 @@ test.describe("the live auction on the TV", () => {
     await tv.goto(`${KIOSK}?key=${displayToken()}`);
     await expect(tv.locator(".live-stage__title")).toHaveText("Week at the lake house");
     await expect(tv.locator(".live-stage__bid-amount")).toHaveText("$500");
+    await expect(tv.locator(".live-stage__description strong")).toHaveText("boat included");
+    await expect(tv.locator(".live-stage__description li")).toHaveCount(2);
 
     await send(page, "setLiveBid", "fundraiser-core", { eventId, lotId, amount: 900 });
     await expect(tv.locator(".live-stage__bid-amount")).toHaveText("$900");

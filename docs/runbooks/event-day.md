@@ -99,7 +99,8 @@ network.
      - Without planned rounds, Ask Me is one appeal you can finish and
        run again.
    - **Live auction.** Add the items beforehand on the **Event** tab, under
-     Show content, **Live auction**: title, a line or two, what it's worth,
+     Show content, **Live auction**: title, a few lines (**bold**, _italics_
+     and lists work), what it's worth,
      the starting bid, and a photo (a phone can take one). Then tap the
      **Live auction** scene; on a phone the **Auction** tab opens by itself.
      - **Open at** starts the bid. Tap an increment once, then the big

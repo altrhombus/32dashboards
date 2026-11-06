@@ -567,3 +567,38 @@ describe("the Live auction scene", () => {
     expect(screen.getByText("Paddle 42")).toBeInTheDocument();
   });
 });
+
+describe("a live item's description", () => {
+  const withDescription = (description: string) => {
+    const demo = sampleLive("demo");
+    const [first, ...rest] = demo.event!.liveLots;
+    return { ...demo, event: { ...demo.event!, liveLots: [{ ...first!, description }, ...rest] } };
+  };
+  const renderIt = (description: string) =>
+    render(
+      <LayoutRenderer
+        layout={builtInLayouts.liveAuction.layout}
+        registry={kioskRegistry}
+        data={{
+          live: withDescription(description),
+          scene: scene("liveAuction"),
+          infoBar: { type: "empty" },
+          roundWrap: null,
+          recent: [],
+          toasts: [],
+        }}
+        fit="none"
+      />,
+    ).container;
+
+  it("understands Markdown", () => {
+    const container = renderIt("Seven nights, **boat included**.\n\n- Sleeps eight\n- On the water");
+    expect(container.querySelector(".live-stage__description strong")).toHaveTextContent("boat included");
+    expect(container.querySelectorAll(".live-stage__description li")).toHaveLength(2);
+  });
+
+  it("can't inject anything into the TV", () => {
+    const container = renderIt('Nice <img src=x onerror="alert(1)"><script>alert(2)</script>');
+    expect(container.querySelector(".live-stage__description img, .live-stage__description script")).toBeNull();
+  });
+});

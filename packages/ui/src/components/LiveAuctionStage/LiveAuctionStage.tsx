@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { LiveLot } from "@32dashboards/schema/core";
 import { formatAmount, formatTotal } from "../../display/format.js";
+import { renderMarkdown } from "../../display/markdown.js";
 import "./LiveAuctionStage.css";
 
 export interface LiveAuctionStageProps {
@@ -69,7 +70,12 @@ export function LiveAuctionStage(props: LiveAuctionStageProps) {
         <h1 className="live-stage__title clamp-3" title={title}>
           {title}
         </h1>
-        {lot.description && <p className="live-stage__description clamp-4">{lot.description}</p>}
+        {lot.description && (
+          <div
+            className="live-stage__description"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(lot.description) }}
+          />
+        )}
         {lot.value !== null && <div className="live-stage__value num">Worth {formatAmount(lot.value)}</div>}
         {showBid && (
           <div className="live-stage__bid">
