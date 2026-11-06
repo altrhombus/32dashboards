@@ -408,6 +408,16 @@ describe("fundraiser-core extension", () => {
       }
     });
 
+    it("remembers the high even if the total hasn't risen since NodeCG started", async () => {
+      const { fake, source, eventId, kinds } = await show();
+      source.report({ eventId, total: 2500, observedAt: at(1) });
+      fake.replicant<Record<string, number>>("totalPeaks").value = {};
+      source.report({ eventId, total: 2500, observedAt: at(2) });
+      source.report({ eventId, total: 100, observedAt: at(3) });
+      source.report({ eventId, total: 2500, observedAt: at(4) });
+      expect(kinds()).toEqual([]);
+    });
+
     it("celebrates what's new once the total passes its old high", async () => {
       const { source, eventId, kinds } = await show();
       source.report({ eventId, total: 2500, observedAt: at(1) });

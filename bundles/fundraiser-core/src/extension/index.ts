@@ -149,12 +149,14 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
     const serialized = JSON.stringify(next);
     if (serialized === lastLiveJson) return;
     const id = next.event?.id;
-    const peak = id ? (totalPeaks.value?.[id] ?? lastLive.total) : 0;
+    const stored = id ? totalPeaks.value?.[id] : undefined;
+    // An event from before peaks were kept, or just started: what was showing is the high so far.
+    const peak = stored ?? (lastLive.event?.id === id ? lastLive.total : 0);
     const crossed = quiet ? [] : core.detectThresholdMoments(lastLive, next, deps, peak);
     lastLive = next;
     lastLiveJson = serialized;
     liveState.value = next;
-    if (id && next.total > peak) setPeak(id, next.total);
+    if (id && (stored === undefined || next.total > peak)) setPeak(id, Math.max(peak, next.total));
     recordMoments(crossed);
   };
   /** Runs a change that isn't money coming in: the new total stands, but nothing is celebrated. */
