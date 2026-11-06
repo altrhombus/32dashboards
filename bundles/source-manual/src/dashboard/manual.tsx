@@ -41,9 +41,16 @@ function Panel() {
         onSelect={select}
         sourceLabel="manual entry"
       />
+      <p className="muted">
+        For events without an auction site: type in the auction or online total, and the items, here. Cash and checks
+        taken in the room go in the Live tab instead.
+      </p>
       {eventId && (
         <>
-          <div className="total">{formatCurrency(entry?.total ?? 0)}</div>
+          <div>
+            <span className="muted">Total typed in here</span>
+            <div className="total">{formatCurrency(entry?.total ?? 0)}</div>
+          </div>
           <form
             className="row"
             onSubmit={(e) => {
@@ -57,12 +64,13 @@ function Panel() {
           >
             <input
               inputMode="decimal"
+              aria-label="Amount"
               placeholder="Amount"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
-            <button type="submit" disabled={!valid || value === 0}>
-              Add donation
+            <button type="submit" className="primary" disabled={!valid || value === 0}>
+              Add to this total
             </button>
             <button
               type="button"
@@ -74,11 +82,14 @@ function Panel() {
                 )
               }
             >
-              Set total
+              Replace the total
             </button>
           </form>
 
-          <h4 style={{ margin: 0 }}>Items</h4>
+          <h4 style={{ margin: 0 }}>Items on the TV</h4>
+          <span className="muted">
+            Featured on the Main screen and in the info bar. Leave the bid fields empty if unknown.
+          </span>
           {(entry?.items ?? []).map((item) => (
             <ItemRow key={item.id} eventId={eventId} item={item} run={run} />
           ))}

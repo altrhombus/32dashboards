@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 // Sets up, or removes, a realistic demo show on the running NodeCG service:
-// an event with items, venue cash, $1,000 milestones, an incentive, a bid
-// war, a prize, sponsors with logos, a look, and a layout for a second
-// screen. For walkthroughs, design sessions, and training volunteers.
+// an event with items, venue cash, $1,000 milestones, a goal, a bid war, a
+// prize, sponsors with logos, three planned Ask Me appeals, a look with a
+// glow and a slow background, a layout for a second screen, and the Welcome
+// scene on air. For walkthroughs, design sessions, and training volunteers.
+// Real events start in the dashboard's New event tab instead, which walks
+// through all of this.
 //
 //   pnpm demo            set it up (refused if it already exists)
 //   pnpm demo --reset    remove it, then set it up again
@@ -172,7 +175,7 @@ async function setUp() {
         "Thank you to our volunteers",
       ],
       callToAction: "Scan the code on your table to bid or give",
-      // A celebration every $1,000 (until there's a rule for that).
+      // A celebration every $1,000.
       milestones: Array.from({ length: 20 }, (_, i) => (i + 1) * 1000).map((amount) => ({
         id: id(),
         amount,
@@ -208,17 +211,37 @@ async function setUp() {
         },
         { id: id(), name: "Harbor Hardware", logoUrl: sponsorLogos["demo-harbor-hardware.svg"], sortOrder: 2 },
       ],
-      askMe: {
-        title: "Fund a kennel",
-        message: "Every **$250** builds one new kennel.\n\nRaise your paddle!",
-        total: 0,
-      },
+      // Three planned Ask Me appeals; the Live tab walks through them in order.
+      askMeRounds: [
+        {
+          id: id(),
+          title: "Fund a kennel",
+          message:
+            "Every **$250** builds one new kennel.\n\n- Shelter for a dog waiting for a home\n- Built by local volunteers",
+          raised: null,
+        },
+        {
+          id: id(),
+          title: "Vet care for 40 cats",
+          message: "**$50** covers a checkup and shots for one cat.",
+          raised: null,
+        },
+        {
+          id: id(),
+          title: "A transport van",
+          message: "Help us bring animals to their *forever homes*.",
+          raised: null,
+        },
+      ],
       theme: {
-        // The "Forest" palette, which passes the contrast and broadcast-safe checks.
+        // The "Forest" palette (it passes the readability and broadcast-safe checks), with a glow and slow drift.
         accentColor: "#a8e063",
         secondaryColor: "#e8d27a",
         backgroundFrom: "#13261c",
         backgroundTo: "#1d3b2a",
+        textColor: "#f4f6ff",
+        backgroundStyle: "glow",
+        backgroundMotion: true,
         logoUrl: logos["demo-spring-gala-logo.svg"],
         fontDisplay: "Atkinson Hyperlegible",
         fontMono: "JetBrains Mono",
@@ -276,207 +299,41 @@ async function setUp() {
     await core("saveScreen", { id: "main-left", name: "Main room left", layouts: {} });
     await core("saveScreen", { id: "main-right", name: "Main room right", layouts: { main: layoutId } });
     screenNote =
-      'Named screens "Main room left" (main-left) and "Main room right" (main-right, with the big-total layout).';
+      'named screens "Main room left" (main-left) and "Main room right" (main-right, with the big-total layout)';
   } else {
     // Screens the demo made before (or ones with the same ids) get the layout back after a reset.
     const right = screens.find((s) => s.id === "main-right");
     if (right && !right.layouts.main) {
       await core("saveScreen", { ...right, layouts: { ...right.layouts, main: layoutId } });
-      screenNote = `Kept your named screens; "${right.name}" shows the big-total layout.`;
+      screenNote = `your named screens, with "${right.name}" on the big-total layout`;
     } else {
-      screenNote = `Kept your ${screens.length} named screen(s); choose "${LAYOUT_NAME}" for one in the Live tab if you like.`;
+      screenNote = `your ${screens.length} named screen(s); pick "${LAYOUT_NAME}" for one in the Live tab if you like`;
     }
-  }
-
-  const active = await read("activeEventId", "fundraiser-core");
-  for (const event of events.filter((e) => e.name === EVENT_NAME)) {
-    if (event.id === active) await core("activateEvent", { eventId: null });
-    await core("deleteEvent", { eventId: event.id });
-  }
-  for (const category of ["event-logos", "sponsor-logos"]) {
-    const dir = path.join(ROOT, "assets", "fundraiser-core", category);
-    if (!existsSync(dir)) continue;
-    for (const file of readdirSync(dir)) if (file.startsWith("demo-")) rmSync(path.join(dir, file));
-  }
-  console.log(
-    `Removed the demo: ${events.filter((e) => e.name === EVENT_NAME).length} event, ${demoLayouts.length} layout, and its logos.`,
-  );
-}
-
-/** Copies the demo logos into an asset category and waits for NodeCG to list them; returns url by file name. */
-async function addLogos(category, files) {
-  const dir = path.join(ROOT, "assets", "fundraiser-core", category);
-  mkdirSync(dir, { recursive: true });
-  for (const file of files) copyFileSync(path.join(ASSET_DIR, file), path.join(dir, file));
-  for (let i = 0; i < 40; i++) {
-    const assets = (await read(`assets:${category}`, "fundraiser-core")) ?? [];
-    const found = Object.fromEntries(
-      files.map((file) => [file, assets.find((a) => a.base === file)?.url]).filter(([, url]) => url),
-    );
-    if (Object.keys(found).length === files.length) return found;
-    await sleep(250);
-  }
-  throw new Error(`NodeCG didn't pick up the ${category} files; check assets/fundraiser-core/${category}.`);
-}
-
-async function setUp() {
-  const events = (await read("events", "fundraiser-core")) ?? [];
-  if (events.some((e) => e.name === EVENT_NAME)) {
-    throw new Error(`"${EVENT_NAME}" already exists. Use --reset to start it over, or --remove.`);
-  }
-
-  const logos = await addLogos("event-logos", ["demo-spring-gala-logo.svg"]);
-  const sponsorLogos = await addLogos("sponsor-logos", [
-    "demo-northside-bakery.svg",
-    "demo-riverbend-credit-union.svg",
-    "demo-harbor-hardware.svg",
-  ]);
-
-  const eventId = await core("createEvent", { name: EVENT_NAME, causeName: "Riverside Animal Shelter" });
-  const id = () => crypto.randomUUID();
-  const milestoneLabels = {
-    5000: "A month of food for every dog",
-    10000: "New puppy play yard",
-    15000: "Vet care for 40 cats",
-    20000: "Stretch goal: a transport van",
-  };
-  await core("updateEvent", {
-    eventId,
-    patch: {
-      endDateTime: nextSaturdayEvening(),
-      source: { adapterId: auction ? "32auctions" : "manual" },
-      announcements: [
-        "Dessert auction opens at 8:00",
-        "Silent auction closes at 9:00. Check your bids!",
-        "Thank you to our volunteers",
-      ],
-      callToAction: "Scan the code on your table to bid or give",
-      // A celebration every $1,000 (until there's a rule for that).
-      milestones: Array.from({ length: 20 }, (_, i) => (i + 1) * 1000).map((amount) => ({
-        id: id(),
-        amount,
-        label: milestoneLabels[amount] ?? "",
-      })),
-      incentives: [{ id: id(), name: "Fund the new cat wing", target: 15000, active: true }],
-      bidWars: [
-        {
-          id: id(),
-          name: "Name the shelter's new kitten",
-          options: [
-            { id: id(), name: "Biscuit", total: 340 },
-            { id: id(), name: "Pepper", total: 280 },
-            { id: id(), name: "Mochi", total: 150 },
-          ],
-        },
-      ],
-      prizes: [
-        {
-          id: id(),
-          name: "Weekend at the lake cabin",
-          description: "Two nights for four, drawn at 9:15",
-          minimumDonation: 50,
-        },
-      ],
-      sponsors: [
-        { id: id(), name: "Northside Bakery", logoUrl: sponsorLogos["demo-northside-bakery.svg"], sortOrder: 0 },
-        {
-          id: id(),
-          name: "Riverbend Credit Union",
-          logoUrl: sponsorLogos["demo-riverbend-credit-union.svg"],
-          sortOrder: 1,
-        },
-        { id: id(), name: "Harbor Hardware", logoUrl: sponsorLogos["demo-harbor-hardware.svg"], sortOrder: 2 },
-      ],
-      askMe: {
-        title: "Fund a kennel",
-        message: "Every **$250** builds one new kennel.\n\nRaise your paddle!",
-        total: 0,
-      },
-      theme: {
-        // The "Forest" palette, which passes the contrast and broadcast-safe checks.
-        accentColor: "#a8e063",
-        secondaryColor: "#e8d27a",
-        backgroundFrom: "#13261c",
-        backgroundTo: "#1d3b2a",
-        logoUrl: logos["demo-spring-gala-logo.svg"],
-        fontDisplay: "Atkinson Hyperlegible",
-        fontMono: "JetBrains Mono",
-      },
-    },
-  });
-
-  let itemNote;
-  if (auction) {
-    // A finished auction doesn't change, so check it rarely; never show its total.
-    await send("source-32auctions", "setConfig", {
-      eventId,
-      config: { ...auction, refreshIntervalSeconds: 300, totalFrom: "none" },
-    });
-    await core("setAdjustment", { eventId, amount: 9630 });
-    await core("refreshSource", { eventId }).catch(() => {});
-    itemNote = `items, photos and bids from 32auctions.com/${auction.friendlyAuctionPath} (its total isn't shown); $9,630 venue cash`;
-  } else {
-    // Items and the online total, as if from the auction site.
-    const items = [
-      ["Weekend at the lake cabin", 420, 900, 4],
-      ["Chef's table dinner for six", 340, 900, 2],
-      ["Signed print by a local artist", 85, 250, 0],
-      ["Season tickets, two seats", 410, 800, 2],
-      ["Hot air balloon ride for two", 150, 450, 1],
-      ["Pottery class for four", 60, 200, 0],
-      ["Golf foursome at Riverside Links", 220, 400, 5],
-      ["Wine tasting for ten", 300, 500, 7],
-      ["Handmade quilt", 175, 300, 3],
-      ["Dog-walking for a month", 90, 240, 1],
-      ["Kayak tour for two", 110, 200, 2],
-      ["Coffee for a year", 260, 365, 6],
-    ];
-    for (const [title, currentBid, value, bidCount] of items) {
-      await send("source-manual", "upsertItem", {
-        eventId,
-        item: { title, currentBid, value, bidCount, remaining: "2 hours" },
-      });
-    }
-    await send("source-manual", "setTotal", { eventId, total: 7350 });
-    // Cash and checks taken at the venue, so the total sits just under a milestone.
-    await core("setAdjustment", { eventId, amount: 2280 });
-    itemNote = `${items.length} made-up auction items; $7,350 online plus $2,280 at the venue`;
-  }
-
-  const layoutId = await send("layout-kiosk", "copyLayout", {
-    fromId: "template:bigTotal",
-    name: LAYOUT_NAME,
-    view: "main",
-  });
-
-  const screens = (await read("screens", "fundraiser-core")) ?? [];
-  let screenNote;
-  if (screens.length === 0) {
-    await core("saveScreen", { id: "main-left", name: "Main room left", layouts: {} });
-    await core("saveScreen", { id: "main-right", name: "Main room right", layouts: { main: layoutId } });
-    screenNote =
-      'Named screens "Main room left" (main-left) and "Main room right" (main-right, with the big-total layout).';
-  } else {
-    screenNote = `Kept your ${screens.length} named screen(s); choose "${LAYOUT_NAME}" for one in the Live tab if you like.`;
   }
 
   const active = await read("activeEventId", "fundraiser-core");
   if (!active) {
     await core("activateEvent", { eventId });
-    await core("switchScene", { id: "main" });
+    // Doors open: guests see the Welcome scene first.
+    await core("switchScene", { id: "welcome" });
   }
 
-  console.log(`Set up "${EVENT_NAME}":`);
+  console.log(`Set up "${EVENT_NAME}", a demo show to look around in:`);
   console.log(`  - ${itemNote}, for $9,630 in all`);
-  console.log("  - a milestone every $1,000; one more $370 crosses $10,000 and celebrates");
-  console.log("  - an incentive, a bid war, a prize, three sponsors with logos, and Ask Me");
-  console.log("  - the Forest look with Atkinson Hyperlegible and JetBrains Mono");
+  console.log("  - the Welcome scene for arrivals, then Main, Intermission, Ask Me and Celebration");
+  console.log("  - a milestone every $1,000: one more $370 of venue cash crosses $10,000 and fills the TVs");
+  console.log("  - three planned Ask Me appeals (Ask Me tab on a phone): finish each to add it to the total");
+  console.log("  - a goal, a bid war, a prize, and three sponsors with logos");
+  console.log("  - the Forest look with a soft glow and a slowly moving background");
   console.log(`  - ${screenNote}`);
   console.log(
-    active ? "  - Another event is on screen, so the demo isn't. Put it on TV in the Live tab." : "  - On screen now.",
+    active
+      ? "  - Another event is on screen, so the demo isn't. Put it on the TVs from the Live tab."
+      : "  - On screen now.",
   );
-  console.log(`Open the TVs with: pnpm -s kiosk-url main-left   (and main-right)`);
+  console.log("Open the TVs with: pnpm -s kiosk-url main-left   (and main-right)");
   console.log("Remove it with: pnpm demo --remove");
+  console.log("For a real event, use the New event tab in the dashboard: it walks you through everything.");
 }
 
 try {

@@ -39,11 +39,16 @@ function useDraft<T>(value: T): [T, (next: T) => void, boolean] {
   return [draft, setDraft, JSON.stringify(draft) !== saved];
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
     <details className="section">
       <summary>{title}</summary>
       <div className="panel" style={{ padding: "8px 0 0" }}>
+        {hint && (
+          <p className="muted" style={{ margin: 0 }}>
+            {hint}
+          </p>
+        )}
         {children}
       </div>
     </details>
@@ -551,7 +556,22 @@ function ShowContent() {
 
   if (!events) return <p className="panel">Waiting for state…</p>;
   const event = events.find((e) => e.id === selectedId) ?? events.find((e) => e.id === activeId) ?? events[0];
-  if (!event) return <p className="panel">No events yet. Create one in the Events panel on the Event tab.</p>;
+  if (!event) {
+    return (
+      <div className="panel">
+        <p className="muted" style={{ margin: 0 }}>
+          No events yet. The guide walks you through setting one up.
+        </p>
+        <button
+          type="button"
+          className="primary guide-button"
+          onClick={() => (window.top!.location.hash = "fullbleed/setup")}
+        >
+          Set up your first event
+        </button>
+      </div>
+    );
+  }
 
   const run: Run = (promise) => {
     setError(null);
@@ -568,7 +588,7 @@ function ShowContent() {
           {events.map((e) => (
             <option key={e.id} value={e.id}>
               {e.name}
-              {e.id === activeId ? " (on screen)" : ""}
+              {e.id === activeId ? " (on the TVs)" : ""}
             </option>
           ))}
         </select>
@@ -577,7 +597,7 @@ function ShowContent() {
       {/* key: drafts reset when switching events */}
       <div key={event.id} className="panel" style={{ padding: 0 }}>
         <h3 className="group-heading">About the event</h3>
-        <Section title="Event details">
+        <Section title="Event details" hint="The name, cause and closing time shown on every screen.">
           <EventDetails event={event} run={run} />
         </Section>
         <Section
@@ -586,7 +606,10 @@ function ShowContent() {
           <LookAndSponsors event={event} run={run} />
         </Section>
         <h3 className="group-heading">Goals and extras</h3>
-        <Section title={`Milestones (${event.milestones.length})`}>
+        <Section
+          title={`Milestones (${event.milestones.length})`}
+          hint="When the total passes one, the TVs celebrate for a few seconds. A label says what it pays for."
+        >
           <ListEditor
             items={event.milestones}
             fields={[
@@ -598,7 +621,10 @@ function ShowContent() {
             onSave={(milestones) => save({ milestones })}
           />
         </Section>
-        <Section title={`Incentives (${event.incentives.length})`}>
+        <Section
+          title={`Incentives (${event.incentives.length})`}
+          hint="Goals with a progress bar in the info bar. In rotation: shown in turn. Pin now: kept on screen. Pin until met: kept on screen until reached."
+        >
           <ListEditor
             items={event.incentives}
             fields={[
@@ -620,7 +646,10 @@ function ShowContent() {
             onSave={(incentives) => save({ incentives })}
           />
         </Section>
-        <Section title={`Bid wars (${event.bidWars.length})`}>
+        <Section
+          title={`Bid wars (${event.bidWars.length})`}
+          hint="Options people vote for with money, like naming a kitten. Add amounts during the show in the Live tab."
+        >
           <BidWars event={event} run={run} />
         </Section>
         <Section title={`Ask Me rounds (${event.askMeRounds.length})`}>
@@ -640,7 +669,10 @@ function ShowContent() {
             onSave={(askMeRounds) => save({ askMeRounds })}
           />
         </Section>
-        <Section title={`Prizes (${event.prizes.length})`}>
+        <Section
+          title={`Prizes (${event.prizes.length})`}
+          hint="Prize draws shown in the info bar, with the minimum donation to enter."
+        >
           <ListEditor
             items={event.prizes}
             fields={[
@@ -655,13 +687,22 @@ function ShowContent() {
           />
         </Section>
         <h3 className="group-heading">On the TV</h3>
-        <Section title="Call to action">
+        <Section
+          title="Call to action"
+          hint="One line telling people how to give, shown in the info bar and on the Welcome screen."
+        >
           <CallToAction event={event} run={run} />
         </Section>
-        <Section title="Info bar rotation">
+        <Section
+          title="Info bar rotation"
+          hint="What the strip along the bottom of the TV cycles through, and for how long."
+        >
           <InfoBarEditor event={event} run={run} />
         </Section>
-        <Section title={`Hidden items (${event.filters.length})`}>
+        <Section
+          title={`Hidden items (${event.filters.length})`}
+          hint="Auction items to keep off the TVs, matched by a word in their title (for example raffle)."
+        >
           <HiddenItems event={event} run={run} />
         </Section>
       </div>

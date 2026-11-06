@@ -150,3 +150,42 @@
   outline: 2px solid var(--action);
   outline-offset: 2px;
 }
+
+.bg-styles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bg-style {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.bg-style:has(input:checked) {
+  border-color: var(--action);
+  background: color-mix(in srgb, var(--action) 12%, transparent);
+}
+
+.bg-style input {
+  position: absolute;
+  opacity: 0;
+}
+
+.bg-style:focus-within {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+
+.bg-style__swatch {
+  height: 44px;
+  border-radius: 6px;
+}
+
+.bg-style .muted {
+  font-size: 0.75rem;
+}

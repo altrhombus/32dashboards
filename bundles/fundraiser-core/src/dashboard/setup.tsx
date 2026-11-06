@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import {
+  BackgroundOptions,
   ColorFields,
   ConfirmButton,
   FontPicker,
@@ -669,6 +670,7 @@ function LookStep(props: { event: FundraiserEvent; update: Update; onFail: (err:
         <summary>Fine-tune the colors</summary>
         <ColorFields theme={theme} onChange={(patch) => save(patch, "new colors")} />
       </details>
+      <BackgroundOptions theme={theme} onChange={(patch) => save(patch, "a new background")} />
       <FontPicker
         title="Words"
         kind="display"

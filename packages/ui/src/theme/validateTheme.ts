@@ -6,7 +6,7 @@ import type { Theme } from "@32dashboards/schema";
  * doesn't, so out-of-range colors are warnings, not errors.
  */
 
-/** Body text color, from tokens.css. */
+/** The default body text color (the theme's `textColor` overrides it). */
 export const TEXT_COLOR = "#f4f6ff";
 
 export interface ThemeIssue {
@@ -65,7 +65,11 @@ export function validateTheme(theme: Theme): ThemeIssue[] {
     }
   }
 
-  const text = parseHexColor(TEXT_COLOR)!;
+  const text = parseHexColor(theme.textColor ?? TEXT_COLOR);
+  if (!text) {
+    issues.push({ level: "error", field: "textColor", message: `"${theme.textColor}" isn't a hex color like #f4f6ff` });
+    return issues;
+  }
   for (const bg of ["backgroundFrom", "backgroundTo"] as const) {
     const background = colors[bg];
     if (!background) continue;

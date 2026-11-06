@@ -43,6 +43,7 @@ function Panel() {
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [secretDrafts, setSecretDrafts] = useState<Partial<Record<SecretKey, string>>>({});
   const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
+  const [link, setLink] = useState("");
 
   const eventId = selected?.id ?? null;
   const saved = eventId ? configs?.[eventId] : undefined;
@@ -126,6 +127,45 @@ function Panel() {
               run(nodecg.sendMessage("setConfig", { eventId, config }), "Settings saved.");
             }}
           >
+            <label className="field">
+              <span>Paste the auction's link to fill these in</span>
+              <span className="row">
+                <input
+                  className="grow"
+                  placeholder="32auctions.com/YourAuction"
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
+                />
+                <button
+                  type="button"
+                  disabled={!link.trim()}
+                  onClick={() =>
+                    run(
+                      nodecg.sendMessage("lookupAuction", { url: link }).then((found) => {
+                        const f = found as {
+                          orgId: string;
+                          auctionId: string;
+                          friendlyAuctionPath: string;
+                          title: string | null;
+                        };
+                        setDraft({
+                          ...draft,
+                          orgId: f.orgId,
+                          auctionId: f.auctionId,
+                          friendlyAuctionPath: f.friendlyAuctionPath,
+                        });
+                        setLink("");
+                        return f;
+                      }),
+                      "Found it. Check the details below, then Save settings.",
+                    )
+                  }
+                >
+                  Fill in
+                </button>
+              </span>
+              <span className="muted">The public link, the one you share with bidders.</span>
+            </label>
             {field("orgId", "Organization ID", "From the admin URL: /organizations/<this>/auctions/…")}
             {field("auctionId", "Auction ID", "From the admin URL: …/auctions/<this>")}
             {field(

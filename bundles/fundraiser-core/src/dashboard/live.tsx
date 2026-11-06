@@ -107,7 +107,17 @@ function TvStatus({ screens, outputs, now }: { screens: ScreensReplicant; output
         <strong>{what}</strong>
         <span>
           {named.length > 1 ? `${named.length - missing.length} of ${named.length} screens connected${extra}. ` : ""}
-          Open the kiosk on the TV laptop (Event-day runbook, step 3).
+          {missing.length === 1 ? (
+            <>
+              On the TV laptop, run <code>open-kiosk.ps1 -Screen {missing[0]!.screen.id}</code>.
+            </>
+          ) : missing.length > 1 ? (
+            <>On the TV laptop, run open-kiosk.ps1 for each (the Screens tab shows each command).</>
+          ) : (
+            <>
+              On the TV laptop, run <code>open-kiosk.ps1</code> to put the TV picture on that screen.
+            </>
+          )}
         </span>
       </div>
     );
@@ -146,17 +156,26 @@ function SourceStatus({
     return (
       <div className="status status--caution">
         <strong>{adapterId} isn't running</strong>
-        <span>Restart NodeCG (Event-day runbook, troubleshooting).</span>
+        <span>
+          The dashboard service needs a restart: in WSL, run <code>sudo systemctl restart 32dashboards-nodecg</code>.
+        </span>
       </div>
     );
   }
   const failing = source.status.state === "error";
+  const waiting = !failing && !source.lastResultAt;
   return (
-    <div className={`status ${failing ? "status--caution" : "status--go"}`}>
+    <div className={`status ${failing || waiting ? "status--caution" : "status--go"}`}>
       <strong>
-        {source.label}: {failing ? "needs a look" : "receiving data"}
+        {source.label}: {failing ? "needs a look" : waiting ? "no data yet" : "receiving data"}
       </strong>
-      <span>{failing ? source.status.message : `Last data ${ago(source.lastResultAt, now)}`}</span>
+      <span>
+        {failing
+          ? source.status.message
+          : waiting
+            ? "Nothing has come in yet. Fetch now to try, or check the source in the Sources tab."
+            : `Last data ${ago(source.lastResultAt, now)}`}
+      </span>
       <button
         type="button"
         className="status__action"
@@ -188,8 +207,8 @@ function EventSwitcher({ events, activeId, act }: { events: EventsReplicant; act
       {changed && (
         <ConfirmButton
           className="primary"
-          label={target ? "Put on TV" : "Take off TV"}
-          confirmLabel="Tap again to switch the TV"
+          label={target ? "Put on the TVs" : "Take off the TVs"}
+          confirmLabel="Tap again to switch the TVs"
           onConfirm={() =>
             act(
               send("activateEvent", { eventId: choice || null }),

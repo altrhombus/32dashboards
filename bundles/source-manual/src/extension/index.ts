@@ -81,7 +81,7 @@ export default function sourceManual(nodecg: NodeCG.ServerAPI, core: FundraiserC
     handle.setStatus(
       usesManual
         ? { state: "ok", message: "Entered by hand", eventId: active }
-        : { state: "idle", message: "Not used by the active event" },
+        : { state: "idle", message: "The event on the TVs uses a different source" },
     );
   };
   core.onActiveEventChange(describeActive);

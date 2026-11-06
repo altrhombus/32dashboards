@@ -9,6 +9,15 @@ export const ThemeSchema = z.object({
   logoUrl: z.string().url().nullable().default(null),
   fontDisplay: z.string().default("Montserrat"),
   fontMono: z.string().default("Share Tech Mono"),
+  /** Body text; light on dark backgrounds, dark on light ones. */
+  textColor: z.string().default("#f4f6ff"),
+  /**
+   * The background: the two colors as a gradient, the first as a solid
+   * color, or a gradient with a soft glow of the accent behind the total.
+   */
+  backgroundStyle: z.enum(["gradient", "solid", "glow"]).default("gradient"),
+  /** A very slow, faint drift of the event's colors behind everything. Off by default. */
+  backgroundMotion: z.boolean().default(false),
 });
 
 export type Theme = z.infer<typeof ThemeSchema>;

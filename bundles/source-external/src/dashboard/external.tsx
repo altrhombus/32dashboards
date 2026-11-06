@@ -35,6 +35,10 @@ function Panel() {
 
   return (
     <div className="panel">
+      <p className="muted" style={{ margin: 0 }}>
+        For another program (a spreadsheet script, a different auction site) that sends totals and items in. Most events
+        don't need this: pick 32auctions or Manual entry instead.
+      </p>
       <SourceStatusLine sourceId={SOURCE_ID} />
       <div>
         <div className="muted">Endpoint</div>

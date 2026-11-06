@@ -91,7 +91,7 @@ export function createPollingSource<S extends z.ZodTypeAny>(
     inFlight = null;
     if (stopped) return;
     if (target) schedule(0);
-    else handle.setStatus({ state: "idle", message: "Not used by the active event", eventId: null });
+    else handle.setStatus({ state: "idle", message: "The event on the TVs uses a different source", eventId: null });
   };
 
   const currentTarget = (): string | null => {

@@ -33,7 +33,7 @@ body,
   box-sizing: border-box;
   padding: var(--spacing-md);
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-surface);
   overflow: hidden;
 }
 
@@ -60,7 +60,7 @@ body,
   box-sizing: border-box;
   padding: 0 var(--spacing-lg);
   border-radius: var(--radius-lg);
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--color-band);
   border-top: 3px solid var(--color-accent);
   font-size: 1.4rem;
   overflow: hidden;
@@ -77,7 +77,7 @@ body,
 }
 
 .kiosk-info-bar--celebrating {
-  background: rgba(0, 0, 0, 0.55);
+  background: color-mix(in srgb, var(--color-band) 85%, var(--color-text) 8%);
   font-size: 1.8rem;
 }
 

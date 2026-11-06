@@ -1,0 +1,70 @@
+/*
+ * Colors components use for surfaces, worked out from the theme's text color
+ * so they read on dark and light backgrounds alike.
+ */
+.theme-root {
+  position: relative;
+  isolation: isolate;
+  --color-surface: color-mix(in srgb, var(--color-text) 6%, transparent);
+  --color-surface-strong: color-mix(in srgb, var(--color-text) 12%, transparent);
+  /* Bars and banners: a step darker (or lighter) than the background. */
+  --color-band: color-mix(in srgb, var(--color-bg-from) 82%, var(--color-text) 6%);
+}
+
+/*
+ * The optional slow background: two faint pools of the event's colors that
+ * drift across the screen over a couple of minutes. Never brighter than a
+ * tint, and still for anyone who asks for reduced motion.
+ */
+.theme-drift {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.theme-drift::before,
+.theme-drift::after {
+  content: "";
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.16;
+  will-change: transform;
+}
+
+.theme-drift::before {
+  top: -30vmax;
+  left: -20vmax;
+  background: var(--color-accent);
+  animation: theme-drift-a 140s ease-in-out infinite alternate;
+}
+
+.theme-drift::after {
+  bottom: -35vmax;
+  right: -25vmax;
+  background: var(--color-secondary);
+  animation: theme-drift-b 170s ease-in-out infinite alternate;
+}
+
+@keyframes theme-drift-a {
+  to {
+    transform: translate(45vw, 30vh) scale(1.15);
+  }
+}
+
+@keyframes theme-drift-b {
+  to {
+    transform: translate(-40vw, -25vh) scale(0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-drift::before,
+  .theme-drift::after {
+    animation: none;
+  }
+}

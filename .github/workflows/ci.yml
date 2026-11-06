@@ -26,6 +26,9 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Lint the repo's scripts
+        run: pnpm lint:scripts
+
       - name: Lint, typecheck, test, build
         run: pnpm turbo run lint typecheck test build
 

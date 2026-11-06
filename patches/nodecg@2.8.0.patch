@@ -1,3 +1,20 @@
+diff --git a/dist/client/dashboard.js b/dist/client/dashboard.js
+index 225e94552f2ae9946ab66f61417adaaf5623a76c..35d9b5d939289bd092222f3163cf8b839e8bef37 100644
+--- a/dist/client/dashboard.js
++++ b/dist/client/dashboard.js
+@@ -63631,6 +63631,12 @@ Sentry.init({...});
+ 				@apply --paper-material-elevation-1;
+ 			}
+ 
++			/* 32dashboards patch: panels never run off a narrow screen (phones, portrait tablets). */
++			:host(:not([fullbleed])) {
++				max-width: 100%;
++				box-sizing: border-box;
++			}
++
+ 			:host([width="1"]) {
+ 				width: 128px;
+ 			}
 diff --git a/dist/server/bootstrap.js b/dist/server/bootstrap.js
 index f481208c1ad4cf93051de083ae034a442db33134..fda4f6e04289ada4a5348eccca8a18b954c71f18 100644
 --- a/dist/server/bootstrap.js

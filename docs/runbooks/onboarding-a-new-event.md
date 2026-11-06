@@ -67,7 +67,9 @@ setup done by hand, panel by panel, which is quicker once you know it.
      the event's colors, logo and fonts in the **Layouts** tab, beside a
      live preview of each scene: start from a palette, adjust it to the
      brand (each color warns if it's hard to read or broadcast-unsafe),
-     pick fonts that ship with the kiosk, and save. Upload logos first in
+     pick a background (gradient, solid, or a soft glow behind the
+     total, optionally slowly moving), pick fonts that ship with the
+     kiosk, and save. Light palettes (Paper, Daylight) suit bright rooms. Upload logos first in
      the dashboard's **Assets** tab.
    - _Call to action_: how people give, e.g. "Bid at 32auctions.com/gala".
    - _Hidden items_: words that keep matching items (e.g. "raffle") off

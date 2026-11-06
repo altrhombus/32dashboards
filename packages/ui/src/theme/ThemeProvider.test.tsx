@@ -11,6 +11,9 @@ const theme: Theme = {
   logoUrl: null,
   fontDisplay: "Montserrat",
   fontMono: "Share Tech Mono",
+  textColor: "#f4f6ff",
+  backgroundStyle: "gradient",
+  backgroundMotion: false,
 };
 
 function Probe() {
@@ -38,6 +41,26 @@ describe("ThemeProvider", () => {
     const root = container.querySelector(".theme-root") as HTMLElement;
     expect(root.style.getPropertyValue("--font-display")).toMatch(/^"Lexend", /);
     expect(root.style.fontFamily).toBe("var(--font-display)");
+  });
+
+  it("uses the theme's text color, background style, and optional slow drift", () => {
+    const { container, rerender } = render(
+      <ThemeProvider theme={{ ...theme, textColor: "#1c2230", backgroundStyle: "solid" }}>
+        <span>child</span>
+      </ThemeProvider>,
+    );
+    const root = () => container.querySelector(".theme-root") as HTMLElement;
+    expect(root().style.getPropertyValue("--color-text")).toBe("#1c2230");
+    expect(root().style.background).toContain("var(--color-bg-from)");
+    expect(container.querySelector(".theme-drift")).toBeNull();
+
+    rerender(
+      <ThemeProvider theme={{ ...theme, backgroundStyle: "glow", backgroundMotion: true }}>
+        <span>child</span>
+      </ThemeProvider>,
+    );
+    expect(root().style.background).toContain("radial-gradient");
+    expect(container.querySelector(".theme-drift")).not.toBeNull();
   });
 
   it("exposes the theme to descendants via useTheme", () => {
