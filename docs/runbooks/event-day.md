@@ -127,6 +127,16 @@ screen now** lists the named screens; pick another finished layout for
 one. **Preview shows** picks which screen the preview follows. Build or
 edit layouts beforehand in the **Layouts** tab, not during the show.
 
+**Text looks too small (or too big) on one TV.** On the **Screens**
+tab, move that screen's **Text size on this TV** slider; the TV changes
+when you let go. To change one part of a layout instead, select it in the
+**Layouts** tab and use its **Text size** (copy a built-in layout first).
+
+**A TV shows "Reconnecting…" in the corner.** It has lost the laptop:
+the network dropped, or NodeCG is restarting. It reconnects by itself;
+after a minute or more away it also reloads. If it stays, check the
+network, then see "NodeCG isn't answering" below.
+
 **A screen shows the built-in layout instead of the one chosen for it.**
 The chosen layout was deleted or can't be shown. The screen falls back
 rather than going blank; choose a layout for it again on the **Screens** tab.

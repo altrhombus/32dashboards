@@ -775,7 +775,8 @@ function BlockInspector(props: {
   const variants = Object.keys(entry.variants);
   const variant = block.variant ?? variants[0]!;
   const px = edit.blockPixels(props.layout, block);
-  const textScale = contentScale(entry.variants[variant], px);
+  const textSize = block.textSize ?? 1;
+  const textScale = Math.round(contentScale(entry.variants[variant], px) * textSize * 100) / 100;
   const fields = edit.settingFields(entry.settings);
   const set = (key: string, value: unknown) =>
     props.onChange((l) => edit.updateBlock(l, block.id, { settings: { ...block.settings, [key]: value } }));
@@ -788,6 +789,35 @@ function BlockInspector(props: {
         {px.width} × {px.height} px on the TV
         {textScale !== 1 && <span className="muted">, text at {Math.round(textScale * 100)}%</span>}
       </p>
+      <label className="field">
+        <span>
+          Text size: {Math.round(textSize * 100)}%
+          {textSize !== 1 && !props.readOnly && (
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => props.onChange((l) => edit.updateBlock(l, block.id, { textSize: undefined }))}
+            >
+              Reset
+            </button>
+          )}
+        </span>
+        <input
+          type="range"
+          min={50}
+          max={200}
+          step={5}
+          value={Math.round(textSize * 100)}
+          disabled={props.readOnly}
+          onChange={(e) => {
+            const next = Number(e.target.value) / 100;
+            props.onChange((l) => edit.updateBlock(l, block.id, { textSize: next === 1 ? undefined : next }));
+          }}
+        />
+        <span className="muted">
+          Bigger or smaller text in this block. To change a whole TV, use Text size on the Screens tab.
+        </span>
+      </label>
       {variants.length > 1 && (
         <label className="field">
           <span>Style</span>

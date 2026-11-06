@@ -14,6 +14,8 @@ export const SlotSchema = z.object({
   variant: z.string().optional(),
   /** Static, per-slot options passed to the component's data selector. */
   options: z.record(z.string(), z.unknown()).default({}),
+  /** Multiplies the content scale a renderer works out for the slot, e.g. 1.25 for bigger text. */
+  scale: z.number().positive().optional(),
 });
 export type Slot = z.infer<typeof SlotSchema>;
 

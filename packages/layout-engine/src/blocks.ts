@@ -23,6 +23,8 @@ export const BlockSchema = z.object({
   /** One of the component's variants; its first when omitted. */
   variant: z.string().optional(),
   settings,
+  /** Bigger or smaller text than the block's size alone gives, e.g. 1.25. Omitted: 1. */
+  textSize: z.number().min(0.5).max(2.5).optional(),
   x: z
     .number()
     .int()
@@ -97,7 +99,10 @@ export function compileBlocks(input: BlockLayoutInput, meta: { id: string; name:
       padding: `${layout.padding}px`,
     },
     slots: Object.fromEntries(
-      layout.blocks.map((b) => [b.id, { component: b.component, variant: b.variant, options: b.settings }]),
+      layout.blocks.map((b) => [
+        b.id,
+        { component: b.component, variant: b.variant, options: b.settings, scale: b.textSize },
+      ]),
     ),
     overlays: layout.overlays.map((o) => ({ component: o.component, options: o.settings })),
   });

@@ -182,6 +182,7 @@ function ScreenCard(props: {
         </span>
       </div>
       <OpenOnTv screenId={screen.id} />
+      <TextSize screen={screen} onSave={(textSize) => save({ ...screen, textSize }, "Text size saved.")} />
       <div className="views">
         {SCREEN_VIEWS.map((view) => (
           <label key={view} className="field">
@@ -201,6 +202,46 @@ function ScreenCard(props: {
         />
       </div>
     </div>
+  );
+}
+
+/**
+ * Bigger or smaller text on every block of one TV, for a small or far-away
+ * screen. Saved when the slider is let go, and shown on that TV right away.
+ */
+function TextSize({ screen, onSave }: { screen: Screen; onSave: (textSize: number | undefined) => void }) {
+  const saved = Math.round((screen.textSize ?? 1) * 100);
+  const [percent, setPercent] = useState(saved);
+  useEffect(() => setPercent(saved), [saved]);
+  const commit = () => {
+    if (percent !== saved) onSave(percent === 100 ? undefined : percent / 100);
+  };
+  return (
+    <label className="field">
+      <span>
+        Text size on this TV: {percent}%
+        {saved !== 100 && (
+          <button type="button" className="link-button" onClick={() => onSave(undefined)}>
+            Reset
+          </button>
+        )}
+      </span>
+      <input
+        type="range"
+        min={70}
+        max={160}
+        step={5}
+        value={percent}
+        onChange={(e) => setPercent(Number(e.target.value))}
+        onPointerUp={commit}
+        onKeyUp={commit}
+        onBlur={commit}
+      />
+      <span className="muted">
+        Makes the words and numbers in every part of this TV bigger or smaller, for a small screen or one far from the
+        room. Watch the TV as you let go.
+      </span>
+    </label>
   );
 }
 

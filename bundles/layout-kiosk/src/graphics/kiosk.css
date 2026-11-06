@@ -298,3 +298,40 @@ body,
     }
   }
 }
+
+/* Lost the server: small enough not to distract the room, plain enough for a volunteer to spot. */
+.kiosk-offline {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1000;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(10, 12, 20, 0.82);
+  color: #f4f6ff;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.kiosk-offline__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #eba552;
+  animation: kiosk-offline-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes kiosk-offline-pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-offline__dot {
+    animation: none;
+  }
+}
