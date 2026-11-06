@@ -18,6 +18,7 @@
 
 .incentive-tracker__amounts {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--color-accent);
 }
 

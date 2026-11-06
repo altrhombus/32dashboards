@@ -32,6 +32,7 @@
 
 .incentive-celebration-overlay__amount {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--color-accent);
   font-size: 1.25rem;
 }

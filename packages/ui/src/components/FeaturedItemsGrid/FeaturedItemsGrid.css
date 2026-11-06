@@ -63,6 +63,7 @@
 .featured-items-grid__price {
   color: var(--color-accent);
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .featured-items-grid__bids {

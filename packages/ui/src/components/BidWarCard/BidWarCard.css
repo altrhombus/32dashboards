@@ -45,6 +45,7 @@
 
 .bid-war-card__option-total {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   min-width: 6ch;
   text-align: right;
 }

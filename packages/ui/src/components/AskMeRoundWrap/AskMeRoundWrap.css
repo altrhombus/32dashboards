@@ -40,6 +40,7 @@
 
 .askme-wrap__amount {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   font-size: 3.2em;
   line-height: 1.05;
