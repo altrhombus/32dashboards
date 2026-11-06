@@ -15,7 +15,17 @@ describe("RecentDonations", () => {
       <RecentDonations
         moments={[
           { ...base, kind: "total-increase", id: "b", delta: 25, total: 0 },
-          { ...base, kind: "new-bid", id: "a", itemId: "1", itemTitle: "Cookies", amount: 45, bidCount: 4, newBids: 3 },
+          {
+            ...base,
+            kind: "new-bid",
+            id: "a",
+            itemId: "1",
+            itemTitle: "Cookies",
+            amount: 45,
+            bidCount: 4,
+            newBids: 3,
+            purchase: false,
+          },
         ]}
       />,
     );

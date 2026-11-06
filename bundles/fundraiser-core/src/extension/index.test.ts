@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FundraiserEvent, LiveStateReplicant, RegisteredSourcesReplicant } from "@32dashboards/schema/core";
 import { createFakeNodecg } from "@32dashboards/nodecg-testing";
+import { DONATION_GRACE_MS } from "./donations.js";
 import fundraiserCore from "./index.js";
 
 function setup() {
@@ -216,30 +217,60 @@ describe("fundraiser-core extension", () => {
     await expect(fake.send("deleteEvent", { eventId })).rejects.toThrow(/on screen/);
   });
 
-  it("sends donation moments for the active event, but not for a baseline", async () => {
-    const { fake, api } = setup();
-    const eventId = await createActiveEvent(fake);
-    const source = api.registerSource("fake", { label: "Fake" });
-    const item = { id: "a", title: "Guitar", currentBid: 50, bidCount: 1 };
+  it("sends donation moments for the active event, thanking only money the bids don't explain", async () => {
+    vi.useFakeTimers();
+    try {
+      const { fake, api } = setup();
+      const eventId = await createActiveEvent(fake);
+      const source = api.registerSource("fake", { label: "Fake" });
+      const item = { id: "a", title: "Guitar", currentBid: 50, bidCount: 1 };
+      const sent = () =>
+        fake.world.sent.map((m) => [(m.data as { kind: string }).kind, (m.data as { delta?: number }).delta]);
 
-    source.report({ eventId, total: 100, items: [item], observedAt: "2026-10-10T12:00:00.000Z" });
-    expect(fake.world.sent).toEqual([]);
+      source.report({ eventId, total: 100, items: [item], observedAt: "2026-10-10T12:00:00.000Z" });
+      expect(fake.world.sent).toEqual([]);
 
-    source.report({
-      eventId,
-      total: 175,
-      items: [{ ...item, currentBid: 75, bidCount: 2 }],
-      observedAt: "2026-10-10T12:00:10.000Z",
-    });
-    const sent = fake.world.sent.map((m) => [m.messageName, (m.data as { kind: string }).kind]);
-    expect(sent).toEqual([
-      ["donationMoment", "total-increase"],
-      ["donationMoment", "new-bid"],
-    ]);
-    expect(fake.replicant<unknown[]>("moments").value).toHaveLength(2);
+      // The total rose 75; the guitar's new bid explains 25 of it.
+      source.report({
+        eventId,
+        total: 175,
+        items: [{ ...item, currentBid: 75, bidCount: 2 }],
+        observedAt: "2026-10-10T12:00:10.000Z",
+      });
+      expect(sent()).toEqual([["new-bid", undefined]]);
 
-    await fake.send("activateEvent", { eventId: null });
-    expect(fake.replicant<unknown[]>("moments").value).toEqual([]);
+      // The other 50 is thanked once no bid has explained it for a while.
+      await vi.advanceTimersByTimeAsync(DONATION_GRACE_MS + 100);
+      expect(sent()).toEqual([
+        ["new-bid", undefined],
+        ["total-increase", 50],
+      ]);
+      expect(fake.replicant<unknown[]>("moments").value).toHaveLength(2);
+
+      await fake.send("activateEvent", { eventId: null });
+      expect(fake.replicant<unknown[]>("moments").value).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("doesn't thank a total that rose a refresh before its bid showed", async () => {
+    vi.useFakeTimers();
+    try {
+      const { fake, api } = setup();
+      const eventId = await createActiveEvent(fake);
+      const source = api.registerSource("fake", { label: "Fake" });
+      const cookies = { id: "c", title: "Cookies", currentBid: 30, bidCount: 0 };
+      const at = (s: number) => new Date(Date.UTC(2026, 10, 7, 20, 0, s)).toISOString();
+      source.report({ eventId, total: 100, items: [cookies], observedAt: at(0) });
+      source.report({ eventId, total: 130, items: [cookies], observedAt: at(10) });
+      await vi.advanceTimersByTimeAsync(10_000);
+      source.report({ eventId, total: 130, items: [{ ...cookies, bidCount: 1 }], observedAt: at(20) });
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(fake.world.sent.map((m) => (m.data as { kind: string }).kind)).toEqual(["new-bid"]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("routes refreshSource to the event's adapter", async () => {

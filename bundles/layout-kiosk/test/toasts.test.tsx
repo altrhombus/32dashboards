@@ -1,7 +1,7 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DonationMoment } from "@32dashboards/schema/core";
-import { MAX_TOASTS, TOAST_BUSY_MS, TOAST_GAP_MS, TOAST_MS, useDonationMoments } from "../src/useShow.js";
+import { FEED_GAP_MS, MAX_TOASTS, TOAST_BUSY_MS, TOAST_GAP_MS, TOAST_MS, useDonationMoments } from "../src/useShow.js";
 
 const EVENT = "00000000-0000-4000-8000-000000000001";
 let listener: ((moment: DonationMoment) => void) | null = null;
@@ -15,6 +15,7 @@ const bid = (n: number): DonationMoment => ({
   amount: 10 * n,
   bidCount: 1,
   newBids: 1,
+  purchase: false,
 });
 
 describe("toasts", () => {
@@ -80,5 +81,19 @@ describe("toasts", () => {
   it("starts the latest bids from earlier moments, newest first", () => {
     const { result } = renderHook(() => useDonationMoments(EVENT, () => {}, { history: [bid(1), bid(2)] }));
     expect(result.current.recent.map((m) => m.id)).toEqual([bid(2).id, bid(1).id]);
+  });
+
+  it("adds bids that came in together to the latest bids one at a time", () => {
+    const { result } = renderHook(() => useDonationMoments(EVENT, () => {}));
+    act(() => {
+      listener!(bid(1));
+      listener!(bid(2));
+      listener!(bid(3));
+    });
+    expect(result.current.recent.map((m) => m.id)).toEqual([bid(1).id]);
+    act(() => vi.advanceTimersByTime(FEED_GAP_MS));
+    expect(result.current.recent.map((m) => m.id)).toEqual([bid(2).id, bid(1).id]);
+    act(() => vi.advanceTimersByTime(FEED_GAP_MS));
+    expect(result.current.recent.map((m) => m.id)).toEqual([bid(3).id, bid(2).id, bid(1).id]);
   });
 });

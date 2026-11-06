@@ -94,7 +94,7 @@ function Segment({ content, total, recent }: { content: SegmentContent; total: n
       return (
         <div className="kiosk-info-bar__logo">
           {content.title && <span className="kiosk-info-bar__logo-title clamp-1">{content.title}</span>}
-          <SponsorCarousel sponsors={[content.sponsor]} />
+          <SponsorCarousel sponsors={[content.sponsor]} background={content.background} />
         </div>
       );
   }
@@ -236,7 +236,12 @@ export const kioskRegistry: Registry<KioskData> = {
 
   sponsors: defineComponent<
     KioskData,
-    { sponsors: NonNullable<KioskData["live"]["event"]>["sponsors"]; title?: unknown; intervalMs: number }
+    {
+      sponsors: NonNullable<KioskData["live"]["event"]>["sponsors"];
+      title?: unknown;
+      intervalMs: number;
+      background: string;
+    }
   >({
     variants: ["carousel"],
     select: ({ live }, { options }) =>
@@ -247,11 +252,13 @@ export const kioskRegistry: Registry<KioskData> = {
             title: options.title === SPONSORS_TITLE ? live.event.sponsorsTitle : options.title,
             // Events stored before this setting existed have none until the server upgrades them.
             intervalMs: (live.event.sponsorsSeconds || 6) * 1000,
+            // The card sits on the lower part of the background, which Auto judges logos against.
+            background: live.event.theme.backgroundTo,
           }
         : null,
-    component: ({ sponsors, title, intervalMs }) => (
+    component: ({ sponsors, title, intervalMs, background }) => (
       <Card title={title}>
-        <SponsorCarousel sponsors={sponsors} intervalMs={intervalMs} />
+        <SponsorCarousel sponsors={sponsors} intervalMs={intervalMs} background={background} />
       </Card>
     ),
   }),

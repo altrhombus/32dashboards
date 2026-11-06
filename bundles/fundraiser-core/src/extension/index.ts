@@ -28,6 +28,7 @@ import { CommandError, formatZodError, listenForCommand } from "@32dashboards/so
 import type { FundraiserCoreApi } from "./api.js";
 import { importAsset } from "./importAsset.js";
 import { lanAddresses } from "./network.js";
+import { DonationLedger } from "./donations.js";
 import * as core from "./state.js";
 
 export type { FundraiserCoreApi, ReportOutcome, SourceHandle } from "./api.js";
@@ -82,6 +83,35 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
     if (found.length === 0) return;
     moments.value = [...plain(moments.value ?? []), ...found].slice(-MOMENTS_LIMIT);
     for (const moment of found) nodecg.sendMessage("donationMoment", moment);
+  };
+
+  // Money the bids don't explain is thanked as a donation, once it's clear it isn't a bid that
+  // the auction's total showed a refresh before the item did (see donations.ts).
+  const donations = new DonationLedger();
+  const donationTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  const thankDonations = (eventId: string) => {
+    const amount = donations.due(eventId, Date.now());
+    const state = read();
+    if (amount >= 1 && state.activeEventId === eventId) {
+      recordMoments([
+        {
+          kind: "total-increase",
+          id: deps.newId(),
+          eventId,
+          at: deps.now(),
+          delta: amount,
+          total: core.computeLiveState(state).total,
+        },
+      ]);
+    }
+    // Check back when the next one could be due, even if no new result arrives by then.
+    clearTimeout(donationTimers.get(eventId));
+    const next = donations.nextDue(eventId);
+    if (next !== null)
+      donationTimers.set(
+        eventId,
+        setTimeout(() => thankDonations(eventId), Math.max(0, next - Date.now()) + 50).unref(),
+      );
   };
 
   const read = (): core.CoreState => ({
@@ -383,13 +413,17 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
             return outcome;
           }
           const event = state.events.find((e) => e.id === parsed.data.eventId);
-          const found =
+          const compared =
             event && state.activeEventId === event.id
-              ? core.detectMoments(before.sourceResults[event.id], parsed.data, event, deps)
-              : [];
+              ? core.compareResults(before.sourceResults[event.id], parsed.data, event, deps)
+              : null;
           write(before, state);
           updateSource(sourceId, { lastResultAt: deps.now() });
-          recordMoments(found);
+          if (compared && event) {
+            recordMoments(compared.bids);
+            donations.observe(event.id, compared.totalDelta, compared.fromBids, Date.now());
+            thankDonations(event.id);
+          }
           return outcome;
         },
         setStatus({ state, message = null, eventId = null }) {

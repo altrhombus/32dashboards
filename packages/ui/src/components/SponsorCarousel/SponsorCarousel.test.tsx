@@ -7,6 +7,7 @@ const sponsor = (n: number, logoUrl: string | null = null) => ({
   name: `Sponsor ${n}`,
   logoUrl,
   sortOrder: n,
+  backdrop: "auto" as const,
 });
 
 describe("SponsorCarousel", () => {
@@ -33,5 +34,13 @@ describe("SponsorCarousel", () => {
       container.querySelector("img")!.dispatchEvent(new Event("error"));
     });
     expect(container.textContent).toBe("Sponsor 1");
+  });
+
+  it("draws each backdrop it's asked for", () => {
+    const one = (backdrop: "outline" | "mono" | "none") =>
+      render(<SponsorCarousel sponsors={[{ ...sponsor(1, "/logo.png"), backdrop }]} />).container;
+    expect(one("outline").querySelector(".sponsor-carousel__logo--outline")).not.toBeNull();
+    expect(one("mono").querySelector(".sponsor-carousel__mono")?.getAttribute("aria-label")).toBe("Sponsor 1");
+    expect(one("none").querySelector("img.sponsor-carousel__logo")).not.toBeNull();
   });
 });

@@ -23,7 +23,7 @@ export type SegmentContent =
   | { kind: "prize"; prize: Prize }
   | { kind: "callToAction"; text: string }
   | { kind: "announcement"; text: string }
-  | { kind: "sponsor"; sponsor: Sponsor; title: string }
+  | { kind: "sponsor"; sponsor: Sponsor; title: string; background: string }
   | { kind: "recent" };
 
 export type Segment = InfoBarSegment & { content: SegmentContent };
@@ -74,7 +74,13 @@ export function buildSegments(live: LiveStateReplicant): SegmentPlan {
         break;
       case "sponsors":
         for (const sponsor of event.sponsors)
-          add(`sponsor:${sponsor.id}`, { kind: "sponsor", sponsor, title: event.sponsorsTitle });
+          add(`sponsor:${sponsor.id}`, {
+            kind: "sponsor",
+            sponsor,
+            title: event.sponsorsTitle,
+            // The info bar sits on the upper end of the background's tone; Auto judges logos against it.
+            background: event.theme.backgroundFrom,
+          });
         break;
     }
   }

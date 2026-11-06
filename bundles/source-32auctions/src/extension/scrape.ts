@@ -51,6 +51,8 @@ export function normalizeCards(cards: { card: ScrapedCard; pageUrl: string }[]) 
       value: parseMoney(card.value),
       bidCount: parseCount(card.bids),
       remaining: card.remaining,
+      // A Buy Now item's "remaining" is how many are left to buy (an auction item's is time left).
+      available: /^\s*buy now/i.test(card.price ?? "") ? parseCount(card.remaining) : null,
     };
   });
 }

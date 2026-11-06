@@ -51,7 +51,8 @@
           "jpeg",
           "webp",
           "svg",
-          "gif"
+          "gif",
+          "avif"
         ]
       },
       {
@@ -63,7 +64,8 @@
           "jpeg",
           "webp",
           "svg",
-          "gif"
+          "gif",
+          "avif"
         ]
       }
     ]

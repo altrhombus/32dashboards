@@ -18,6 +18,7 @@ const TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/webp": "webp",
   "image/gif": "gif",
+  "image/avif": "avif",
 };
 
 /** A file name from a label: "Riverside Animal Shelter" -> "riverside-animal-shelter". */

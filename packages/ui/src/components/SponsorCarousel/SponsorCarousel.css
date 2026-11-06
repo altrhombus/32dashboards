@@ -7,6 +7,8 @@
 .sponsor-carousel__slide {
   position: absolute;
   inset: 0;
+  /* Container units let a plate hug its logo's shape at any size. */
+  container-type: size;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -27,6 +29,38 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+/* A soft card in the theme's text color (which always contrasts with the background), shaped to the logo. */
+.sponsor-carousel__plate {
+  --pad: clamp(6px, 6cqh, 16px);
+  display: flex;
+  box-sizing: border-box;
+  width: min(100cqw, calc((100cqh - 2 * var(--pad)) * var(--logo-ratio) + 2 * var(--pad)));
+  height: min(100cqh, calc((100cqw - 2 * var(--pad)) / var(--logo-ratio) + 2 * var(--pad)));
+  padding: var(--pad);
+  border-radius: clamp(6px, 10cqh, 18px);
+  background: color-mix(in srgb, var(--color-text) 94%, transparent);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.22);
+}
+
+/* A thin halo in the theme's text color, traced around the logo's shapes. */
+.sponsor-carousel__logo--outline {
+  filter: drop-shadow(0 0 1px var(--color-text)) drop-shadow(0 0 1px var(--color-text))
+    drop-shadow(0 0 6px color-mix(in srgb, var(--color-text) 45%, transparent));
+}
+
+/* The logo's shape, filled with the theme's text color (for see-through logos). */
+.sponsor-carousel__mono {
+  width: 100%;
+  height: 100%;
+  background: var(--color-text);
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
 }
 
 .sponsor-carousel__name {

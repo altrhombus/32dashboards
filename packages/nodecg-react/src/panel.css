@@ -180,12 +180,72 @@ details.section > summary {
   text-transform: uppercase;
 }
 
-.logo-thumb {
-  width: 56px;
-  height: 36px;
-  object-fit: contain;
-  border-radius: 4px;
-  background: #fff;
+/* A logo as the TV draws it (backdrop included), small, on the event's own colors. */
+.logo-preview {
+  flex: none;
+  display: inline-block;
+  box-sizing: border-box;
+  width: 104px;
+  height: 52px;
+  padding: 5px;
+  border-radius: 6px;
+}
+
+.logo-preview .sponsor-carousel {
+  height: 100%;
+  min-height: 0;
+}
+
+/* One logo in the editor: preview, name and order on top; file and backdrop beneath. */
+.logo-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: 6px 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.logo-row .logo-preview {
+  grid-row: 1 / 3;
+}
+
+.logo-row__name {
+  min-width: 0;
+}
+
+.logo-row__order {
+  display: flex;
+  gap: 6px;
+}
+
+.logo-row__details {
+  grid-column: 2 / 4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.logo-row__details select {
+  max-width: 100%;
+}
+
+@media (max-width: 520px) {
+  .logo-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .logo-row__order,
+  .logo-row__details {
+    grid-column: 1 / 3;
+  }
+
+  .logo-row .logo-preview {
+    grid-row: auto;
+  }
 }
 
 .list-row {

@@ -285,7 +285,7 @@ describe("computeLiveState", () => {
   });
 });
 
-describe("detectMoments", () => {
+describe("compareResults", () => {
   const deps = makeDeps();
   const { state: base, eventId } = withEvent();
   const event = core.setFilters(base, eventId, ["raffle"], deps).events[0]!;
@@ -295,70 +295,73 @@ describe("detectMoments", () => {
     currentBid,
     bidCount,
   });
+  const at = (total: number, items: SourceItem[]) => ({ ...result(eventId, total), items });
 
   it("yields nothing for the first result", () => {
-    expect(core.detectMoments(undefined, result(eventId, 100), event, deps)).toEqual([]);
+    expect(core.compareResults(undefined, result(eventId, 100), event, deps)).toEqual({
+      bids: [],
+      totalDelta: 0,
+      fromBids: 0,
+    });
   });
 
-  it("reports total increases (with the adjusted total) but not decreases", () => {
-    const withAdjustment = { ...event, adjustment: 50 };
-    const [moment] = core.detectMoments(result(eventId, 100), result(eventId, 125.5), withAdjustment, deps);
-    expect(moment).toMatchObject({ kind: "total-increase", delta: 25.5, total: 175.5 });
-    expect(core.detectMoments(result(eventId, 100), result(eventId, 90), event, deps)).toEqual([]);
+  it("reports the total's change, up or down", () => {
+    expect(core.compareResults(result(eventId, 100), result(eventId, 125.5), event, deps).totalDelta).toBe(25.5);
+    expect(core.compareResults(result(eventId, 100), result(eventId, 90), event, deps).totalDelta).toBe(-10);
   });
 
-  it("reports more bids or a higher bid on visible items only", () => {
-    const previous = {
-      ...result(eventId, 100),
-      items: [
-        bid("a", "Guitar", 50, 1),
-        bid("b", "Raffle", 5, 1),
-        bid("c", "Wine", 20, 2),
-        bid("d", "Hat", null, null),
-      ],
-    };
-    const next = {
-      ...result(eventId, 100),
-      items: [
-        bid("a", "Guitar", 60, 2),
-        bid("b", "Raffle", 10, 2),
-        bid("c", "Wine", 20, 2),
-        bid("d", "Hat", 5, 1),
-        bid("e", "New item", 99, 9),
-      ],
-    };
-    const moments = core.detectMoments(previous, next, event, deps);
-    expect(moments).toEqual([
+  it("celebrates more bids or a higher bid on visible items only", () => {
+    const previous = at(100, [
+      bid("a", "Guitar", 50, 1),
+      bid("b", "Raffle", 5, 1),
+      bid("c", "Wine", 20, 2),
+      bid("d", "Hat", null, null),
+    ]);
+    const next = at(100, [
+      bid("a", "Guitar", 60, 2),
+      bid("b", "Raffle", 10, 2),
+      bid("c", "Wine", 20, 2),
+      bid("d", "Hat", 5, 1),
+      bid("e", "New item", 99, 9),
+    ]);
+    const { bids } = core.compareResults(previous, next, event, deps);
+    expect(bids).toEqual([
       expect.objectContaining({ kind: "new-bid", itemId: "a", amount: 60, bidCount: 2, newBids: 1 }),
     ]);
   });
 
-  it("celebrates a bid once: the total's rise from bids isn't also thanked", () => {
-    const previous = { ...result(eventId, 100), items: [bid("a", "Cookies", 50, 1), bid("b", "Raffle", 5, 1)] };
-    // Cookies +30 over 3 bids, the hidden raffle +5, and a $20 donation.
-    const next = { ...result(eventId, 155), items: [bid("a", "Cookies", 80, 4), bid("b", "Raffle", 10, 2)] };
-    const moments = core.detectMoments(previous, next, { ...event, filters: ["raffle"] }, deps);
-    expect(moments).toEqual([
-      expect.objectContaining({ kind: "total-increase", delta: 20 }),
-      expect.objectContaining({ kind: "new-bid", itemId: "a", amount: 80, newBids: 3 }),
-    ]);
+  it("counts what bids added to the total, hidden items included", () => {
+    const previous = at(100, [bid("a", "Cookies", 50, 1), bid("b", "Raffle", 5, 1)]);
+    const next = at(155, [bid("a", "Cookies", 80, 4), bid("b", "Raffle", 10, 2)]);
+    expect(core.compareResults(previous, next, event, deps)).toMatchObject({ totalDelta: 55, fromBids: 35 });
+  });
 
-    // A first bid at the opening price (shown as the current bid before anyone bid) is a bid, not a donation.
-    const opening = { ...result(eventId, 100), items: [bid("a", "Apple pie", 50, 0)] };
-    const firstBid = { ...result(eventId, 150), items: [bid("a", "Apple pie", 50, 1)] };
-    expect(core.detectMoments(opening, firstBid, event, deps).map((m) => m.kind)).toEqual(["new-bid"]);
+  it("counts a first bid at the opening price, and each sale of an item with several to sell", () => {
+    // Before anyone bids, an item shows its opening price as its current bid.
+    expect(core.bidMoney(bid("a", "Pie", 50, 0), bid("a", "Pie", 50, 1))).toBe(50);
+    expect(core.bidMoney(bid("a", "Pie", 50, 0), bid("a", "Pie", 60, 1))).toBe(60);
+    // Several to sell at a fixed price: each new "bid" adds the price.
+    expect(core.bidMoney(bid("a", "Pie", 30, 1), bid("a", "Pie", 30, 3))).toBe(60);
+    // Outbid: the new high bid replaces the old one in the total.
+    expect(core.bidMoney(bid("a", "Pie", 30, 1), bid("a", "Pie", 45, 2))).toBe(15);
+    expect(core.bidMoney(undefined, bid("a", "Pie", 30, 0))).toBe(0);
+  });
 
-    const bidOnly = { ...next, total: 135 };
-    expect(core.detectMoments(previous, bidOnly, { ...event, filters: ["raffle"] }, deps).map((m) => m.kind)).toEqual([
-      "new-bid",
-    ]);
+  it("counts Buy Now purchases as bids: each one bought adds its price", () => {
+    const tea = { ...bid("t", "Garden tour", 100, null), available: 11 };
+    const { bids, fromBids } = core.compareResults(at(100, [tea]), at(300, [{ ...tea, available: 9 }]), event, deps);
+    expect(fromBids).toBe(200);
+    expect(bids).toEqual([expect.objectContaining({ itemId: "t", amount: 100, newBids: 2, purchase: true })]);
   });
 
   it("caps new-bid moments per result", () => {
     const items = Array.from({ length: 20 }, (_, i) => bid(String(i), `Item ${i}`, 10, 1));
-    const previous = { ...result(eventId, 100), items };
-    const next = { ...result(eventId, 100), items: items.map((i) => ({ ...i, bidCount: 2 })) };
-    expect(core.detectMoments(previous, next, event, deps)).toHaveLength(core.MAX_BID_MOMENTS_PER_RESULT);
+    const previous = at(100, items);
+    const next = at(
+      100,
+      items.map((i) => ({ ...i, bidCount: 2 })),
+    );
+    expect(core.compareResults(previous, next, event, deps).bids).toHaveLength(core.MAX_BID_MOMENTS_PER_RESULT);
   });
 });
 

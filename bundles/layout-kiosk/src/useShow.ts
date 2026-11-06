@@ -17,6 +17,11 @@ export const MAX_TOASTS = 3;
 export const TOAST_GAP_MS = 1_000;
 /** Toasts waiting beyond this are dropped, oldest first: a backlog would only show stale bids. */
 export const MAX_WAITING_TOASTS = 12;
+/** Bids that arrive together join the latest-bids list this far apart... */
+export const FEED_GAP_MS = 1_000;
+/** ...or this far apart while more than FEED_RUSH are waiting, so a busy refresh is done before the next. */
+export const FEED_RUSH_GAP_MS = 400;
+const FEED_RUSH = 4;
 /** How many of the latest bids and donations are kept for the info bar (more than fit). */
 export const MAX_RECENT = 12;
 
@@ -141,6 +146,24 @@ export function useDonationMoments(
     let lastShownAt = 0;
     let pumpQueued = false;
 
+    // Bids that came in together join the latest-bids list one at a time, so a busy refresh reads
+    // as a stream rather than the whole row changing at once.
+    let feedQueue: ToastMoment[] = [];
+    let feeding = false;
+    const feed = () => {
+      if (feeding || feedQueue.length === 0) return;
+      const moment = feedQueue.shift()!;
+      // "How long ago" goes by this screen's clock for what arrives live, so a TV computer whose
+      // clock is a little off still says "just now" for a bid that just came in.
+      setRecent((current) => mergeRecent([{ ...moment, at: new Date().toISOString() }], current));
+      // A pause after each, even if nothing's waiting yet: the rest of a refresh's bids arrive just after.
+      feeding = true;
+      later(feedQueue.length > FEED_RUSH ? FEED_RUSH_GAP_MS : FEED_GAP_MS, () => {
+        feeding = false;
+        feed();
+      });
+    };
+
     // Moves the next waiting toast on screen when there's room, one at a time.
     const pump = () => {
       // While the info bar lists the latest bids, toasts would repeat it: let them go.
@@ -178,9 +201,8 @@ export function useDonationMoments(
         later(ROUND_WRAP_MS, () => setRoundWrap((current) => (current?.id === moment.id ? null : current)));
         return;
       }
-      // "How long ago" goes by this screen's clock for what arrives live, so a TV computer whose
-      // clock is a little off still says "just now" for a bid that just came in.
-      setRecent((current) => mergeRecent([{ ...moment, at: new Date().toISOString() }], current));
+      feedQueue = [...feedQueue, moment].slice(-MAX_RECENT);
+      feed();
       waiting.current = [...waiting.current, moment].slice(-MAX_WAITING_TOASTS);
       pump();
     };

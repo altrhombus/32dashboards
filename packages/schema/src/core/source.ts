@@ -11,6 +11,11 @@ export const SourceItemSchema = z.object({
   bidCount: z.number().int().nonnegative().nullable().default(null),
   /** Free-form time left as the platform shows it (e.g. "2 days"). */
   remaining: z.string().nullable().default(null),
+  /**
+   * For a fixed-price item with several to buy ("Buy Now"), how many are
+   * left; each one bought adds its price to the total. Null for auction items.
+   */
+  available: z.number().int().nonnegative().nullable().optional(),
 });
 export type SourceItem = z.infer<typeof SourceItemSchema>;
 
