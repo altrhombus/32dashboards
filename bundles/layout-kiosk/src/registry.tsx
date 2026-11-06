@@ -233,7 +233,7 @@ export const kioskRegistry: Registry<KioskData> = {
 
   sponsors: defineComponent<
     KioskData,
-    { sponsors: NonNullable<KioskData["live"]["event"]>["sponsors"]; title?: unknown }
+    { sponsors: NonNullable<KioskData["live"]["event"]>["sponsors"]; title?: unknown; intervalMs: number }
   >({
     variants: ["carousel"],
     select: ({ live }, { options }) =>
@@ -242,11 +242,13 @@ export const kioskRegistry: Registry<KioskData> = {
             sponsors: [...live.event.sponsors].sort((a, b) => a.sortOrder - b.sortOrder),
             // A layout's own heading wins; left at the default, the block uses the event's.
             title: options.title === SPONSORS_TITLE ? live.event.sponsorsTitle : options.title,
+            // Events stored before this setting existed have none until the server upgrades them.
+            intervalMs: (live.event.sponsorsSeconds || 6) * 1000,
           }
         : null,
-    component: ({ sponsors, title }) => (
+    component: ({ sponsors, title, intervalMs }) => (
       <Card title={title}>
-        <SponsorCarousel sponsors={sponsors} />
+        <SponsorCarousel sponsors={sponsors} intervalMs={intervalMs} />
       </Card>
     ),
   }),

@@ -41,6 +41,7 @@ export const UpdateEventMessageSchema = z
       askMeInTotal: true,
       celebrateAtClose: true,
       sponsorsTitle: true,
+      sponsorsSeconds: true,
     })
       .extend({
         theme: EventThemeSchema.partial(),

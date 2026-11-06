@@ -450,12 +450,17 @@ function nameFromFile(file: string): string {
  */
 function Logos({ event, run }: { event: FundraiserEvent; run: Run }) {
   const logoFiles = useAssets("sponsor-logos");
-  const [draft, setDraft, dirty] = useDraft({ title: event.sponsorsTitle, sponsors: event.sponsors });
+  const [draft, setDraft, dirty] = useDraft({
+    title: event.sponsorsTitle,
+    seconds: event.sponsorsSeconds,
+    sponsors: event.sponsors,
+  });
   const [uploading, setUploading] = useState(false);
   const { sponsors } = draft;
   const setSponsors = (next: typeof sponsors) => setDraft({ ...draft, sponsors: next });
   const patchFor = (d: typeof draft) => ({
     sponsorsTitle: d.title.trim(),
+    sponsorsSeconds: Math.min(60, Math.max(2, Math.round(d.seconds) || 6)),
     sponsors: d.sponsors.map((s, i) => ({ ...s, name: s.name.trim() || "Logo", sortOrder: i })),
   });
 
@@ -497,6 +502,20 @@ function Logos({ event, run }: { event: FundraiserEvent; run: Run }) {
             <option key={h} value={h} />
           ))}
         </datalist>
+      </label>
+      <label className="row">
+        Seconds per logo
+        <input
+          inputMode="numeric"
+          style={{ width: 60 }}
+          aria-label="Seconds per logo"
+          value={draft.seconds}
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            if (Number.isInteger(n)) setDraft({ ...draft, seconds: n });
+          }}
+        />
+        <span className="muted">on the Main screen (2–60). In the info bar, set Logos under Info bar rotation.</span>
       </label>
       <label className="field">
         <span>Add logos (PNG, JPG or SVG; pick several at once)</span>
