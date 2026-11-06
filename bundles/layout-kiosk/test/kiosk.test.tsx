@@ -7,7 +7,7 @@ import type { KioskData } from "../src/data.js";
 import { kioskCatalog } from "../src/catalog.js";
 import { builtInLayouts, templates } from "../src/layouts.js";
 import { checkLayout } from "../src/library.js";
-import { kioskRegistry } from "../src/registry.js";
+import { kioskRegistry, usesSpotlight } from "../src/registry.js";
 import { sampleLive } from "../src/samples.js";
 import { buildSegments, selectFeaturedItems, selectNoBidItems } from "../src/segments.js";
 
@@ -334,5 +334,82 @@ describe("milestones over a scene that shouldn't be covered", () => {
     expect(container.querySelector(".kiosk-banner")).not.toBeNull();
     expect(screen.getByText("5 minutes left")).toBeInTheDocument();
     expect(builtInLayouts[sceneId].blocks.overlays.map((o) => o.component)).not.toContain("milestoneSpotlight");
+  });
+});
+
+describe("how milestones are celebrated", () => {
+  const milestone = (label: string) => ({
+    kind: "milestone" as const,
+    id: id(40),
+    eventId: id(1),
+    at: NOW,
+    milestoneId: id(41),
+    amount: 5000,
+    label,
+  });
+  const goal = {
+    kind: "incentive-met" as const,
+    id: id(42),
+    eventId: id(1),
+    at: NOW,
+    incentiveId: id(43),
+    name: "New van",
+    target: 5000,
+  };
+  const lastCall = { kind: "last-call" as const, id: id(44), eventId: id(1), at: NOW, minutesLeft: 5 };
+  const withStyle = (milestoneStyle: NonNullable<LiveStateReplicant["event"]>["milestoneStyle"]) => {
+    const demo = sampleLive("demo");
+    return { ...demo, event: { ...demo.event!, milestoneStyle } };
+  };
+
+  it.each([
+    ["spotlight", "", true],
+    ["spotlight", "A new van", true],
+    ["infoBar", "", false],
+    ["infoBar", "A new van", false],
+    ["named", "", false],
+    ["named", "A new van", true],
+  ] as const)("%s, label %j: full screen is %s", (style, label, expected) => {
+    expect(usesSpotlight({ live: withStyle(style) }, milestone(label))).toBe(expected);
+  });
+
+  it("treats a goal as labeled, and always gives last calls the screen", () => {
+    expect(usesSpotlight({ live: withStyle("named") }, goal)).toBe(true);
+    expect(usesSpotlight({ live: withStyle("infoBar") }, goal)).toBe(false);
+    expect(usesSpotlight({ live: withStyle("infoBar") }, lastCall)).toBe(true);
+  });
+
+  it("never misses one: a layout without an info bar gets the full screen", () => {
+    expect(usesSpotlight({ live: withStyle("infoBar"), hasInfoBar: false }, milestone(""))).toBe(true);
+  });
+
+  const renderMain = (live: LiveStateReplicant, moment: ReturnType<typeof milestone>) =>
+    render(
+      <LayoutRenderer
+        layout={builtInLayouts.main.layout}
+        registry={kioskRegistry}
+        data={{
+          live,
+          scene: scene("main"),
+          infoBar: { type: "celebration", moment },
+          roundWrap: null,
+          recent: [],
+          toasts: [],
+          hasInfoBar: true,
+        }}
+        fit="none"
+      />,
+    ).container;
+
+  it("puts on the show in the bar when nothing covers the screen", () => {
+    const container = renderMain(withStyle("named"), milestone(""));
+    expect(container.querySelector(".kiosk-info-bar--starring")).not.toBeNull();
+    expect(container.querySelector(".milestone-spotlight")).toBeNull();
+  });
+
+  it("keeps the bar quiet under the full screen", () => {
+    const container = renderMain(withStyle("named"), milestone("A new van"));
+    expect(container.querySelector(".kiosk-info-bar--starring")).toBeNull();
+    expect(container.querySelector(".milestone-spotlight")).not.toBeNull();
   });
 });

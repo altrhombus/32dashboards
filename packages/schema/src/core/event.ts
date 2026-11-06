@@ -3,7 +3,14 @@ import { ThemeSchema } from "../theme.js";
 import { IncentiveSchema } from "../incentive.js";
 import { SponsorSchema } from "../sponsor.js";
 import { AskMeConfigSchema } from "../askme.js";
-import { BidWarSchema, InfoBarConfigSchema, MAX_MILESTONES, MilestoneSchema, PrizeSchema } from "./show.js";
+import {
+  BidWarSchema,
+  InfoBarConfigSchema,
+  MAX_MILESTONES,
+  MilestoneSchema,
+  MilestoneStyleSchema,
+  PrizeSchema,
+} from "./show.js";
 
 /** The logos' heading unless an event says otherwise. */
 export const SPONSORS_TITLE = "Thank you to our sponsors";
@@ -73,6 +80,7 @@ export const FundraiserEventSchema = z.object({
   /** How long each logo shows in a Logos block before the next (the info bar has its own timing). */
   sponsorsSeconds: z.number().int().min(2).max(60).default(6),
   milestones: z.array(MilestoneSchema).max(MAX_MILESTONES).default([]),
+  milestoneStyle: MilestoneStyleSchema.default("spotlight"),
   bidWars: z.array(BidWarSchema).max(20).default([]),
   prizes: z.array(PrizeSchema).max(50).default([]),
   /** One line telling viewers how to give, e.g. "Bid at 32auctions.com/spring-gala". */

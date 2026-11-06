@@ -17,7 +17,7 @@ import {
 import { SponsorCarousel, formatAmount, useLogoCheck, validateTheme } from "@32dashboards/ui";
 import "@32dashboards/nodecg-react/panel.css";
 import { AskMeRoundsEditor } from "./askMeRounds.js";
-import { AnnouncementsField, announcementsProblem } from "./fields.js";
+import { AnnouncementsField, MilestoneStyleField, announcementsProblem } from "./fields.js";
 import { send } from "./send.js";
 import { isoToLocalInput, localInputToIso } from "./setupPlan.js";
 
@@ -870,6 +870,7 @@ function ShowContent() {
           title={`Milestones (${event.milestones.length})`}
           hint="When the total passes one, the TVs celebrate for a few seconds. A label says what it pays for."
         >
+          <MilestoneStyleField value={event.milestoneStyle} onChange={(milestoneStyle) => save({ milestoneStyle })} />
           <ListEditor
             items={event.milestones}
             fields={[

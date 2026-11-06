@@ -33,6 +33,7 @@ export const UpdateEventMessageSchema = z
       incentives: true,
       sponsors: true,
       milestones: true,
+      milestoneStyle: true,
       bidWars: true,
       prizes: true,
       callToAction: true,

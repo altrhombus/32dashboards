@@ -102,12 +102,13 @@ function Segment({ content, total, recent }: { content: SegmentContent; total: n
   }
 }
 
-function InfoBar({ display, total, recent }: { display: InfoBarDisplay; total: number; recent: ToastMoment[] }) {
+function InfoBar(props: { display: InfoBarDisplay; total: number; recent: ToastMoment[]; starring: boolean }) {
+  const { display, total, recent, starring } = props;
   if (display.type === "empty") return <div className="kiosk-info-bar" />;
   if (display.type === "celebration") {
     const m = display.moment;
     return (
-      <div className="kiosk-info-bar kiosk-info-bar--celebrating">
+      <div className={`kiosk-info-bar kiosk-info-bar--celebrating${starring ? " kiosk-info-bar--starring" : ""}`}>
         {m.kind === "milestone" ? (
           <MilestoneCelebration heading="Milestone reached!" amount={m.amount} detail={m.label || undefined} />
         ) : m.kind === "incentive-met" ? (
@@ -131,6 +132,18 @@ function celebrationText(moment: CelebrationMoment, event: KioskData["live"]["ev
   return moment.kind === "milestone"
     ? { heading: "Milestone reached", amount: moment.amount, detail: moment.label || undefined }
     : { heading: "Goal met", amount: moment.target, detail: moment.name };
+}
+
+/**
+ * Whether a celebration takes over the screen, or plays in the info bar. Last
+ * calls always take the screen: everyone needs to see those. So does anything
+ * on a layout with no info bar to play in.
+ */
+export function usesSpotlight(data: Pick<KioskData, "live" | "hasInfoBar">, moment: CelebrationMoment): boolean {
+  if (moment.kind === "last-call" || data.hasInfoBar === false) return true;
+  const style = data.live.event?.milestoneStyle ?? "spotlight";
+  if (style === "named") return moment.kind === "incentive-met" || Boolean(moment.label);
+  return style === "spotlight";
 }
 
 function Toasts({ toasts }: { toasts: ToastMoment[] }) {
@@ -295,9 +308,18 @@ export const kioskRegistry: Registry<KioskData> = {
     ),
   }),
 
-  infoBar: defineComponent<KioskData, { display: InfoBarDisplay; total: number; recent: ToastMoment[] }>({
+  infoBar: defineComponent<
+    KioskData,
+    { display: InfoBarDisplay; total: number; recent: ToastMoment[]; starring: boolean }
+  >({
     variants: ["bar"],
-    select: ({ infoBar, live, recent }) => ({ display: infoBar, total: live.total, recent }),
+    select: (data) => ({
+      display: data.infoBar,
+      total: data.live.total,
+      recent: data.recent,
+      // With nothing covering the screen, the bar is the whole celebration, so it puts on more of a show.
+      starring: data.infoBar.type === "celebration" && !usesSpotlight(data, data.infoBar.moment),
+    }),
     component: InfoBar,
   }),
 
@@ -316,8 +338,10 @@ export const kioskRegistry: Registry<KioskData> = {
   milestoneSpotlight: defineComponent<KioskData, Parameters<typeof MilestoneSpotlight>[0]>({
     variants: ["full"],
     // Shown while the info bar celebrates, so both start and end together.
-    select: ({ infoBar, live }) =>
-      infoBar.type === "celebration" ? celebrationText(infoBar.moment, live.event) : null,
+    select: (data) =>
+      data.infoBar.type === "celebration" && usesSpotlight(data, data.infoBar.moment)
+        ? celebrationText(data.infoBar.moment, data.live.event)
+        : null,
     component: MilestoneSpotlight,
   }),
 

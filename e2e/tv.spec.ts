@@ -78,3 +78,34 @@ test.describe("what the room sees", () => {
     await expect(page.getByText("https://")).toHaveCount(0);
   });
 });
+
+test.describe("milestones on the TV", () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+
+  test("play in the bar, with the full screen kept for labeled ones", async ({ browser, page }) => {
+    await signIn(page);
+    const eventId = await liveEvent(page);
+    await send(page, "updateEvent", "fundraiser-core", {
+      eventId,
+      patch: {
+        milestoneStyle: "named",
+        milestones: [
+          { id: crypto.randomUUID(), amount: 1500, label: "" },
+          { id: crypto.randomUUID(), amount: 2000, label: "A new van" },
+        ],
+      },
+    });
+    const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const tv = await context.newPage();
+    await tv.goto(`${KIOSK}?key=${displayToken()}`);
+    await expect(tv.locator(".total-raised-counter__amount")).toBeVisible();
+
+    await send(page, "nudgeAdjustment", "fundraiser-core", { eventId, delta: 600 });
+    await expect(tv.locator(".kiosk-info-bar--starring")).toBeVisible();
+    await expect(tv.locator(".milestone-spotlight")).toHaveCount(0);
+
+    await send(page, "nudgeAdjustment", "fundraiser-core", { eventId, delta: 500 });
+    await expect(tv.locator(".milestone-spotlight")).toContainText("A new van", { timeout: 12_000 });
+    await context.close();
+  });
+});

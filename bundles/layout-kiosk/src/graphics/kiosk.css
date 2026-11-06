@@ -83,6 +83,72 @@ body,
   font-size: 2rem;
 }
 
+/* A celebration with the bar to itself: light sweeps across, and the amount arrives with a bounce. */
+.kiosk-info-bar--starring {
+  position: relative;
+  border-top-width: 5px;
+  background: color-mix(in srgb, var(--color-band) 72%, var(--color-accent) 28%);
+  animation: kiosk-star-glow 2.4s ease-in-out infinite;
+}
+
+.kiosk-info-bar--starring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 35%, color-mix(in srgb, #fff 40%, transparent) 50%, transparent 65%);
+  pointer-events: none;
+  transform: translateX(-100%);
+  animation: kiosk-star-sweep 2.4s ease-in-out infinite;
+}
+
+.kiosk-info-bar--starring .milestone-celebration__amount {
+  display: inline-block;
+  /* The bar is tinted with the accent, so the accent itself wouldn't stand out on it. */
+  color: var(--color-text);
+  animation: kiosk-star-pop 0.9s var(--ease-overshoot) both;
+}
+
+.kiosk-info-bar--starring .milestone-celebration__heading {
+  color: var(--color-text);
+}
+
+@keyframes kiosk-star-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes kiosk-star-glow {
+  50% {
+    box-shadow: inset 0 0 40px color-mix(in srgb, var(--color-accent) 55%, transparent);
+  }
+}
+
+@keyframes kiosk-star-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-info-bar--starring,
+  .kiosk-info-bar--starring .milestone-celebration__amount {
+    animation: none;
+  }
+
+  .kiosk-info-bar--starring::before {
+    display: none;
+  }
+}
+
 .kiosk-info-bar__logo {
   display: flex;
   align-self: stretch;

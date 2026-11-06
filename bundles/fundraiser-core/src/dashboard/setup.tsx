@@ -30,7 +30,7 @@ import "@32dashboards/nodecg-react/look.css";
 import "@32dashboards/ui/fonts.css";
 import "./setup.css";
 import { AskMeRoundsEditor } from "./askMeRounds.js";
-import { AnnouncementsField, announcementsProblem } from "./fields.js";
+import { AnnouncementsField, MilestoneStyleField, announcementsProblem } from "./fields.js";
 import { send } from "./send.js";
 import { STEPS, isoToLocalInput, localInputToIso, milestoneAmounts, type StepId } from "./setupPlan.js";
 
@@ -740,6 +740,11 @@ function CelebrateStep({ event, update }: { event: FundraiserEvent; update: Upda
           {(every * MAX_MILESTONES).toLocaleString()}.
         </p>
       )}
+
+      <MilestoneStyleField
+        value={event.milestoneStyle}
+        onChange={(milestoneStyle) => void update({ milestoneStyle }, "how the TVs celebrate").catch(() => {})}
+      />
 
       <h2 className="card__sub">A big goal (optional)</h2>
       <p className="muted">Shown with a progress bar in the info bar, and celebrated when it's reached.</p>

@@ -99,7 +99,12 @@ network.
      bids don't explain (a donation) gets a "Thank you". In a rush they
      queue up and come in one by one, a few on screen at a time.
    - **Milestones** fill the TVs for a few seconds (the milestone
-     spotlight), then the show carries on by itself. On Ask Me and
+     spotlight), or play in the info bar, as the event chooses under
+     **Milestones** in Show content: every one in the bar, or the bar with
+     the full screen kept for milestones with a label. Goals count as
+     labeled, and last calls always fill the screen. To try it in a
+     rehearsal, add venue cash past a milestone, then **Take off** the same
+     amount. On Ask Me and
      Celebration they show as a strip across the top instead, so the
      appeal or thank-you stays up. Each is celebrated once: a total that
      dips and recovers doesn't repeat it.

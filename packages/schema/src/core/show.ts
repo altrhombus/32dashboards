@@ -17,6 +17,15 @@ export const MilestoneSchema = z.object({
 });
 export type Milestone = z.infer<typeof MilestoneSchema>;
 
+/**
+ * How milestones and met goals are celebrated: over the whole screen, in the
+ * info bar, or in the info bar with the full screen kept for the ones that
+ * have a label (and for goals, which have names of their own).
+ */
+export const MILESTONE_STYLES = ["spotlight", "infoBar", "named"] as const;
+export const MilestoneStyleSchema = z.enum(MILESTONE_STYLES);
+export type MilestoneStyle = z.infer<typeof MilestoneStyleSchema>;
+
 /** How many milestones an event can have. */
 export const MAX_MILESTONES = 50;
 
