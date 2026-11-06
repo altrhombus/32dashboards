@@ -39,10 +39,26 @@ describe("DonationLedger", () => {
     expect(ledger.due(E, BID_MEMORY_MS + 1 + DONATION_GRACE_MS)).toBe(30);
   });
 
-  it("doesn't treat a drop in the total as a bid", () => {
+  it("doesn't thank a total for coming back after a drop", () => {
+    const ledger = new DonationLedger();
+    ledger.observe(E, -5000, 0, 0);
+    ledger.observe(E, 5000, 0, 1000);
+    expect(ledger.due(E, 1000 + DONATION_GRACE_MS)).toBe(0);
+    expect(ledger.nextDue(E)).toBeNull();
+  });
+
+  it("thanks only what's past where the total was before the drop", () => {
     const ledger = new DonationLedger();
     ledger.observe(E, -50, 0, 0);
-    ledger.observe(E, 50, 0, 1000);
-    expect(ledger.due(E, 1000 + DONATION_GRACE_MS)).toBe(50);
+    ledger.observe(E, 80, 0, 1000);
+    expect(ledger.due(E, 1000 + DONATION_GRACE_MS)).toBe(30);
+  });
+
+  it("still treats bids during a drop as bids", () => {
+    const ledger = new DonationLedger();
+    ledger.observe(E, -100, 0, 0);
+    ledger.observe(E, 40, 40, 1000);
+    ledger.observe(E, 100, 0, 2000);
+    expect(ledger.due(E, 2000 + DONATION_GRACE_MS)).toBe(0);
   });
 });

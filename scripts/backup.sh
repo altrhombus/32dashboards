@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Backs up everything an install needs to come back exactly as it was:
 #   db/nodecg.sqlite3     events, settings, Replicants, dashboard logins
-#   db/source-secrets/    source credentials and push-token hashes
+#   db/source-secrets/    source credentials and push-token hashes, sealed
+#   db/display-token      the TV links' display-only token
 #   assets/               uploaded logos
 #   cfg/                  NodeCG and bundle config (includes the session secret)
 #
@@ -12,7 +13,9 @@
 #   pnpm backup /some/dir     -> /some/dir/32dashboards-<timestamp>.tar.gz
 #   BACKUP_KEEP=10 pnpm backup   keep only the newest 10 (default 30; 0 keeps all)
 #
-# Backups contain secrets; they're written owner-only. Restore with
+# Backups contain secrets; they're written owner-only. The key that opens
+# db/source-secrets (~/.config/32dashboards/secrets.key) is deliberately left
+# out, so a copied backup holds no readable passwords. Restore with
 # scripts/restore.sh (see docs/runbooks/backup-and-restore.md).
 set -euo pipefail
 umask 077
@@ -33,6 +36,7 @@ mkdir -p "$STAGE/db" "$DEST"
 sqlite3 "$ROOT/db/nodecg.sqlite3" ".backup '$STAGE/db/nodecg.sqlite3'"
 [ "$(sqlite3 "$STAGE/db/nodecg.sqlite3" 'pragma integrity_check;')" = "ok" ] || { echo "Backup copy failed its integrity check." >&2; exit 1; }
 [ -d "$ROOT/db/source-secrets" ] && cp -a "$ROOT/db/source-secrets" "$STAGE/db/"
+[ -f "$ROOT/db/display-token" ] && cp -a "$ROOT/db/display-token" "$STAGE/db/"
 [ -d "$ROOT/assets" ] && cp -a "$ROOT/assets" "$STAGE/"
 [ -d "$ROOT/cfg" ] && cp -a "$ROOT/cfg" "$STAGE/"
 printf 'created=%s\nhost=%s\ncommit=%s\n' "$STAMP" "$(hostname)" "$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)" > "$STAGE/BACKUP-INFO"

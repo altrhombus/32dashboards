@@ -36,6 +36,15 @@ const main: BlockLayoutInput = {
   overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }, { component: "askMeWrap" }],
 };
 
+const noBids: BlockLayoutInput = {
+  blocks: [
+    { id: "header", component: "header", x: 0, y: 0, w: 24, h: 2 },
+    { id: "noBidItems", component: "noBidItems", x: 0, y: 2, w: 24, h: 19 },
+    { id: "infobar", component: "infoBar", x: 0, y: 21, w: 24, h: 3 },
+  ],
+  overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }, { component: "askMeWrap" }],
+};
+
 const intermission: BlockLayoutInput = {
   blocks: [
     { id: "header", component: "header", x: 0, y: 0, w: 24, h: 2 },
@@ -65,10 +74,15 @@ const fullScreen = (component: string, overlays: BlockLayoutInput["overlays"] = 
 const builtInInputs: Record<ScreenView, { name: string; blocks: BlockLayoutInput }> = {
   welcome: { name: "Welcome", blocks: welcome },
   main: { name: "Main", blocks: main },
+  noBids: { name: "No bids yet", blocks: noBids },
   intermission: { name: "Intermission", blocks: intermission },
-  // Between rounds, the wrap-up plays right on the Ask Me screen.
-  askMe: { name: "Ask Me", blocks: fullScreen("askMe", [{ component: "askMeWrap" }]) },
-  celebration: { name: "Celebration", blocks: fullScreen("grandCelebration") },
+  // Between rounds, the wrap-up plays right on the Ask Me screen. Milestones and last calls get a
+  // strip here, not the spotlight: an appeal or the thank-you shouldn't vanish behind them.
+  askMe: {
+    name: "Ask Me",
+    blocks: fullScreen("askMe", [{ component: "askMeWrap" }, { component: "milestoneBanner" }]),
+  },
+  celebration: { name: "Celebration", blocks: fullScreen("grandCelebration", [{ component: "milestoneBanner" }]) },
   standby: { name: "Standby", blocks: fullScreen("standby") },
 };
 

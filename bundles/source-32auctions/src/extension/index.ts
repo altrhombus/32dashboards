@@ -1,9 +1,8 @@
 import type NodeCG from "nodecg/types";
 import { CommandError, createPollingSource, listenForCommand } from "@32dashboards/source-sdk";
 import { ConfigSchema, DEFAULT_BASE_URL, SECRET_KEYS, SOURCE_ID, auctionMessageSchemas } from "../config.js";
-import { LookupError, lookupAuction } from "./lookup.js";
+import { lookupAuction } from "./lookup.js";
 import { createSessionPoller } from "./session.js";
-import { SignInError } from "./signin.js";
 
 /** How many items with photos a connection test shows back. */
 const SAMPLE_SIZE = 8;
@@ -24,19 +23,18 @@ export default function source32auctions(nodecg: NodeCG.ServerAPI) {
   const bundleConfig = (nodecg.bundleConfig ?? {}) as { baseUrl?: string };
   const baseUrl = (bundleConfig.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
 
+  const poll = createSessionPoller({ baseUrl });
   const source = createPollingSource(nodecg, {
     id: SOURCE_ID,
     label: "32auctions",
     configSchema: ConfigSchema,
     secretKeys: SECRET_KEYS,
     intervalSeconds: (config) => config.refreshIntervalSeconds,
-    poll: createSessionPoller({ baseUrl }),
+    poll,
+    onRetry: poll.forgetFailure,
   });
 
-  const readable = (err: unknown) =>
-    err instanceof LookupError || err instanceof SignInError || err instanceof Error
-      ? new CommandError(err.message)
-      : new CommandError(String(err));
+  const readable = (err: unknown) => new CommandError(err instanceof Error ? err.message : String(err));
 
   listenForCommand(nodecg, "lookupAuction", auctionMessageSchemas.lookupAuction, ({ url }) =>
     lookupAuction(url, { baseUrl, signal: AbortSignal.timeout(20_000) }).catch((err: unknown) => {

@@ -12,7 +12,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "eslint --max-warnings 0 src"
+    "lint": "eslint --max-warnings 0 src",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "react": "^19.0.0"
@@ -22,7 +23,12 @@
     "@types/react": "^19.0.0",
     "nodecg": "2.8.0",
     "react": "^19.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.0.0",
+    "jsdom": "^25.0.0",
+    "react-dom": "^19.0.0",
+    "vitest": "^2.1.0"
   },
   "dependencies": {
     "@32dashboards/schema": "workspace:*",

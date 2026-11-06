@@ -3,7 +3,7 @@ import { HttpError } from "@32dashboards/source-sdk";
 import type { Config } from "../src/config.js";
 import { TotalNotShownError } from "../src/extension/scrape.js";
 import { createSessionPoller } from "../src/extension/session.js";
-import { SignInError, mergeCookies, signIn } from "../src/extension/signin.js";
+import { SignInError, mergeCookies, signIn, type SignInOptions } from "../src/extension/signin.js";
 
 const BASE = "https://example.test";
 const EMAIL = "organizer@example.test";
@@ -67,7 +67,7 @@ describe("signIn", () => {
     const site = fakeLogin({ loginPage: "<html><body>Please complete the captcha</body></html>" });
     const attempt = signIn({ baseUrl: BASE, email: EMAIL, password: PASSWORD, fetchImpl: site.fetchImpl });
     await expect(attempt).rejects.toBeInstanceOf(SignInError);
-    await expect(attempt).rejects.toThrow(/sign-in page changed/);
+    await expect(attempt).rejects.toThrow(/sign-in page didn't look right/);
   });
 });
 
@@ -188,5 +188,30 @@ describe("createSessionPoller", () => {
     await poll(context(credentials, { totalFrom: "none" }));
     await poll(context({ sessionCookie: "pasted" }));
     expect(site.signInImpl).not.toHaveBeenCalled();
+  });
+
+  it("tries a turned-down password once more when an operator asks", async () => {
+    const site = siteWithSession();
+    const poll = createSessionPoller({ baseUrl: BASE, scrape: site.scrape, signInImpl: site.signInImpl });
+    const wrong = { email: EMAIL, password: "wrong" };
+    await expect(poll(context(wrong))).rejects.toThrow(/didn't accept/);
+    await expect(poll(context(wrong))).rejects.toThrow(/tap Fetch now to retry/);
+    expect(site.signInImpl).toHaveBeenCalledTimes(1);
+    poll.forgetFailure(context(wrong).eventId);
+    await expect(poll(context(wrong))).rejects.toThrow(/didn't accept/);
+    expect(site.signInImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("tries again by itself when no password was sent, as with a maintenance page", async () => {
+    const site = siteWithSession();
+    let down = true;
+    const signInImpl = vi.fn(async (options: SignInOptions) => {
+      if (down) throw new SignInError("The sign-in page didn't look right.", false);
+      return site.signInImpl(options);
+    });
+    const poll = createSessionPoller({ baseUrl: BASE, scrape: site.scrape, signInImpl });
+    await expect(poll(context(credentials))).rejects.toThrow(/didn't look right/);
+    down = false;
+    await expect(poll(context(credentials))).resolves.toMatchObject({ total: 1234 });
   });
 });

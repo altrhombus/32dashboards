@@ -17,6 +17,9 @@ export const MilestoneSchema = z.object({
 });
 export type Milestone = z.infer<typeof MilestoneSchema>;
 
+/** How many milestones an event can have. */
+export const MAX_MILESTONES = 50;
+
 export const BidWarOptionSchema = z.object({
   id,
   name: z.string().min(1).max(60),
@@ -86,7 +89,7 @@ export function segmentSecondsFor(config: InfoBarConfig, kind: InfoBarSegmentKin
 export type InfoBarConfig = z.infer<typeof InfoBarConfigSchema>;
 
 /** The show's current state. Every output (venue TV now, stream later) renders its own layout per scene. */
-export const SCENE_IDS = ["welcome", "main", "intermission", "askMe", "celebration"] as const;
+export const SCENE_IDS = ["welcome", "main", "noBids", "intermission", "askMe", "celebration"] as const;
 export const SceneIdSchema = z.enum(SCENE_IDS);
 export type SceneId = z.infer<typeof SceneIdSchema>;
 

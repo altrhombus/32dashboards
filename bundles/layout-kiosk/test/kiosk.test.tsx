@@ -9,7 +9,7 @@ import { builtInLayouts, templates } from "../src/layouts.js";
 import { checkLayout } from "../src/library.js";
 import { kioskRegistry } from "../src/registry.js";
 import { sampleLive } from "../src/samples.js";
-import { buildSegments, selectFeaturedItems } from "../src/segments.js";
+import { buildSegments, selectFeaturedItems, selectNoBidItems } from "../src/segments.js";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const NOW = "2026-10-10T12:00:00.000Z";
@@ -268,5 +268,71 @@ describe("selectFeaturedItems", () => {
     const items = [item("deal", 100, 1), item("quiet", null, 0), item("busy", null, 12), item("warm", 50, 5)];
     expect(selectFeaturedItems(items, 3).map((i) => i.id)).toEqual(["deal", "busy", "warm"]);
     expect(selectFeaturedItems(worstCaseItems).map((i) => i.id)).toEqual(["empty", "long", "name"]);
+  });
+});
+
+describe("the No bids yet scene", () => {
+  it("picks auction items without a bid, not Buy Now items or ones already bid on", () => {
+    const item = (id: string, bidCount: number | null, available?: number | null) => ({
+      id,
+      title: id,
+      imageUrl: null,
+      currentBid: 10,
+      value: null,
+      bidCount,
+      remaining: null,
+      available,
+    });
+    const picked = selectNoBidItems([item("open", 0), item("bid", 2), item("buy-now", null, 4), item("sold", 0, 0)]);
+    expect(picked.map((i) => i.id)).toEqual(["open"]);
+  });
+
+  it("offers a QR code on Welcome when the call to action has an address, without repeating it", () => {
+    const demo = sampleLive("demo");
+    const event = { ...demo.event!, callToAction: "Bid at https://www.32auctions.com/SpringGala" };
+    const data: KioskData = {
+      live: { ...demo, event },
+      scene: scene("welcome"),
+      infoBar: { type: "empty" },
+      roundWrap: null,
+      recent: [],
+      toasts: [],
+    };
+    render(<LayoutRenderer layout={builtInLayouts.welcome.layout} registry={kioskRegistry} data={data} fit="none" />);
+    expect(screen.getByRole("img", { name: "QR code to bid or give" })).toBeInTheDocument();
+    expect(screen.queryByText(/Bid at/)).toBeNull();
+  });
+
+  it("shows the address the short way in the info bar", () => {
+    const demo = sampleLive("demo");
+    const event = { ...demo.event!, callToAction: "Bid at https://www.32auctions.com/SpringGala" };
+    const cta = buildSegments({ ...demo, event }).segments.find((s) => s.content.kind === "callToAction");
+    expect(cta?.content).toEqual({ kind: "callToAction", text: "Bid at 32auctions.com/SpringGala" });
+  });
+});
+
+describe("milestones over a scene that shouldn't be covered", () => {
+  it.each(["askMe", "celebration"] as const)("%s shows a banner, not the spotlight", (sceneId) => {
+    const moment = {
+      kind: "last-call" as const,
+      id: id(30),
+      eventId: id(1),
+      at: NOW,
+      minutesLeft: 5,
+    };
+    const data: KioskData = {
+      live,
+      scene: scene(sceneId),
+      infoBar: { type: "celebration", moment },
+      roundWrap: null,
+      recent: [],
+      toasts: [],
+    };
+    const { container } = render(
+      <LayoutRenderer layout={builtInLayouts[sceneId].layout} registry={kioskRegistry} data={data} fit="none" />,
+    );
+    expect(container.querySelector(".kiosk-banner")).not.toBeNull();
+    expect(screen.getByText("5 minutes left")).toBeInTheDocument();
+    expect(builtInLayouts[sceneId].blocks.overlays.map((o) => o.component)).not.toContain("milestoneSpotlight");
   });
 });

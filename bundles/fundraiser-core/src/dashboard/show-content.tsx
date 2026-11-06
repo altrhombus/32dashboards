@@ -5,6 +5,7 @@ import {
   INFO_BAR_SEGMENTS,
   LOGO_BACKDROPS,
   SPONSORS_TITLE,
+  parseAnnouncements,
   segmentSecondsFor,
   type ActiveEventIdReplicant,
   type BidWar,
@@ -15,15 +16,19 @@ import {
 } from "@32dashboards/schema/core";
 import { SponsorCarousel, formatAmount, useLogoCheck, validateTheme } from "@32dashboards/ui";
 import "@32dashboards/nodecg-react/panel.css";
+import { AskMeRoundsEditor } from "./askMeRounds.js";
+import { AnnouncementsField, announcementsProblem } from "./fields.js";
 import { send } from "./send.js";
+import { isoToLocalInput, localInputToIso } from "./setupPlan.js";
 
 /*
- * Interim editor for an event's show content: what the info bar rotates
- * through and what gets celebrated. Each section edits a local draft and
- * saves it as one updateEvent; Phase 5 redesigns this for live operation.
+ * The editor for an event's show content: what the info bar rotates through
+ * and what gets celebrated. Each section edits a local draft and saves it as
+ * one updateEvent; Ask Me rounds save as you type, as in the New event guide.
  */
 
 type Run = (promise: Promise<unknown>) => void;
+type SavePatch = (patch: Parameters<typeof send<"updateEvent">>[1]["patch"]) => void;
 
 const SEGMENT_LABELS: Record<InfoBarSegmentKind, string> = {
   items: "Item marquee",
@@ -44,9 +49,10 @@ function useDraft<T>(value: T): [T, (next: T) => void, boolean] {
   return [draft, setDraft, JSON.stringify(draft) !== saved];
 }
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+function Section(props: { title: string; hint?: string; children: ReactNode; onToggle?: (open: boolean) => void }) {
+  const { title, hint, children, onToggle } = props;
   return (
-    <details className="section">
+    <details className="section" onToggle={(e) => onToggle?.(e.currentTarget.open)}>
       <summary>{title}</summary>
       <div className="panel" style={{ padding: "8px 0 0" }}>
         {hint && (
@@ -141,18 +147,12 @@ function ListEditor<T extends { id: string }>(props: {
 
 function BidWars({ event, run }: { event: FundraiserEvent; run: Run }) {
   const [draft, setDraft, dirty] = useDraft(event.bidWars);
+  // Only for showing: the laptop keeps each option's running total whatever this draft says.
   const savedTotals = new Map(event.bidWars.flatMap((w) => w.options.map((o) => [o.id, o.total] as const)));
   const updateWar = (index: number, patch: Partial<BidWar>) =>
     setDraft(draft.map((w, i) => (i === index ? { ...w, ...patch } : w)));
 
-  const save = () => {
-    // Totals may have been nudged since the draft was made; keep the live ones.
-    const bidWars = draft.map((w) => ({
-      ...w,
-      options: w.options.map((o) => ({ ...o, total: savedTotals.get(o.id) ?? 0 })),
-    }));
-    run(send("updateEvent", { eventId: event.id, patch: { bidWars } }));
-  };
+  const save = () => run(send("updateEvent", { eventId: event.id, patch: { bidWars: draft } }));
 
   return (
     <>
@@ -665,22 +665,11 @@ function moveItem<T>(list: T[], index: number, by: number): T[] {
   return next;
 }
 
-/** ISO timestamp <-> the value of an <input type="datetime-local"> (local time, minutes). */
-function toLocalInput(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-}
-
-function fromLocalInput(value: string): string | null {
-  return value ? new Date(value).toISOString() : null;
-}
-
 function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
   const saved = {
     name: event.name,
     causeName: event.causeName,
-    endDateTime: toLocalInput(event.endDateTime),
+    endDateTime: isoToLocalInput(event.endDateTime),
     announcements: event.announcements.join("\n"),
     askMeTitle: event.askMe.title,
     askMeMessage: event.askMe.message,
@@ -698,11 +687,8 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
         patch: {
           name: draft.name.trim(),
           causeName: draft.causeName.trim(),
-          endDateTime: fromLocalInput(draft.endDateTime),
-          announcements: draft.announcements
-            .split("\n")
-            .map((a) => a.trim())
-            .filter(Boolean),
+          endDateTime: localInputToIso(draft.endDateTime),
+          announcements: parseAnnouncements(draft.announcements),
           askMe: { title: draft.askMeTitle, message: draft.askMeMessage },
         },
       }),
@@ -728,10 +714,10 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
         hint="Off: the TVs announce 10, 5 and 1 minute left and that bidding has closed, and you start the Celebration yourself (best if the program goes on after bidding closes). Not while Ask Me is on."
         onChange={(celebrateAtClose) => run(send("updateEvent", { eventId: event.id, patch: { celebrateAtClose } }))}
       />
-      <label className="field">
-        <span>Announcements, one per line (**bold** and *italics* work)</span>
-        <textarea rows={4} {...field("announcements")} />
-      </label>
+      <AnnouncementsField
+        value={draft.announcements}
+        onChange={(announcements) => setDraft({ ...draft, announcements })}
+      />
       <label className="field">
         <span>Ask Me title (when there are no planned rounds)</span>
         <input maxLength={120} {...field("askMeTitle")} />
@@ -741,7 +727,12 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
         <textarea rows={5} maxLength={1200} {...field("askMeMessage")} />
       </label>
       <div className="row">
-        <button type="button" className="primary" disabled={!dirty || !draft.name.trim()} onClick={save}>
+        <button
+          type="button"
+          className="primary"
+          disabled={!dirty || !draft.name.trim() || Boolean(announcementsProblem(draft.announcements))}
+          onClick={save}
+        >
           Save details
         </button>
         {dirty && (
@@ -788,11 +779,39 @@ function HiddenItems({ event, run }: { event: FundraiserEvent; run: Run }) {
   );
 }
 
+/** The appeals, with the one being edited on a small TV, so a long message can be checked as it's written. */
+function AskMeRounds({ event, show, save }: { event: FundraiserEvent; show: boolean; save: SavePatch }) {
+  const [editing, setEditing] = useState(0);
+  return (
+    <>
+      <div className="appeal-editor">
+        <div>
+          <AskMeRoundsEditor
+            event={event}
+            editing={editing}
+            onEditing={setEditing}
+            save={(rounds) => save({ askMeRounds: rounds.map((r) => ({ ...r, title: r.title.trim() })) })}
+          />
+        </div>
+        {show && event.askMeRounds.length > 0 && (
+          <iframe
+            className="appeal-editor__preview"
+            title="This appeal on the TV"
+            src={`/bundles/layout-kiosk/graphics/kiosk.html?preview&view=askMe&event=${event.id}&askMeRound=${editing}`}
+            tabIndex={-1}
+          />
+        )}
+      </div>
+    </>
+  );
+}
+
 function ShowContent() {
   const events = useReplicant<EventsReplicant>("events");
   const activeId = useReplicant<ActiveEventIdReplicant>("activeEventId") ?? null;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [appealsOpen, setAppealsOpen] = useState(false);
   useEffect(() => setSelectedId(null), [activeId]);
 
   if (!events) return <p className="panel">Waiting for state…</p>;
@@ -818,8 +837,7 @@ function ShowContent() {
     setError(null);
     promise.catch((err) => setError(errorText(err)));
   };
-  const save = (patch: Parameters<typeof send<"updateEvent">>[1]["patch"]) =>
-    run(send("updateEvent", { eventId: event.id, patch }));
+  const save: SavePatch = (patch) => run(send("updateEvent", { eventId: event.id, patch }));
 
   return (
     <div className="panel">
@@ -894,12 +912,11 @@ function ShowContent() {
         >
           <BidWars event={event} run={run} />
         </Section>
-        <Section title={`Ask Me rounds (${event.askMeRounds.length})`}>
+        <Section title={`Ask Me rounds (${event.askMeRounds.length})`} onToggle={setAppealsOpen}>
           <p className="muted">
             Plan each Ask Me appeal of the night, in order. Finishing one celebrates it and moves the TVs on to the
             next; after the last, the TVs go back to the scene from before Ask Me. With none planned, Ask Me is one
-            appeal (its title and message are in Event details) that you can run as many times as you like. Long
-            messages shrink to fit the TV; about 300 characters or fewer reads best from across the room.
+            appeal (its title and message are in Event details) that you can run as many times as you like.
           </p>
           <SaveToggle
             checked={event.askMeInTotal}
@@ -907,16 +924,7 @@ function ShowContent() {
             hint="Leave this off if Ask Me gifts also go into the auction (for example as an item): its total already has them, and adding them here would count them twice. Turn it on if Ask Me money is only counted here."
             onChange={(askMeInTotal) => save({ askMeInTotal })}
           />
-          <ListEditor
-            items={event.askMeRounds}
-            fields={[
-              { key: "title", label: "Title, e.g. Fund a kennel", type: "text", width: 220 },
-              { key: "message", label: "Message (Markdown: **bold**)", type: "text", width: 320 },
-            ]}
-            blank={() => ({ id: newId(), title: "", message: "", raised: null })}
-            addLabel="Add an Ask Me round"
-            onSave={(askMeRounds) => save({ askMeRounds })}
-          />
+          <AskMeRounds event={event} show={appealsOpen} save={save} />
         </Section>
         <Section
           title={`Prizes (${event.prizes.length})`}
@@ -956,7 +964,11 @@ function ShowContent() {
         </Section>
       </div>
 
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <p className="error sticky-error" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

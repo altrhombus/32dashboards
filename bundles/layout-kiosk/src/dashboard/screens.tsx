@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { ConfirmButton, errorText, useReplicant } from "@32dashboards/nodecg-react";
+import { ConfirmButton, errorText, useNow, useReplicant } from "@32dashboards/nodecg-react";
 import {
   SCREEN_VIEWS,
   ScreenIdSchema,
@@ -52,13 +52,22 @@ const slug = (name: string) =>
 
 type Run = (promise: Promise<unknown>, done?: string) => void;
 
-function useNow(ms = 5_000): number {
-  const [now, setNow] = useState(() => Date.now());
+/** The display-only token in TV links, and a way to replace it. */
+function useDisplayToken(run: Run) {
+  const [token, setToken] = useState<string | null>(null);
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), ms);
-    return () => clearInterval(timer);
-  }, [ms]);
-  return now;
+    nodecg.sendMessage("displayToken").then(
+      (value) => setToken(value as string),
+      () => {},
+    );
+  }, []);
+  const replace = useCallback(() => {
+    run(
+      nodecg.sendMessage("replaceDisplayToken").then((value) => setToken(value as string)),
+      "Replaced. TVs using the old link stop updating until you open the new one.",
+    );
+  }, [run]);
+  return { token, replace };
 }
 
 function ScreensPanel() {
@@ -69,15 +78,17 @@ function ScreensPanel() {
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   const [newScreenId, setNewScreenId] = useState("");
 
-  if (!screens || !layouts) return <p className="panel">Waiting for state…</p>;
-
-  const run: Run = (promise, done) => {
+  const run = useCallback<Run>((promise, done) => {
     setMessage(null);
     promise.then(
       () => done && setMessage({ text: done }),
       (err) => setMessage({ text: errorText(err), error: true }),
     );
-  };
+  }, []);
+  const { token, replace } = useDisplayToken(run);
+
+  if (!screens || !layouts) return <p className="panel">Waiting for state…</p>;
+
   const presence = screenPresence(screens, outputs, now);
 
   return (
@@ -91,7 +102,15 @@ function ScreensPanel() {
           </p>
         )}
         {presence.named.map(({ screen, connected, since }) => (
-          <ScreenCard key={screen.id} screen={screen} connected={connected} since={since} layouts={layouts} run={run} />
+          <ScreenCard
+            key={screen.id}
+            screen={screen}
+            connected={connected}
+            since={since}
+            layouts={layouts}
+            token={token}
+            run={run}
+          />
         ))}
         {presence.unnamed.map((u, i) => (
           <div key={i} className="row unnamed">
@@ -113,6 +132,20 @@ function ScreensPanel() {
           </div>
         ))}
         <AddScreen key={newScreenId} initialId={newScreenId} taken={screens.map((s) => s.id)} run={run} />
+      </section>
+
+      <section className="group" aria-label="TV links">
+        <p className="muted">
+          TV links can show the TV picture and nothing else: they can't open this dashboard or change the show. If one
+          ends up somewhere it shouldn't, replace them, then open each TV's new link.
+        </p>
+        <div className="row">
+          <ConfirmButton
+            label="Replace the TV links"
+            confirmLabel="Tap again: open TVs stop updating"
+            onConfirm={replace}
+          />
+        </div>
       </section>
 
       <section className="group" aria-label="Layouts">
@@ -143,9 +176,10 @@ function ScreenCard(props: {
   connected: boolean;
   since: string | null;
   layouts: SavedLayout[];
+  token: string | null;
   run: Run;
 }) {
-  const { screen, connected, since, layouts, run } = props;
+  const { screen, connected, since, layouts, token, run } = props;
   const [name, setName] = useState(screen.name);
   useEffect(() => setName(screen.name), [screen.name]);
 
@@ -181,7 +215,7 @@ function ScreenCard(props: {
           {connected ? `Connected since ${clock(since!)}` : "Not connected"}
         </span>
       </div>
-      <OpenOnTv screenId={screen.id} />
+      <OpenOnTv screenId={screen.id} token={token} />
       <TextSize screen={screen} onSave={(textSize) => save({ ...screen, textSize }, "Text size saved.")} />
       <div className="views">
         {SCREEN_VIEWS.map((view) => (
@@ -245,20 +279,13 @@ function TextSize({ screen, onSave }: { screen: Screen; onSave: (textSize: numbe
   );
 }
 
-/** The socketToken cookie NodeCG sets after sign-in; as `?key=` it lets a TV page in without a login. */
-function signInKey(): string | null {
-  const match = /(?:^|;\s*)socketToken=([^;]+)/.exec(document.cookie);
-  return match ? decodeURIComponent(match[1]!) : null;
-}
-
 const LOOPBACK = /^(127\.|localhost$|\[?::1\]?$)/;
 
 /**
  * How to show a screen's TV picture: on this computer in one click, or by
  * its link on another computer (with this laptop's network address in it).
  */
-function OpenOnTv({ screenId }: { screenId: string }) {
-  const key = signInKey();
+function OpenOnTv({ screenId, token }: { screenId: string; token: string | null }) {
   const [address, setAddress] = useState<string | null>(LOOPBACK.test(location.hostname) ? null : location.host);
   useEffect(() => {
     if (address) return;
@@ -270,8 +297,8 @@ function OpenOnTv({ screenId }: { screenId: string }) {
       () => {},
     );
   }, [address]);
-  if (!key) return <p className="warning">Sign in to the dashboard to get this screen's TV link.</p>;
-  const path = `/bundles/layout-kiosk/graphics/kiosk.html?key=${encodeURIComponent(key)}&screen=${screenId}`;
+  if (!token) return <p className="muted">Getting this screen's TV link…</p>;
+  const path = `/bundles/layout-kiosk/graphics/kiosk.html?key=${encodeURIComponent(token)}&screen=${screenId}`;
   return (
     <div className="open-tv">
       <div className="row">
@@ -295,10 +322,6 @@ function OpenOnTv({ screenId }: { screenId: string }) {
           <input readOnly value={`http://${address}${path}`} onFocus={(e) => e.currentTarget.select()} />
         </label>
       )}
-      <p className="warning" style={{ margin: 0 }}>
-        The link includes the dashboard's key: anyone who has it can see the TV and run the show. Share it only with
-        your own computers.
-      </p>
     </div>
   );
 }

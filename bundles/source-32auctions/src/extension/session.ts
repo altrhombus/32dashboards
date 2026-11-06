@@ -14,17 +14,19 @@ export interface SessionOptions {
  * Polls with automatic sign-in. When the event's panel has an organizer
  * email and password, the source signs in before it first needs the hidden
  * total, keeps the session in memory, and signs in again when the site stops
- * accepting it (401/403, or the total disappears). A pair that was turned
- * down isn't tried again until it changes, so a wrong password can't lock
- * the account. Without an email and password, pasted cookies are used as
- * before.
+ * accepting it (401/403, or the total disappears). A pair the site turned
+ * down isn't tried again by itself, so a wrong password can't lock the
+ * account: it takes a new pair, or an operator asking (`forgetFailure`, on
+ * saving the settings or tapping Fetch now). A sign-in page that doesn't look
+ * right sends nothing, so that's simply tried again on the next cycle.
+ * Without an email and password, pasted cookies are used as before.
  */
 export function createSessionPoller(options: SessionOptions) {
   const { baseUrl, fetchImpl, scrape = scrapeAuction, signInImpl = signIn } = options;
   const sessions = new Map<string, Cookies>();
   const failures = new Map<string, { fingerprint: string; message: string }>();
 
-  return async function poll(context: PollContext<Config>): Promise<PollResult> {
+  async function poll(context: PollContext<Config>): Promise<PollResult> {
     const { eventId, config, secrets, signal, log } = context;
     const email = secrets.email?.trim() ?? "";
     const password = secrets.password ?? "";
@@ -43,7 +45,9 @@ export function createSessionPoller(options: SessionOptions) {
         log("info", "Signed in to 32auctions");
         return cookies;
       } catch (err) {
-        if (err instanceof SignInError) failures.set(eventId, { fingerprint: fingerprint!, message: err.message });
+        if (err instanceof SignInError && err.submitted) {
+          failures.set(eventId, { fingerprint: fingerprint!, message: err.message });
+        }
         throw err;
       }
     };
@@ -52,7 +56,8 @@ export function createSessionPoller(options: SessionOptions) {
     if (blocked) {
       // Don't retry a pair that was turned down; use pasted cookies if there are any.
       return fetchWith(undefined).catch((err: unknown) => {
-        throw new Error(`${failure!.message} (${err instanceof Error ? err.message : String(err)})`);
+        const reason = err instanceof Error ? err.message : String(err);
+        throw new Error(`${failure!.message} Save it again or tap Fetch now to retry. (${reason})`);
       });
     }
 
@@ -77,5 +82,10 @@ export function createSessionPoller(options: SessionOptions) {
       log("info", "The 32auctions session ended; signing in again");
       return fetchWith(await signInNow());
     }
-  };
+  }
+
+  return Object.assign(poll, {
+    /** Lets the next poll try signing in again, even with the pair that was turned down. */
+    forgetFailure: (eventId: string) => void failures.delete(eventId),
+  });
 }

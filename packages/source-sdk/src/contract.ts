@@ -11,7 +11,13 @@ export const CORE_BUNDLE = "fundraiser-core";
 export type ReportOutcome = "stored" | "unknown-event" | "wrong-source" | "stale" | "invalid";
 
 /** One observation. Set `eventId` when the fetch *starts*, so a slow fetch can't land on the wrong event. */
-export type SourceReport = Omit<SourceResultInput, "sourceId">;
+export type SourceReport = Omit<SourceResultInput, "sourceId"> & {
+  /**
+   * This result starts over: the settings behind it changed, so how it differs
+   * from the last one isn't money coming in. Nothing is celebrated for it.
+   */
+  baseline?: boolean;
+};
 
 export interface StatusUpdate {
   state: SourceStatus["state"];
@@ -37,6 +43,11 @@ export interface SourceHandle {
 export interface RegisterSourceOptions {
   /** Human-readable name for panels, e.g. "32auctions". */
   label: string;
+  /**
+   * The operator types the amounts in, so even an event's first result is
+   * real money coming in. For other sources it's just where the total stood.
+   */
+  handEntered?: boolean;
 }
 
 export interface FundraiserCoreApi {

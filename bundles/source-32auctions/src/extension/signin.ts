@@ -9,9 +9,21 @@ import * as cheerio from "cheerio";
  * cookies instead.
  */
 
-/** A sign-in that won't work until the email or password changes (wrong password, a new captcha…). */
+/**
+ * A sign-in that didn't work. `submitted` says the site saw the password and
+ * turned it down, so trying again by itself could lock the account; without
+ * it nothing was sent, and the next cycle can safely try again (a maintenance
+ * or challenge page in place of the sign-in form passes by itself).
+ */
 export class SignInError extends Error {
   override name = "SignInError";
+
+  constructor(
+    message: string,
+    readonly submitted = true,
+  ) {
+    super(message);
+  }
 }
 
 export type Cookies = Record<string, string>;
@@ -65,7 +77,8 @@ export async function signIn(options: SignInOptions): Promise<Cookies> {
     form.find('input[name="authenticity_token"]').attr("value") ?? $('meta[name="csrf-token"]').attr("content");
   if (!form.length || !token) {
     throw new SignInError(
-      "The 32auctions sign-in page changed, so signing in automatically stopped working. Paste cookies instead.",
+      "The 32auctions sign-in page didn't look right. If this keeps up, its layout changed: paste cookies instead.",
+      false,
     );
   }
   const action = new URL(form.attr("action")!, `${baseUrl}/login`).href;

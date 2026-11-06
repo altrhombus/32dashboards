@@ -16,6 +16,8 @@ export const SourceItemSchema = z.object({
    * left; each one bought adds its price to the total. Null for auction items.
    */
   available: z.number().int().nonnegative().nullable().optional(),
+  /** Where a bidder can open this item, if the source knows (the TVs show it as a QR code). */
+  url: z.string().nullable().optional(),
 });
 export type SourceItem = z.infer<typeof SourceItemSchema>;
 

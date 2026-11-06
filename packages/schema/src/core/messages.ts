@@ -70,18 +70,43 @@ export const SetAdjustmentMessageSchema = z.object({ eventId, amount: z.number()
 export type SetAdjustmentMessage = z.infer<typeof SetAdjustmentMessageSchema>;
 
 /** Adds `delta` to the current adjustment (quick +/- buttons). */
-export const NudgeAdjustmentMessageSchema = z.object({ eventId, delta: z.number().finite() }).strict();
+export const NudgeAdjustmentMessageSchema = z
+  .object({
+    eventId,
+    delta: z.number().finite(),
+    /** Undoing an earlier action: changes the total without a thank-you or a milestone. */
+    quiet: z.boolean().optional(),
+  })
+  .strict();
 export type NudgeAdjustmentMessage = z.infer<typeof NudgeAdjustmentMessageSchema>;
 
 /**
  * Adds `delta` to the Ask Me total. The server does the adding, so quick
  * taps from a phone that hasn't seen the last one yet all count.
  */
-export const NudgeAskMeMessageSchema = z.object({ eventId, delta: z.number().finite() }).strict();
+export const NudgeAskMeMessageSchema = z
+  .object({
+    eventId,
+    delta: z.number().finite(),
+    /**
+     * Undoing a tap: the round the tap went to, so it can't come out of a
+     * later round. `raised` is the Ask Me money finished so far when it was
+     * tapped, which tells rounds apart when there's no plan.
+     */
+    round: z.object({ id: z.string().uuid().nullable(), raised: z.number().nonnegative() }).strict().optional(),
+  })
+  .strict();
 export type NudgeAskMeMessage = z.infer<typeof NudgeAskMeMessageSchema>;
 
 export const SetFiltersMessageSchema = z.object({ eventId, filters: FundraiserEventSchema.shape.filters }).strict();
 export type SetFiltersMessage = z.infer<typeof SetFiltersMessageSchema>;
+
+/** Pins one incentive to the info bar, or (`incentiveId: null`) unpins them all. */
+export const PinIncentiveMessageSchema = z.object({ eventId, incentiveId: z.string().uuid().nullable() }).strict();
+export type PinIncentiveMessage = z.infer<typeof PinIncentiveMessageSchema>;
+
+/** Empties the list of what the TV celebrated, e.g. after a rehearsal. */
+export const ClearMomentsMessageSchema = z.object({}).strict().optional();
 
 /** Asks the event's adapter to fetch now instead of waiting for its next cycle. */
 export const RefreshSourceMessageSchema = z.object({ eventId }).strict();
@@ -171,6 +196,8 @@ export const coreMessageSchemas = {
   nudgeAdjustment: NudgeAdjustmentMessageSchema,
   nudgeAskMe: NudgeAskMeMessageSchema,
   setFilters: SetFiltersMessageSchema,
+  pinIncentive: PinIncentiveMessageSchema,
+  clearMoments: ClearMomentsMessageSchema,
   refreshSource: RefreshSourceMessageSchema,
   nudgeBidWar: NudgeBidWarMessageSchema,
   switchScene: SwitchSceneMessageSchema,

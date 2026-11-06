@@ -76,6 +76,12 @@ Graphics and panels pick up a rebuild on browser refresh; extension and
 schema changes need a NodeCG restart. Run
 `pnpm turbo run lint typecheck test` before committing; CI runs the same.
 
+`pnpm e2e` runs the browser tests (`e2e/`) against a real NodeCG with a
+throwaway database, including phone-sized screens and what a TV link can
+and can't do; build the bundles first. Where Playwright's Chromium can't
+run, start Edge or Chrome with `--remote-debugging-port=9333` and set
+`E2E_CDP_URL=http://127.0.0.1:9333`.
+
 ## Legacy stack
 
 `apps/` (React display and admin, Express API, Python scraper, deployed

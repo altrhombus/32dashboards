@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   getCore,
   listenForCommand,
+  plain,
   secretStoreFor,
   type FundraiserCoreApi,
   type SecretStore,
@@ -36,7 +37,7 @@ export default function sourceExternal(
     defaultValue: { path: PUSH_PATH, tokenCreatedAt: null, lastPushAt: null },
   });
   const update = (patch: Partial<EndpointReplicant>) => {
-    endpoint.value = { ...(JSON.parse(JSON.stringify(endpoint.value)) as EndpointReplicant), ...patch };
+    endpoint.value = { ...plain(endpoint.value), ...patch };
   };
   update({ path: PUSH_PATH, tokenCreatedAt: secrets.get(TOKEN_SCOPE, "createdAt") ?? null });
 

@@ -47,6 +47,15 @@ export const kioskCatalog: Catalog = {
     repeatable: false,
     settings: z.object({ title: title("Featured items"), size: z.number().int().min(1).max(12).default(6) }).strict(),
   },
+  noBidItems: {
+    name: "No bids yet",
+    description: "A couple of items nobody has bid on yet, large, each with a QR code that opens it.",
+    category: "items",
+    placement: "block",
+    variants: { spotlight: { minWidth: 900, minHeight: 500, reference: { width: 1872, height: 772 }, maxScale: 1.3 } },
+    repeatable: false,
+    settings: z.object({ size: z.number().int().min(1).max(2).default(2) }).strict(),
+  },
   countdown: {
     name: "Time left",
     description: "A countdown to the event's end time.",
@@ -111,6 +120,16 @@ export const kioskCatalog: Catalog = {
     repeatable: false,
     settings: none,
   },
+  milestoneBanner: {
+    name: "Milestone banner",
+    description:
+      "A strip along the top when a milestone is reached or bidding is closing, for scenes that shouldn't be covered.",
+    category: "money",
+    placement: "overlay",
+    variants: { strip: { minWidth: 0, minHeight: 0 } },
+    repeatable: false,
+    settings: none,
+  },
   askMeWrap: {
     name: "Ask Me wrap-up",
     description: "When an Ask Me round finishes, shows what it raised for a few seconds.",
@@ -122,7 +141,7 @@ export const kioskCatalog: Catalog = {
   },
   welcome: {
     name: "Welcome",
-    description: "For arrivals: the logo, the event and its cause, how to give, and when bidding closes.",
+    description: "For arrivals: the logo, the event and its cause, a QR code to give, and when bidding closes.",
     category: "scene",
     placement: "block",
     variants: { hero: { minWidth: 1200, minHeight: 500, reference: { width: 1872, height: 900 }, maxScale: 1.3 } },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatTotal } from "./format.js";
+import { formatAmount, formatTotal, formatExact } from "./format.js";
 
 describe("formatTotal", () => {
   it("shows whole dollars, rounding down", () => {
@@ -17,5 +17,13 @@ describe("formatAmount", () => {
   it("rounds to whole dollars", () => {
     expect(formatAmount(59.5)).toBe("$60");
     expect(formatAmount(1234.4)).toBe("$1,234");
+  });
+});
+
+describe("formatExact", () => {
+  it("keeps the cents an operator typed, and hides them when there are none", () => {
+    expect(formatExact(20.5)).toBe("$20.50");
+    expect(formatExact(1250)).toBe("$1,250");
+    expect(formatExact(-5)).toBe("-$5");
   });
 });

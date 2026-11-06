@@ -21,7 +21,7 @@ export function GrandCelebrationOverlay({ active, totalRaised, causeName, logoUr
         {logoUrl && <img className="grand-celebration-overlay__logo" src={logoUrl} alt="" />}
         <h1>Thank you</h1>
         <h2>
-          for helping raise <span className="num">{formatTotal(totalRaised)}</span>
+          for helping raise <span className="grand-celebration-overlay__total num">{formatTotal(totalRaised)}</span>
           {causeName ? ` for ${causeName}` : ""}!
         </h2>
       </div>

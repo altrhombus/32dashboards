@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { renderSVG } from "uqr";
 import { createRoot } from "react-dom/client";
-import { ConfirmButton, errorText, useReplicant } from "@32dashboards/nodecg-react";
+import {
+  ConfirmButton,
+  errorText,
+  signInKey,
+  useConnected,
+  useNarrow,
+  useNow,
+  useReplicant,
+} from "@32dashboards/nodecg-react";
 import type {
   ActiveEventIdReplicant,
   BidWar,
@@ -19,7 +27,7 @@ import type {
   ScreenView,
 } from "@32dashboards/schema/core";
 import { askMeProgress, screenPresence } from "@32dashboards/schema/core";
-import { formatAmount, formatTotal } from "@32dashboards/ui";
+import { formatExact, formatTotal } from "@32dashboards/ui";
 import "@32dashboards/nodecg-react/panel.css";
 import "./live.css";
 import { parseAmount } from "./amount.js";
@@ -30,16 +38,6 @@ import { send } from "./send.js";
  * always marked with the red tally; every action is one tap and says what
  * it changed; actions that end the show take a second tap.
  */
-
-/** Re-renders every `ms` so relative times stay fresh. */
-function useNow(ms = 5_000): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), ms);
-    return () => clearInterval(timer);
-  }, [ms]);
-  return now;
-}
 
 function ago(iso: string | null, now: number): string {
   if (!iso) return "never";
@@ -58,6 +56,9 @@ interface Feedback {
   undo?: () => void;
 }
 
+/** Puts something back. Resolves once the laptop has done it, or rejects with why it couldn't. */
+type Undo = () => Promise<unknown>;
+
 /** Something this device did, kept so any recent action can be undone, not just the last one. */
 interface Action {
   id: number;
@@ -65,27 +66,19 @@ interface Action {
   at: number;
   /** Groups actions for a view, e.g. "askMe" for the Ask Me pad's recent taps. */
   tag?: string;
-  undo?: () => void;
+  undo?: Undo;
   undone?: boolean;
 }
 
-type Act = (promise: Promise<unknown>, done: string, undo?: () => void, tag?: string) => void;
+type Act = (promise: Promise<unknown>, done: string, undo?: Undo, tag?: string) => void;
 
 const HISTORY_LIMIT = 30;
 
-/** True while the viewport is phone-sized. */
-function useNarrow(maxWidth = 760): boolean {
-  const query = `(max-width: ${maxWidth}px)`;
-  const [narrow, setNarrow] = useState(() => window.matchMedia?.(query).matches ?? false);
-  useEffect(() => {
-    const list = window.matchMedia?.(query);
-    if (!list) return;
-    const onChange = () => setNarrow(list.matches);
-    list.addEventListener("change", onChange);
-    return () => list.removeEventListener("change", onChange);
-  }, [query]);
-  return narrow;
-}
+/** Width below which the console is laid out for a phone. */
+const PHONE_WIDTH = 760;
+
+/** No answer from the laptop for this long, and the console says so. */
+const SLOW_ANSWER_MS = 6_000;
 
 // --- Status strip ---------------------------------------------------------
 
@@ -217,6 +210,7 @@ function EventSwitcher({ events, activeId, act }: { events: EventsReplicant; act
 const SCENES: { id: SceneId; name: string; what: string }[] = [
   { id: "welcome", name: "Welcome", what: "For arrivals: logo, cause, how to give" },
   { id: "main", name: "Main", what: "Total, featured items, info bar" },
+  { id: "noBids", name: "No bids yet", what: "Items with no bids, with QR codes to bid" },
   { id: "intermission", name: "Intermission", what: "Your message and a countdown" },
   { id: "askMe", name: "Ask Me", what: "The Ask Me spotlight, full screen" },
   { id: "celebration", name: "Celebration", what: "Thank-you screen with the final total" },
@@ -225,6 +219,8 @@ const SCENES: { id: SceneId; name: string; what: string }[] = [
 function Scenes({ scene, event, act }: { scene: SceneReplicant; event: FundraiserEvent | null; act: Act }) {
   const [message, setMessage] = useState("");
   const [minutes, setMinutes] = useState<number | null>(10);
+  // Leaving Ask Me with money in the round finishes it, so that takes a second tap that says so.
+  const roundWaiting = scene.id === "askMe" && event && event.askMe.total > 0 && !askMeProgress(event).done;
 
   const go = (id: SceneId) => {
     const name = SCENES.find((s) => s.id === id)!.name;
@@ -237,11 +233,8 @@ function Scenes({ scene, event, act }: { scene: SceneReplicant; event: Fundraise
           }
         : { id };
     const previous = { id: scene.id, message: scene.message, countdownTo: scene.countdownTo };
-    act(send("switchScene", payload), `${name} is on the TV.`, () => void send("switchScene", previous));
-    // Leaving Ask Me finishes its round: assume yes, with Undo.
-    if (scene.id === "askMe" && id !== "askMe" && event && event.askMe.total > 0 && !askMeProgress(event).done) {
-      finishRound(event, act);
-    }
+    act(send("switchScene", payload), `${name} is on the TV.`, () => send("switchScene", previous));
+    if (roundWaiting) finishRound(event, act);
   };
 
   return (
@@ -254,13 +247,17 @@ function Scenes({ scene, event, act }: { scene: SceneReplicant; event: Fundraise
             <span className="scene__what">{onAir ? `On TV since ${clock(scene.changedAt)}` : s.what}</span>
           </>
         );
-        if (s.id === "celebration" && !onAir) {
+        if (!onAir && (s.id === "celebration" || roundWaiting)) {
           return (
             <ConfirmButton
               key={s.id}
               className="scene"
               label={content}
-              confirmLabel="Tap again to end with the celebration"
+              confirmLabel={
+                roundWaiting
+                  ? `Tap again: finish this round (${formatExact(event.askMe.total)}) and switch`
+                  : "Tap again to end with the celebration"
+              }
               onConfirm={() => go(s.id)}
             />
           );
@@ -303,10 +300,6 @@ function Scenes({ scene, event, act }: { scene: SceneReplicant; event: Fundraise
   );
 }
 
-// --- Money in the room --------------------------------------------------------
-
-const VENUE_AMOUNTS = [20, 50, 100, 500];
-
 // --- Screens ---------------------------------------------------------------
 
 /** What the console needs from layout-kiosk's `layouts` Replicant (read by name, so core doesn't depend on that bundle). */
@@ -337,10 +330,8 @@ function ScreenLayouts(props: {
     if (ref) layouts[view] = ref;
     else delete layouts[view];
     const name = ref ? (props.layouts.find((l) => l.id === ref)?.name ?? "the chosen layout") : "the built-in layout";
-    act(
-      send("saveScreen", { ...screen, layouts }),
-      `${screen.name} now shows ${name}.`,
-      () => void send("saveScreen", { ...screen, layouts: before }),
+    act(send("saveScreen", { ...screen, layouts }), `${screen.name} now shows ${name}.`, () =>
+      send("saveScreen", { ...screen, layouts: before }),
     );
   };
   return (
@@ -361,21 +352,24 @@ function ScreenLayouts(props: {
                 ))}
               </optgroup>
             )}
-            {others.length > 0 && (
-              <optgroup label="Others">
-                {others.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
-                  </option>
-                ))}
-              </optgroup>
-            )}
+            <optgroup label="Others">
+              {view !== "noBids" && <option value="builtin:noBids">Built-in No bids yet</option>}
+              {others.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </optgroup>
           </select>
         </label>
       ))}
     </section>
   );
 }
+
+// --- Money in the room --------------------------------------------------------
+
+const VENUE_AMOUNTS = [20, 50, 100, 500];
 
 /** A typed-in amount beside the preset buttons ("Other amount" + Add, and optionally Take off). */
 function AmountForm({
@@ -442,10 +436,8 @@ function Money({
   const correctionValid = correction.trim() !== "" && Number.isFinite(corrected) && corrected >= 0;
 
   const add = (delta: number) =>
-    act(
-      send("nudgeAdjustment", { eventId: event.id, delta }),
-      `Added ${formatAmount(delta)} from the venue.`,
-      () => void send("nudgeAdjustment", { eventId: event.id, delta: -delta }),
+    act(send("nudgeAdjustment", { eventId: event.id, delta }), `Added ${formatExact(delta)} from the venue.`, () =>
+      send("nudgeAdjustment", { eventId: event.id, delta: -delta, quiet: true }),
     );
 
   return (
@@ -453,19 +445,19 @@ function Money({
       <div className="money__total">
         <span className="money__amount">{formatTotal(live.total)}</span>
         <span className="muted">
-          {formatTotal(live.rawTotal)} from {sourceLabel}, {formatAmount(live.adjustment)} at the venue
-          {live.askMeRaised > 0 && live.event?.askMeInTotal && `, ${formatAmount(live.askMeRaised)} from Ask Me`}
+          {formatTotal(live.rawTotal)} from {sourceLabel}, {formatExact(live.adjustment)} at the venue
+          {live.askMeRaised > 0 && live.event?.askMeInTotal && `, ${formatExact(live.askMeRaised)} from Ask Me`}
         </span>
       </div>
       <div className="money__add">
-        <span className="money__label">Cash and checks at the venue: {formatAmount(live.adjustment)} so far</span>
+        <span className="money__label">Cash and checks at the venue: {formatExact(live.adjustment)} so far</span>
         <span className="muted">
           Each one you add is added to that, and thanked on the TV. Take off fixes a mistake, without a thank-you.
         </span>
         <div className="chips">
           {VENUE_AMOUNTS.map((a) => (
             <button key={a} type="button" className="chip chip--money" onClick={() => add(a)}>
-              +{formatAmount(a)}
+              +{formatExact(a)}
             </button>
           ))}
         </div>
@@ -475,8 +467,8 @@ function Money({
           onSubtract={(amount) =>
             act(
               send("nudgeAdjustment", { eventId: event.id, delta: -amount }),
-              `Took ${formatAmount(amount)} off the venue total.`,
-              () => void send("nudgeAdjustment", { eventId: event.id, delta: amount }),
+              `Took ${formatExact(amount)} off the venue total.`,
+              () => send("nudgeAdjustment", { eventId: event.id, delta: amount, quiet: true }),
             )
           }
         />
@@ -484,7 +476,7 @@ function Money({
       <details>
         <summary className="muted">Counted the cash box? Set the exact venue total</summary>
         <p className="muted">
-          This replaces the {formatAmount(live.adjustment)} with the number you counted. It doesn't thank anyone on the
+          This replaces the {formatExact(live.adjustment)} with the number you counted. It doesn't thank anyone on the
           TV. To add a donation, use the buttons above.
         </p>
         <form
@@ -495,8 +487,8 @@ function Money({
             const previous = live.adjustment;
             act(
               send("setAdjustment", { eventId: event.id, amount: corrected }),
-              `Venue total changed from ${formatAmount(previous)} to ${formatAmount(corrected)}.`,
-              () => void send("setAdjustment", { eventId: event.id, amount: previous }),
+              `Venue total changed from ${formatExact(previous)} to ${formatExact(corrected)}.`,
+              () => send("setAdjustment", { eventId: event.id, amount: previous }),
             );
             setCorrection("");
           }}
@@ -540,17 +532,49 @@ function finishRound(event: FundraiserEvent, act: Act, onAir = false) {
   const done =
     amount > 0
       ? event.askMeInTotal
-        ? `Added ${which} (${formatAmount(amount)}) to the total.`
-        : `Finished ${which} (${formatAmount(amount)}).`
+        ? `Added ${which} (${formatExact(amount)}) to the total.`
+        : `Finished ${which} (${formatExact(amount)}).`
       : `Skipped ${which}.`;
   act(
     send("finishAskMeRound", { eventId: event.id, amount, roundId: progress.roundId ?? undefined }),
     `${done}${then}`,
-    () => {
-      void send("reopenAskMeRound", { eventId: event.id, amount, roundId: progress.roundId ?? undefined });
-      if (returning) void send("switchScene", { id: "askMe" });
+    async () => {
+      await send("reopenAskMeRound", { eventId: event.id, amount, roundId: progress.roundId ?? undefined });
+      if (returning) await send("switchScene", { id: "askMe" });
     },
     "askMe",
+  );
+}
+
+/** Fixes the appeal on now from the console: a typo noticed mid-show shouldn't need another tab. */
+function EditAppeal({ event, act }: { event: FundraiserEvent; act: Act }) {
+  const progress = askMeProgress(event);
+  const [title, setTitle] = useState(progress.title);
+  const [message, setMessage] = useState(progress.message);
+  const dirty = title !== progress.title || message !== progress.message;
+  const save = () => {
+    const patch = progress.roundId
+      ? { askMeRounds: event.askMeRounds.map((r) => (r.id === progress.roundId ? { ...r, title, message } : r)) }
+      : { askMe: { title, message } };
+    act(send("updateEvent", { eventId: event.id, patch }), "Saved the appeal. The TVs have it.", undefined, "askMe");
+  };
+  return (
+    <details>
+      <summary className="muted">Edit this appeal</summary>
+      <div className="askme__edit">
+        <input aria-label="Appeal title" maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} />
+        <textarea
+          aria-label="Appeal message"
+          rows={7}
+          maxLength={1200}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+        <button type="button" disabled={!dirty} onClick={save}>
+          Save the appeal
+        </button>
+      </div>
+    </details>
   );
 }
 
@@ -563,16 +587,20 @@ function AskMePad(props: {
   act: Act;
 }) {
   const { event, act } = props;
+  const progress = askMeProgress(event);
+  const amount = event.askMe.total;
+  // Which round money went to, so undoing it can't take it out of a later round.
+  const round = { id: progress.roundId, raised: event.askMeRaised };
   const add = (delta: number) =>
     act(
       send("nudgeAskMe", { eventId: event.id, delta }),
-      `Added ${formatAmount(delta)} to Ask Me.`,
-      () => void send("nudgeAskMe", { eventId: event.id, delta: -delta }),
+      `Added ${formatExact(delta)} to Ask Me.`,
+      () => send("nudgeAskMe", { eventId: event.id, delta: -delta, round }),
       "askMe",
     );
   const taps = props.history.filter((a) => a.tag === "askMe").slice(0, 5);
-  const progress = askMeProgress(event);
-  const amount = event.askMe.total;
+  // A round that raised nothing can be skipped, but that's not the obvious next step, so it asks twice.
+  const skipping = amount === 0 && progress.count > 0 && !progress.done;
   return (
     <section className="block askme" aria-label="Ask Me">
       <div className="askme__head">
@@ -591,65 +619,78 @@ function AskMePad(props: {
           </button>
         )}
       </div>
-      <span className="askme__total num">{formatAmount(event.askMe.total)}</span>
+      <span className="askme__total num">{formatExact(event.askMe.total)}</span>
       <div className="askme__pad">
         {ASK_ME_AMOUNTS.map((d) => (
           <button key={d} type="button" className="askme__amount" onClick={() => add(d)}>
-            +{formatAmount(d)}
+            +{formatExact(d)}
           </button>
         ))}
       </div>
       <AmountForm label="Other Ask Me amount" onAdd={add} />
+      {!progress.done && <EditAppeal key={`${progress.roundId}-${progress.title}`} event={event} act={act} />}
       {progress.count > 0 && (
         <ol className="askme__plan" aria-label="Tonight's Ask Me rounds">
-          {event.askMeRounds.map((round, i) => (
-            <li key={round.id} data-state={round.raised !== null ? "done" : i === event.askMeCurrent ? "now" : "later"}>
-              <span className="clamp-1">{round.title || `Ask Me ${i + 1}`}</span>
+          {event.askMeRounds.map((planned, i) => (
+            <li
+              key={planned.id}
+              data-state={planned.raised !== null ? "done" : i === event.askMeCurrent ? "now" : "later"}
+            >
+              <span className="clamp-1">{planned.title || `Ask Me ${i + 1}`}</span>
               <span className="num">
-                {round.raised !== null ? formatAmount(round.raised) : i === event.askMeCurrent ? "now" : ""}
+                {planned.raised !== null ? formatExact(planned.raised) : i === event.askMeCurrent ? "now" : ""}
               </span>
             </li>
           ))}
         </ol>
       )}
-      <button
-        type="button"
-        className="primary askme__finish"
-        disabled={progress.done || (amount === 0 && progress.count === 0)}
-        onClick={() => finishRound(event, act, props.onAir)}
-      >
-        {progress.done
-          ? "All Ask Me rounds are done"
-          : progress.count === 0
-            ? amount > 0
-              ? event.askMeInTotal
-                ? `Finish this round: add ${formatAmount(amount)} to the total`
-                : `Finish this round (${formatAmount(amount)})`
-              : "Finish this round"
-            : `${amount > 0 ? `Finish round ${progress.number} (${formatAmount(amount)})` : `Skip round ${progress.number}`}${
-                progress.next ? ` · next: ${progress.next.title}` : " · the last one"
-              }`}
-      </button>
+      {skipping ? (
+        <ConfirmButton
+          className="askme__skip"
+          label={`Skip round ${progress.number}${progress.next ? ` · next: ${progress.next.title}` : " · the last one"}`}
+          confirmLabel={`Tap again: skip round ${progress.number} with nothing raised`}
+          onConfirm={() => finishRound(event, act, props.onAir)}
+        />
+      ) : (
+        <button
+          type="button"
+          className="primary askme__finish"
+          disabled={progress.done || amount === 0}
+          onClick={() => finishRound(event, act, props.onAir)}
+        >
+          {progress.done
+            ? "All Ask Me rounds are done"
+            : progress.count === 0
+              ? amount > 0
+                ? event.askMeInTotal
+                  ? `Finish this round: add ${formatExact(amount)} to the total`
+                  : `Finish this round (${formatExact(amount)})`
+                : "Finish this round"
+              : `Finish round ${progress.number} (${formatExact(amount)})${
+                  progress.next ? ` · next: ${progress.next.title}` : " · the last one"
+                }`}
+        </button>
+      )}
       <p className="muted">
         {progress.count === 0
-          ? "Finishing puts the TVs back on the scene from before Ask Me, where the wrap-up plays. Switching to another scene finishes the round too. "
-          : "After the last round, the TVs go back to the scene from before Ask Me, where the wrap-up plays. Switching to another scene finishes this round too (unless it's still at $0). "}
+          ? "Finishing puts the TVs back on the scene from before Ask Me, where the wrap-up plays. "
+          : "After the last round, the TVs go back to the scene from before Ask Me, where the wrap-up plays. "}
         {event.askMeInTotal
-          ? `So far, Ask Me has added ${formatAmount(event.askMeRaised)} to the total.`
-          : `Ask Me so far: ${formatAmount(event.askMeRaised)}. Shown on the TVs, but not added to the total, because the auction counts it (change this on the Event tab, under Ask Me rounds).`}
+          ? `So far, Ask Me has added ${formatExact(event.askMeRaised)} to the total.`
+          : `Ask Me so far: ${formatExact(event.askMeRaised)}, shown on the TVs but not added to the total.`}
       </p>
       <details>
         <summary className="muted">Made a mistake? Clear this round without adding it</summary>
         <ConfirmButton
           label="Clear this round"
-          confirmLabel={`Tap again: drop ${formatAmount(event.askMe.total)} without adding it`}
+          confirmLabel={`Tap again: drop ${formatExact(event.askMe.total)} without adding it`}
           disabled={event.askMe.total === 0}
           onConfirm={() => {
             const previous = event.askMe.total;
             act(
               send("updateEvent", { eventId: event.id, patch: { askMe: { total: 0 } } }),
-              `Cleared the Ask Me round (was ${formatAmount(previous)}); nothing added.`,
-              () => void send("nudgeAskMe", { eventId: event.id, delta: previous }),
+              `Cleared the Ask Me round (was ${formatExact(previous)}); nothing added.`,
+              () => send("nudgeAskMe", { eventId: event.id, delta: previous, round }),
               "askMe",
             );
           }}
@@ -672,8 +713,8 @@ function BidWars({ event, act }: { event: FundraiserEvent; act: Act }) {
   const nudge = (war: BidWar, optionId: string, name: string, delta: number) =>
     act(
       send("nudgeBidWar", { eventId: event.id, bidWarId: war.id, optionId, delta }),
-      `${delta > 0 ? "Added" : "Took"} ${formatAmount(Math.abs(delta))} ${delta > 0 ? "to" : "from"} ${name}.`,
-      () => void send("nudgeBidWar", { eventId: event.id, bidWarId: war.id, optionId, delta: -delta }),
+      `${delta > 0 ? "Added" : "Took"} ${formatExact(Math.abs(delta))} ${delta > 0 ? "to" : "from"} ${name}.`,
+      () => send("nudgeBidWar", { eventId: event.id, bidWarId: war.id, optionId, delta: -delta }),
     );
   return (
     <section className="block" aria-label="Bid wars">
@@ -684,7 +725,7 @@ function BidWars({ event, act }: { event: FundraiserEvent; act: Act }) {
           {war.options.map((o) => (
             <div key={o.id} className="war__option">
               <span className="war__option-name">{o.name}</span>
-              <span className="war__total">{formatAmount(o.total)}</span>
+              <span className="war__total">{formatExact(o.total)}</span>
               <span className="chips">
                 {[5, 25, 100].map((d) => (
                   <button key={d} type="button" className="chip" onClick={() => nudge(war, o.id, o.name, d)}>
@@ -705,10 +746,9 @@ function Incentives({ event, total, act }: { event: FundraiserEvent; total: numb
   const active = event.incentives.filter((i) => i.active);
   if (active.length === 0) return null;
   const pin = (id: string | null) => {
-    const incentives = event.incentives.map((i) => ({ ...i, displayNow: i.id === id }));
     const name = active.find((i) => i.id === id)?.name;
     act(
-      send("updateEvent", { eventId: event.id, patch: { incentives } }),
+      send("pinIncentive", { eventId: event.id, incentiveId: id }),
       name ? `${name} is pinned to the info bar.` : "Info bar is rotating again.",
     );
   };
@@ -722,7 +762,7 @@ function Incentives({ event, total, act }: { event: FundraiserEvent; total: numb
             <div className="incentive__text">
               <span className="incentive__name">{i.name}</span>
               <span className="muted">
-                {formatTotal(total)} of {formatAmount(i.target)} ({pct}%)
+                {formatTotal(total)} of {formatExact(i.target)} ({pct}%)
               </span>
             </div>
             <button
@@ -743,15 +783,15 @@ function Incentives({ event, total, act }: { event: FundraiserEvent; total: numb
 function describeMoment(m: DonationMoment): string {
   switch (m.kind) {
     case "total-increase":
-      return `${formatAmount(m.delta)} came in`;
+      return `${formatExact(m.delta)} came in`;
     case "new-bid":
-      return `${m.newBids > 1 ? `${m.newBids} new bids` : "New bid"} on ${m.itemTitle}${m.amount !== null ? `: ${formatAmount(m.amount)}` : ""}`;
+      return `${m.newBids > 1 ? `${m.newBids} new bids` : "New bid"} on ${m.itemTitle}${m.amount !== null ? `: ${formatExact(m.amount)}` : ""}`;
     case "milestone":
-      return `Milestone ${formatAmount(m.amount)} reached${m.label ? `: ${m.label}` : ""}`;
+      return `Milestone ${formatExact(m.amount)} reached${m.label ? `: ${m.label}` : ""}`;
     case "incentive-met":
       return `Incentive met: ${m.name}`;
     case "askme-round":
-      return `${m.count ? `Ask Me ${m.number} of ${m.count}` : "Ask Me round"}${m.title ? ` (${m.title})` : ""}: ${formatAmount(m.amount)} raised`;
+      return `${m.count ? `Ask Me ${m.number} of ${m.count}` : "Ask Me round"}${m.title ? ` (${m.title})` : ""}: ${formatExact(m.amount)} raised`;
     case "last-call":
       return m.minutesLeft === 0
         ? "Bidding closed"
@@ -759,10 +799,18 @@ function describeMoment(m: DonationMoment): string {
   }
 }
 
-function Moments({ moments }: { moments: MomentsReplicant }) {
+function Moments({ moments, act }: { moments: MomentsReplicant; act: Act }) {
   return (
     <section className="block moments" aria-label="Recent moments">
       <h2>What the TV celebrated</h2>
+      {moments.length > 0 && (
+        <ConfirmButton
+          className="moments__clear"
+          label="Clear this list"
+          confirmLabel="Tap again: clear it and the TVs' Latest bids"
+          onConfirm={() => act(send("clearMoments", undefined), "Cleared what the TV celebrated.")}
+        />
+      )}
       {moments.length === 0 ? (
         <p className="muted">Donations, bids, and milestones show up here as they happen.</p>
       ) : (
@@ -819,12 +867,6 @@ function RecentActions({ history, onUndo }: { history: Action[]; onUndo: (a: Act
 }
 
 // --- Open on your phone --------------------------------------------------------
-
-/** The socketToken cookie NodeCG sets after sign-in; `?key=` with it signs another device in. */
-function signInKey(): string | null {
-  const match = /(?:^|;\s*)socketToken=([^;]+)/.exec(document.cookie);
-  return match ? decodeURIComponent(match[1]!) : null;
-}
 
 /** A QR code that opens this console, signed in, on a phone on the same network. */
 function OpenOnPhone() {
@@ -910,7 +952,7 @@ const PHONE_TABS: { id: PhoneTab; label: string }[] = [
   { id: "more", label: "More" },
 ];
 
-/** Phone header: what's on the TV and whether everything's connected; tap for details and to switch events. */
+/** Phone header: what's on the TV and whether everything's connected, in words if not; tap for details and to switch events. */
 function PhoneHeader(props: {
   title: string;
   sceneName: string | null;
@@ -932,6 +974,11 @@ function PhoneHeader(props: {
           aria-label={props.ok.data ? "Data coming in" : "Data needs a look"}
         />
       </button>
+      {!open && (!props.ok.tvs || !props.ok.data) && (
+        <button type="button" className="phone-head__problem" onClick={() => setOpen(true)}>
+          {!props.ok.tvs ? "A TV isn't connected" : "The money needs a look"}: tap for details
+        </button>
+      )}
       {open && <div className="phone-head__details">{props.details}</div>}
     </header>
   );
@@ -950,7 +997,8 @@ function Console() {
   const moments = useReplicant<MomentsReplicant>("moments") ?? [];
   const layouts = useReplicant<LayoutSummary[]>("layouts", "layout-kiosk") ?? [];
   const now = useNow();
-  const narrow = useNarrow();
+  const narrow = useNarrow(PHONE_WIDTH);
+  const connected = useConnected();
   const [tab, setTab] = useState<PhoneTab>("money");
   const [previewScreen, setPreviewScreen] = useState(() => {
     try {
@@ -966,21 +1014,32 @@ function Console() {
 
   const act: Act = (promise, done, undo, tag) => {
     clearTimeout(feedbackTimer.current);
+    const slow = setTimeout(
+      () => setFeedback({ text: "Still waiting for the laptop to answer…", error: true }),
+      SLOW_ANSWER_MS,
+    );
     promise.then(
       () => {
+        clearTimeout(slow);
         const action: Action = { id: nextId.current++, text: done, at: Date.now(), tag, undo };
         setHistory((h) => [action, ...h].slice(0, HISTORY_LIMIT));
         setFeedback({ text: done, undo: undo && (() => undoAction(action)) });
         feedbackTimer.current = setTimeout(() => setFeedback(null), 10_000);
       },
-      (err) => setFeedback({ text: errorText(err), error: true }),
+      (err) => {
+        clearTimeout(slow);
+        setFeedback({ text: errorText(err), error: true });
+      },
     );
   };
   const undoAction = (action: Action) => {
-    if (!action.undo) return;
-    action.undo();
-    setHistory((h) => h.map((a) => (a.id === action.id ? { ...a, undone: true } : a)));
-    setFeedback({ text: `Undone: ${action.text}` });
+    action.undo?.().then(
+      () => {
+        setHistory((h) => h.map((a) => (a.id === action.id ? { ...a, undone: true } : a)));
+        setFeedback({ text: `Undone: ${action.text}` });
+      },
+      (err) => setFeedback({ text: `Couldn't undo: ${errorText(err)}`, error: true }),
+    );
   };
 
   // When Ask Me goes on air, the phone jumps to the Ask Me pad.
@@ -994,7 +1053,7 @@ function Console() {
   const view: ScreenView = event ? scene.id : "standby";
   const shownScreen = screens.find((s) => s.id === previewScreen);
   const presence = screenPresence(screens, outputs, now);
-  const connected = new Set(presence.named.filter((n) => n.connected).map((n) => n.screen.id));
+  const connectedScreens = new Set(presence.named.filter((n) => n.connected).map((n) => n.screen.id));
   const pickPreview = (id: string) => {
     setPreviewScreen(id);
     try {
@@ -1053,6 +1112,12 @@ function Console() {
       .
     </p>
   );
+  const offline = !connected && (
+    <div className="offline" role="alert">
+      <strong>Lost the laptop. Reconnecting…</strong>
+      <span>What you tap now goes through once it's back. Check this device's Wi-Fi if this stays.</span>
+    </div>
+  );
   const feedbackBar = (
     <div
       className={`feedback${feedback ? " feedback--shown" : ""}${feedback?.error ? " feedback--error" : ""}`}
@@ -1079,6 +1144,7 @@ function Console() {
     const dataOk = !event || adapterId === "manual" || (source !== undefined && source.status.state !== "error");
     return (
       <div className="console console--phone">
+        {offline}
         <PhoneHeader
           title={event ? event.name : "No event on the TV"}
           sceneName={event ? (SCENES.find((s) => s.id === scene.id)?.name ?? null) : null}
@@ -1099,13 +1165,13 @@ function Console() {
             <>
               {preview}
               <Scenes scene={scene} event={event} act={act} />
-              <ScreenLayouts screens={screens} layouts={layouts} view={view} connected={connected} act={act} />
+              <ScreenLayouts screens={screens} layouts={layouts} view={view} connected={connectedScreens} act={act} />
             </>
           ) : (
             <>
               <RecentActions history={history} onUndo={undoAction} />
               <Incentives event={event!} total={live.total} act={act} />
-              <Moments moments={moments} />
+              <Moments moments={moments} act={act} />
             </>
           )}
         </main>
@@ -1129,6 +1195,7 @@ function Console() {
 
   return (
     <div className="console">
+      {offline}
       <header className="strip">{status}</header>
       <div className="strip__tools">
         <OpenOnPhone />
@@ -1138,7 +1205,7 @@ function Console() {
         {preview}
         <div className="stage__side">
           <Scenes scene={scene} event={event} act={act} />
-          <ScreenLayouts screens={screens} layouts={layouts} view={view} connected={connected} act={act} />
+          <ScreenLayouts screens={screens} layouts={layouts} view={view} connected={connectedScreens} act={act} />
         </div>
       </div>
 
@@ -1152,7 +1219,7 @@ function Console() {
           </div>
           <div className="desk__side">
             <RecentActions history={history} onUndo={undoAction} />
-            <Moments moments={moments} />
+            <Moments moments={moments} act={act} />
           </div>
         </div>
       ) : (

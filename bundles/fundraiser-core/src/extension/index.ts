@@ -23,8 +23,9 @@ import {
   type ScreensReplicant,
   type SourceLogReplicant,
   type SourceResultsReplicant,
+  type TotalPeaksReplicant,
 } from "@32dashboards/schema/core";
-import { CommandError, formatZodError, listenForCommand } from "@32dashboards/source-sdk";
+import { CommandError, formatZodError, listenForCommand, plain } from "@32dashboards/source-sdk";
 import type { FundraiserCoreApi } from "./api.js";
 import { importAsset } from "./importAsset.js";
 import { lanAddresses } from "./network.js";
@@ -34,9 +35,6 @@ import * as core from "./state.js";
 export type { FundraiserCoreApi, ReportOutcome, SourceHandle } from "./api.js";
 
 const deps: core.Deps = { now: () => new Date().toISOString(), newId: randomUUID };
-
-/** Copies a value out of NodeCG's change-tracking proxy. */
-const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 /** Runs every listener, logging (not propagating) failures so one bad adapter can't break the core. */
 function notify<A extends unknown[]>(nodecg: NodeCG.ServerAPI, listeners: Set<(...args: A) => void>, ...args: A): void {
@@ -63,6 +61,7 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   // Kept across restarts (it's capped at MOMENTS_LIMIT), so the TVs' latest bids and the console's
   // list of what the TV celebrated don't go blank when NodeCG restarts mid-event.
   const moments = nodecg.Replicant<MomentsReplicant>("moments", { defaultValue: [] });
+  const totalPeaks = nodecg.Replicant<TotalPeaksReplicant>("totalPeaks", { defaultValue: {} });
   const outputs = nodecg.Replicant<OutputsReplicant>("outputs", { defaultValue: [], persistent: false });
   const screens = nodecg.Replicant<ScreensReplicant>("screens", { defaultValue: [] });
   const scene = nodecg.Replicant<SceneReplicant>("scene", {
@@ -140,15 +139,35 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   // that's the one place every change to the displayed total passes through.
   let lastLive = core.computeLiveState(read());
   let lastLiveJson = JSON.stringify(liveState.value);
+  // Set around a change that moves the total without new money, so it can't cross a milestone.
+  let quiet = false;
+  const setPeak = (eventId: string, total: number) => {
+    totalPeaks.value = { ...plain(totalPeaks.value ?? {}), [eventId]: total };
+  };
   const refreshLiveState = () => {
     const next = core.computeLiveState(read());
     const serialized = JSON.stringify(next);
     if (serialized === lastLiveJson) return;
-    const crossed = core.detectThresholdMoments(lastLive, next, deps);
+    const id = next.event?.id;
+    const peak = id ? (totalPeaks.value?.[id] ?? lastLive.total) : 0;
+    const crossed = quiet ? [] : core.detectThresholdMoments(lastLive, next, deps, peak);
     lastLive = next;
     lastLiveJson = serialized;
     liveState.value = next;
+    if (id && next.total > peak) setPeak(id, next.total);
     recordMoments(crossed);
+  };
+  /** Runs a change that isn't money coming in: the new total stands, but nothing is celebrated. */
+  const quietly = (change: () => void) => {
+    quiet = true;
+    change();
+    refreshLiveState();
+    quiet = false;
+  };
+  /** An operator took money off: it never was raised, so milestones above it can be reached again. */
+  const lowerPeak = (state: core.CoreState) => {
+    const { event, total } = core.computeLiveState(state);
+    if (event && total < (totalPeaks.value?.[event.id] ?? 0)) setPeak(event.id, total);
   };
 
   const activeListeners = new Set<(eventId: string | null) => void>();
@@ -202,18 +221,28 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
     queueMicrotask(() => notify(nodecg, duplicateListeners, input.eventId, eventId));
     return { state: next, reply: eventId };
   });
-  command("deleteEvent", (state, { eventId }) => ({ state: core.deleteEvent(state, eventId) }));
+  listenForCommand(nodecg, "deleteEvent", coreMessageSchemas.deleteEvent, ({ eventId }) => {
+    const before = read();
+    write(before, core.deleteEvent(before, eventId));
+    const { [eventId]: _deleted, ...rest } = plain(totalPeaks.value ?? {});
+    totalPeaks.value = rest;
+  });
   command("activateEvent", (state, { eventId }) => ({ state: core.activateEvent(state, eventId) }));
-  command("setAdjustment", (state, { eventId, amount }) => ({
-    state: core.setAdjustment(state, eventId, amount, deps),
-  }));
-  listenForCommand(nodecg, "nudgeAdjustment", coreMessageSchemas.nudgeAdjustment, ({ eventId, delta }) => {
+  listenForCommand(nodecg, "setAdjustment", coreMessageSchemas.setAdjustment, ({ eventId, amount }) => {
+    const before = read();
+    const after = core.setAdjustment(before, eventId, amount, deps);
+    quietly(() => write(before, after));
+    lowerPeak(after);
+  });
+  listenForCommand(nodecg, "nudgeAdjustment", coreMessageSchemas.nudgeAdjustment, ({ eventId, delta, quiet }) => {
     const before = read();
     const after = core.nudgeAdjustment(before, eventId, delta, deps);
-    write(before, after);
-    // Money added at the venue (cash, checks) is a donation too; a
-    // correction downward, or setAdjustment, isn't celebrated.
-    if (delta > 0 && after.activeEventId === eventId) {
+    if (quiet) quietly(() => write(before, after));
+    else write(before, after);
+    if (delta < 0) lowerPeak(after);
+    // Money added at the venue (cash, checks) is a donation too; a correction
+    // downward, setAdjustment, or undoing an earlier action isn't celebrated.
+    if (delta > 0 && !quiet && after.activeEventId === eventId) {
       recordMoments([
         {
           kind: "total-increase",
@@ -226,7 +255,9 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
       ]);
     }
   });
-  command("nudgeAskMe", (state, { eventId, delta }) => ({ state: core.nudgeAskMe(state, eventId, delta, deps) }));
+  command("nudgeAskMe", (state, { eventId, delta, round }) => ({
+    state: core.nudgeAskMe(state, eventId, delta, deps, round),
+  }));
   listenForCommand(nodecg, "finishAskMeRound", coreMessageSchemas.finishAskMeRound, ({ eventId, amount, roundId }) => {
     const before = read();
     const event = before.events.find((e) => e.id === eventId);
@@ -259,14 +290,23 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
       ]);
     }
   });
-  command("reopenAskMeRound", (state, { eventId, amount, roundId }) => ({
-    state: core.reopenAskMeRound(state, eventId, amount, roundId, deps),
-  }));
+  listenForCommand(nodecg, "reopenAskMeRound", coreMessageSchemas.reopenAskMeRound, ({ eventId, amount, roundId }) => {
+    const before = read();
+    const after = core.reopenAskMeRound(before, eventId, amount, roundId, deps);
+    write(before, after);
+    lowerPeak(after);
+  });
   command("setFilters", (state, { eventId, filters }) => ({
     state: core.setFilters(state, eventId, filters, deps),
   }));
 
   command("nudgeBidWar", (state, input) => ({ state: core.nudgeBidWar(state, input, deps) }));
+  command("pinIncentive", (state, { eventId, incentiveId }) => ({
+    state: core.pinIncentive(state, eventId, incentiveId, deps),
+  }));
+  listenForCommand(nodecg, "clearMoments", coreMessageSchemas.clearMoments, () => {
+    moments.value = [];
+  });
 
   // The scene Ask Me was put on over, to go back to once Ask Me is done (in memory; Main after a restart).
   let beforeAskMe: { id: SceneId; countdownTo: string | null; message: string | null } = {
@@ -277,7 +317,7 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   const switchTo = (id: SceneId, countdownTo: string | null = null, message: string | null = null) => {
     const current = scene.value;
     if (id === "askMe" && current && current.id !== "askMe") {
-      beforeAskMe = ["welcome", "main", "intermission"].includes(current.id)
+      beforeAskMe = ["welcome", "main", "noBids", "intermission"].includes(current.id)
         ? { id: current.id, countdownTo: current.countdownTo, message: current.message }
         : { id: "main", countdownTo: null, message: null };
     }
@@ -376,7 +416,7 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   };
 
   return {
-    registerSource(sourceId, { label }) {
+    registerSource(sourceId, { label, handEntered = false }) {
       if (refreshListeners.has(sourceId)) throw new Error(`Source "${sourceId}" is already registered`);
       const listeners = new Set<(eventId: string) => void>();
       refreshListeners.set(sourceId, listeners);
@@ -400,7 +440,7 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
 
       return {
         sourceId,
-        report(input) {
+        report({ baseline = false, ...input }) {
           const parsed = SourceResultSchema.safeParse({ ...input, sourceId });
           if (!parsed.success) {
             log("warn", `Invalid result: ${formatZodError(parsed.error)}`, null);
@@ -413,11 +453,15 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
             return outcome;
           }
           const event = state.events.find((e) => e.id === parsed.data.eventId);
+          const previous = before.sourceResults[parsed.data.eventId];
+          // The first result only says where the total stood, unless the operator typed it in.
+          const startsOver = baseline || (!previous && !handEntered);
           const compared =
-            event && state.activeEventId === event.id
-              ? core.compareResults(before.sourceResults[event.id], parsed.data, event, deps)
+            event && state.activeEventId === event.id && !startsOver
+              ? core.compareResults(previous, parsed.data, event, deps)
               : null;
-          write(before, state);
+          if (startsOver) quietly(() => write(before, state));
+          else write(before, state);
           updateSource(sourceId, { lastResultAt: deps.now() });
           if (compared && event) {
             recordMoments(compared.bids);

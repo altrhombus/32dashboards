@@ -3,7 +3,7 @@ import { ThemeSchema } from "../theme.js";
 import { IncentiveSchema } from "../incentive.js";
 import { SponsorSchema } from "../sponsor.js";
 import { AskMeConfigSchema } from "../askme.js";
-import { BidWarSchema, InfoBarConfigSchema, MilestoneSchema, PrizeSchema } from "./show.js";
+import { BidWarSchema, InfoBarConfigSchema, MAX_MILESTONES, MilestoneSchema, PrizeSchema } from "./show.js";
 
 /** The logos' heading unless an event says otherwise. */
 export const SPONSORS_TITLE = "Thank you to our sponsors";
@@ -30,11 +30,6 @@ export const EventSourceSchema = z.object({
 });
 export type EventSource = z.infer<typeof EventSourceSchema>;
 
-/**
- * One fundraiser. Many are kept on an install (past ones for reuse, future
- * ones in prep); `activeEventId` picks the one on screen. The adjustment and
- * filters belong to the event, so they persist and travel with it.
- */
 /** One planned Ask Me appeal. `raised` is set when the round finishes (null while it hasn't). */
 export const AskMeRoundSchema = z.object({
   id: z.string().uuid(),
@@ -44,6 +39,23 @@ export const AskMeRoundSchema = z.object({
 });
 export type AskMeRound = z.infer<typeof AskMeRoundSchema>;
 
+/** How many announcements an event can have, and how long each can be. */
+export const MAX_ANNOUNCEMENTS = 50;
+export const MAX_ANNOUNCEMENT_LENGTH = 200;
+
+/** Turns the one-per-line text panels edit into announcements. */
+export function parseAnnouncements(text: string): string[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+/**
+ * One fundraiser. Many are kept on an install (past ones for reuse, future
+ * ones in prep); `activeEventId` picks the one on screen. The adjustment and
+ * filters belong to the event, so they persist and travel with it.
+ */
 export const FundraiserEventSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(200),
@@ -52,7 +64,7 @@ export const FundraiserEventSchema = z.object({
   /** At endDateTime, switch the TVs to the Celebration scene (otherwise they only announce it). */
   celebrateAtClose: z.boolean().default(false),
   theme: EventThemeSchema,
-  announcements: z.array(z.string().max(200)).max(50).default([]),
+  announcements: z.array(z.string().max(MAX_ANNOUNCEMENT_LENGTH)).max(MAX_ANNOUNCEMENTS).default([]),
   askMe: AskMeConfigSchema,
   incentives: z.array(IncentiveSchema).default([]),
   sponsors: z.array(SponsorSchema).default([]),
@@ -60,7 +72,7 @@ export const FundraiserEventSchema = z.object({
   sponsorsTitle: z.string().trim().max(60).default(SPONSORS_TITLE),
   /** How long each logo shows in a Logos block before the next (the info bar has its own timing). */
   sponsorsSeconds: z.number().int().min(2).max(60).default(6),
-  milestones: z.array(MilestoneSchema).max(50).default([]),
+  milestones: z.array(MilestoneSchema).max(MAX_MILESTONES).default([]),
   bidWars: z.array(BidWarSchema).max(20).default([]),
   prizes: z.array(PrizeSchema).max(50).default([]),
   /** One line telling viewers how to give, e.g. "Bid at 32auctions.com/spring-gala". */

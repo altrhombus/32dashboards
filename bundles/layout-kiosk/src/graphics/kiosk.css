@@ -180,13 +180,48 @@ body,
 .kiosk-welcome__closes {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: calc(var(--spacing-lg) * 2);
   font-size: 1.8rem;
-  opacity: 0.9;
 }
 
 .kiosk-welcome__closes .countdown-clock {
   max-width: none;
+}
+
+.kiosk-welcome__countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.kiosk-welcome__qr {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin: 0;
+  font-weight: 700;
+}
+
+.kiosk-welcome__qr .qr-code {
+  width: 200px;
+}
+
+/* A milestone or last call over a scene that shouldn't be covered. */
+.kiosk-banner {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  z-index: 2;
+  width: min(1400px, 90%);
+  padding: 6px var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  background: var(--color-band);
+  border-bottom: 3px solid var(--color-accent);
+  font-size: 1.6rem;
+  box-sizing: border-box;
+  transform: translateX(-50%);
+  animation: kiosk-segment-in 0.4s var(--ease-standard);
 }
 
 .kiosk-standby {

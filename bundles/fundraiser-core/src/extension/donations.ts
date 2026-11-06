@@ -1,18 +1,20 @@
+import { roundCents } from "@32dashboards/schema/core";
+
 /*
  * Thanks money the bids don't explain (a donation), without thanking a bid
  * twice. An auction's total and its item list don't always update in the
  * same refresh: the total can rise a refresh before the bid that raised it
  * shows on its item, or the other way round. So unexplained money waits
  * DONATION_GRACE_MS before it's thanked, and bid money the total hasn't
- * caught up with yet cancels it out (and vice versa) in the meantime.
+ * caught up with yet cancels it out (and vice versa) in the meantime. A total
+ * that drops and comes back isn't new money either, so a rise only counts
+ * once it's past where the total was before the drop.
  */
 
 /** How long a rise in the total waits for a bid to explain it before it's thanked. */
 export const DONATION_GRACE_MS = 25_000;
 /** How long bid money waits for the total to catch up before it's forgotten. */
 export const BID_MEMORY_MS = 3 * 60_000;
-
-const cents = (n: number) => Math.round(n * 100) / 100;
 
 interface Pending {
   /** Total rises no bid has explained yet, and since when. */
@@ -21,6 +23,8 @@ interface Pending {
   /** Bid money the total hasn't shown yet, and since when. */
   bidMoney: number;
   bidSince: number | null;
+  /** How far the total has dropped, and hasn't yet come back. */
+  dropped: number;
 }
 
 export class DonationLedger {
@@ -28,7 +32,8 @@ export class DonationLedger {
 
   private for(eventId: string): Pending {
     let p = this.events.get(eventId);
-    if (!p) this.events.set(eventId, (p = { donation: 0, donationSince: null, bidMoney: 0, bidSince: null }));
+    if (!p)
+      this.events.set(eventId, (p = { donation: 0, donationSince: null, bidMoney: 0, bidSince: null, dropped: 0 }));
     return p;
   }
 
@@ -36,26 +41,30 @@ export class DonationLedger {
   observe(eventId: string, totalDelta: number, fromBids: number, now: number): void {
     const p = this.for(eventId);
     this.expire(p, now);
-    const unexplained = cents(totalDelta - fromBids);
+    if (totalDelta < 0) p.dropped = roundCents(p.dropped + -totalDelta);
+    const unexplained = roundCents(totalDelta - fromBids);
     if (unexplained > 0) {
-      // Money first: pay off bids seen earlier whose money hadn't shown in the total.
-      const settled = Math.min(unexplained, p.bidMoney);
-      p.bidMoney = cents(p.bidMoney - settled);
+      // A recovery first: money that was already counted before the total dropped.
+      const recovered = Math.min(unexplained, p.dropped);
+      p.dropped = roundCents(p.dropped - recovered);
+      // Then pay off bids seen earlier whose money hadn't shown in the total.
+      const settled = Math.min(unexplained - recovered, p.bidMoney);
+      p.bidMoney = roundCents(p.bidMoney - settled);
       if (p.bidMoney <= 0) p.bidSince = null;
-      const left = cents(unexplained - settled);
+      const left = roundCents(unexplained - recovered - settled);
       if (left > 0) {
-        p.donation = cents(p.donation + left);
+        p.donation = roundCents(p.donation + left);
         p.donationSince ??= now;
       }
     } else if (unexplained < 0) {
       // Bids the total doesn't show yet (only bid money; a drop in the total isn't a bid).
       let early = Math.min(-unexplained, fromBids);
       const settled = Math.min(early, p.donation);
-      p.donation = cents(p.donation - settled);
+      p.donation = roundCents(p.donation - settled);
       if (p.donation <= 0) p.donationSince = null;
-      early = cents(early - settled);
+      early = roundCents(early - settled);
       if (early > 0) {
-        p.bidMoney = cents(p.bidMoney + early);
+        p.bidMoney = roundCents(p.bidMoney + early);
         p.bidSince ??= now;
       }
     }

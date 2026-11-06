@@ -97,6 +97,8 @@ With one TV, skip everything about the second computer.
     **Fetch now**. If it says **needs a look**, it says why.
 - [ ] **Put the event on the TVs.** In the Live tab, pick the event at the
       top, tap **Put on the TVs**, then tap again to confirm.
+- [ ] **Clear the rehearsal.** Under **What the TV celebrated**, tap **Clear
+      this list**.
 - [ ] **Show Welcome** as guests arrive: tap **Welcome** under the scenes.
 
 ## During the show
@@ -112,9 +114,13 @@ tabs at the bottom are **Money**, **Ask Me**, **Scenes** and **More**.
 - **Ask Me:** switch to the **Ask Me** scene. Tap amounts as paddles go
   up. **Finish round** celebrates the round and brings up the next appeal.
   After the last one, the TVs go back to the scene before Ask Me and
-  celebrate there. Leaving the Ask Me scene finishes the round on now.
+  celebrate there. Leaving the Ask Me scene with money in the round finishes
+  it, after a second tap.
+- **No bids yet:** tap the scene to show items nobody has bid on, with QR
+  codes to bid. Good for a quiet stretch.
 - **Bidding closing:** the TVs count down the last minutes and announce
-  when bidding closes. Then start the **Celebration** when you're ready.
+  when bidding closes. If the event is set to switch by itself, they go to
+  **Celebration**; otherwise start it when you're ready.
 - **Bid wars:** tap an amount next to an option.
 - **Mistakes:** every action offers **Undo** for a few seconds, and
   **Your recent actions** keeps an Undo for each of your last 30.
@@ -148,6 +154,8 @@ More: [event day, troubleshooting](event-day.md#troubleshooting).
 - [ ] **Close the TV pictures:** click each one and press **Alt+F4**.
 - [ ] **Undo the Windows settings** on both computers if you like: sleep,
       Do not disturb, and updates.
-- [ ] If volunteers had the phone code, use **Reset Key** in the
-      dashboard's **Settings** so it stops working. Then sign in again on
-      the laptop.
+- [ ] Use **Reset Key** in the dashboard's **Settings** so the phone code
+      stops working. Then sign in again on the laptop. The TV links don't
+      run the show, so they can stay.
+- [ ] **Clear the organizer password** in the **32auctions source** panel on
+      the **Sources** tab, if you won't need it again soon.

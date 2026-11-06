@@ -29,7 +29,7 @@ const EMPTY: Draft = {
 
 const TOTAL_FROM: { value: Config["totalFrom"]; label: string }[] = [
   { value: "page", label: "The auction page (needs sign-in if the auction hides its total)" },
-  { value: "bids", label: "The sum of the items' current bids" },
+  { value: "bids", label: "The items' bids added up (leaves out donations and Buy Now)" },
   { value: "none", label: "Not shown: only venue cash and other entries" },
 ];
 

@@ -16,10 +16,56 @@ index 225e94552f2ae9946ab66f61417adaaf5623a76c..35d9b5d939289bd092222f3163cf8b83
  				width: 128px;
  			}
 diff --git a/dist/server/bootstrap.js b/dist/server/bootstrap.js
-index f481208c1ad4cf93051de083ae034a442db33134..fda4f6e04289ada4a5348eccca8a18b954c71f18 100644
+index f481208c1ad4cf93051de083ae034a442db33134..b512fa9b2867faaec640472e08d68e910bb9de07 100644
 --- a/dist/server/bootstrap.js
 +++ b/dist/server/bootstrap.js
-@@ -776,6 +776,13 @@ function createMiddleware(db, callbacks) {
+@@ -391,12 +391,45 @@ const listenToEvent = (eventEmitter, eventName, boundary) => effect.Effect.gen(f
+ /**
+ * Express middleware that checks if the user is authenticated.
+ */
++// 32dashboards patch: a display-only token for TVs. `db/display-token` (made by layout-kiosk) opens the kiosk
++// graphic and what it loads, nothing else, and a socket using it can read but only check in (see below).
++const readDisplayToken = () => {
++	try {
++		return node_fs.default.readFileSync(node_path.join(__nodecg_internal_util.rootPaths.getRuntimeRoot(), "db", "display-token"), "utf8").trim();
++	} catch {
++		return "";
++	}
++};
++const isDisplayToken = (token) => {
++	const expected = readDisplayToken();
++	if (!expected || typeof token !== "string" || token.length !== expected.length) return false;
++	return node_crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected));
++};
++const DISPLAY_PATHS = [/^\/bundles\/layout-kiosk\/(graphics|shared)(\/|$)/, /^\/assets\//, /^\/sentry\.js$/];
++const DISPLAY_SOCKET_EVENTS = new Set(["joinRoom", "replicant:declare", "replicant:read", "graphic:registerSocket", "graphic:queryAvailability"]);
++const allowDisplayEvent = (event, data) => DISPLAY_SOCKET_EVENTS.has(event) || event === "message" && data?.bundleName === "fundraiser-core" && data?.messageName === "outputHeartbeat";
+ const authCheck = async (req, res, next) => {
+ 	try {
+ 		if (!config.login?.enabled) {
+ 			next();
+ 			return;
+ 		}
++		// 32dashboards patch: the TV token. In its own cookie, so a TV opened beside the dashboard leaves the sign-in alone.
++		const signedIn = req.cookies.socketToken || req.user;
++		const displayToken = req.query.key ?? (signedIn ? void 0 : req.cookies.displayToken);
++		if (isDisplayToken(displayToken)) {
++			if (req.method !== "GET" || !DISPLAY_PATHS.some((allowed) => allowed.test(req.baseUrl + req.path))) {
++				res.status(403).send("This is a TV link: it can only show the TV picture.");
++				return;
++			}
++			res.cookie("displayToken", displayToken, {
++				httpOnly: true,
++				sameSite: "lax",
++				secure: req.secure
++			});
++			next();
++			return;
++		}
+ 		let { user } = req;
+ 		let isUsingKeyOrSocketToken = false;
+ 		let keyOrSocketTokenAuthenticated = false;
+@@ -776,6 +809,13 @@ function createMiddleware(db, callbacks) {
  					}
  				}
  				log$6.info("(Local) %s \"%s\" access", allowed ? "Granting" : "Denying", username);
@@ -33,3 +79,38 @@ index f481208c1ad4cf93051de083ae034a442db33134..fda4f6e04289ada4a5348eccca8a18b9
  				done(void 0, await db.upsertUser({
  					name: username,
  					provider_type: "local",
+@@ -2735,7 +2775,13 @@ function parseWorkspaces(bundles$1) {
+ 			route: `workspace/${name}`
+ 		});
+ 	});
+-	workspaces.sort((a, b) => a.label.localeCompare(b.label));
++	// 32dashboards patch: tabs in the order a show uses them (Live first, and it's what opens), not alphabetical.
++	const tabOrder = ["live", "event", "new event", "screens", "layouts", "sources"];
++	const tabRank = (label) => {
++		const rank = tabOrder.indexOf(label.toLowerCase());
++		return rank === -1 ? tabOrder.length : rank;
++	};
++	workspaces.sort((a, b) => tabRank(a.label) - tabRank(b.label) || a.label.localeCompare(b.label));
+ 	if (defaultWorkspaceHasPanels || !otherWorkspacesHavePanels) workspaces.unshift({
+ 		name: "default",
+ 		label: otherWorkspacesHavePanels ? "Main Workspace" : "Workspace",
+@@ -3621,6 +3667,19 @@ const createSocketAuthMiddleware = (db) => {
+ 				next(new UnauthorizedError(UnAuthErrCode.InvalidToken, "more than one token provided"));
+ 				return;
+ 			}
++			// 32dashboards patch: a TV token's socket can read, and check in, and nothing else.
++			if (isDisplayToken(token)) {
++				socket.use(([event, data, ack], nextPacket) => {
++					if (allowDisplayEvent(event, data)) {
++						nextPacket();
++						return;
++					}
++					const reply = [data, ack].find((arg) => typeof arg === "function");
++					if (reply) reply("This is a TV link: it can only show the TV picture.");
++				});
++				next(void 0);
++				return;
++			}
+ 			const apiKey = await db.findApiKey(token);
+ 			if (!apiKey) {
+ 				next(new UnauthorizedError(UnAuthErrCode.CredentialsRequired, "no credentials found"));

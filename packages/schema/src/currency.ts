@@ -11,6 +11,11 @@ export function parseCurrencyValue(raw: string | null | undefined): number {
   return Number.isFinite(value) ? value : 0;
 }
 
+/** Rounds to whole cents, the only precision money is kept at. */
+export function roundCents(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",

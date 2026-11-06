@@ -9,6 +9,7 @@ export {
   LiveStateReplicantSchema as liveState,
   SourceLogReplicantSchema as sourceLog,
   MomentsReplicantSchema as moments,
+  TotalPeaksReplicantSchema as totalPeaks,
   SceneReplicantSchema as scene,
   ScreensReplicantSchema as screens,
   OutputsReplicantSchema as outputs,

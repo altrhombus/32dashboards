@@ -79,6 +79,15 @@
   opacity: 0.7;
 }
 
+/* An item waiting for its first bid: an invitation, rather than a quiet "0 bids". */
+.featured-items-grid__first {
+  overflow: hidden;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  color: var(--color-secondary);
+}
+
 @keyframes featured-fade-in {
   from {
     opacity: 0;

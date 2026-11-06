@@ -48,7 +48,7 @@ $wslArgs += @('--cd', $RepoPath, '--', 'bash', 'scripts/kiosk-url.sh')
 if ($Screen) { $wslArgs += $Screen }
 $url = (& wsl.exe @wslArgs | Select-Object -Last 1).Trim()
 if (-not $url.StartsWith('http')) {
-  throw "Couldn't get the kiosk URL from WSL. Is NodeCG set up, and have you logged in to the dashboard once? Output: $url"
+  throw "Couldn't get the kiosk URL from WSL. Is NodeCG set up, and has it started once? Output: $url"
 }
 
 $edge = @(

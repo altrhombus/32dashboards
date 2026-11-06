@@ -8,10 +8,13 @@ import {
   PaletteSwatches,
   errorText,
   uploadAsset,
+  useAutosave,
   useLogoColors,
   useReplicant,
 } from "@32dashboards/nodecg-react";
 import {
+  MAX_MILESTONES,
+  parseAnnouncements,
   screenPresence,
   type ActiveEventIdReplicant,
   type EventTheme,
@@ -26,6 +29,8 @@ import "@32dashboards/nodecg-react/panel.css";
 import "@32dashboards/nodecg-react/look.css";
 import "@32dashboards/ui/fonts.css";
 import "./setup.css";
+import { AskMeRoundsEditor } from "./askMeRounds.js";
+import { AnnouncementsField, announcementsProblem } from "./fields.js";
 import { send } from "./send.js";
 import { STEPS, isoToLocalInput, localInputToIso, milestoneAmounts, type StepId } from "./setupPlan.js";
 
@@ -409,22 +414,6 @@ function StartStep(props: {
 
 // --- 2. Name -------------------------------------------------------------------
 
-/** A text field that saves itself shortly after typing stops. */
-function useAutosave<T>(value: T, save: (value: T) => void, delay = 600) {
-  const first = useRef(true);
-  const saveRef = useRef(save);
-  saveRef.current = save;
-  const json = JSON.stringify(value);
-  useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
-    const timer = setTimeout(() => saveRef.current(JSON.parse(json) as T), delay);
-    return () => clearTimeout(timer);
-  }, [json, delay]);
-}
-
 function NameStep({ event, update }: { event: FundraiserEvent; update: Update }) {
   const [name, setName] = useState(event.name);
   const [cause, setCause] = useState(event.causeName);
@@ -433,7 +422,7 @@ function NameStep({ event, update }: { event: FundraiserEvent; update: Update })
   useAutosave(cause, (v) => void update({ causeName: v.trim() }, "what it's raising money for").catch(() => {}));
   useAutosave(end, (v) => {
     const iso = localInputToIso(v);
-    if (iso) void update({ endDateTime: iso }, "the countdown").catch(() => {});
+    if (iso || !v) void update({ endDateTime: iso }, "the countdown").catch(() => {});
   });
   return (
     <Question title="What's it called?" lead="These show on every screen. Change them any time.">
@@ -530,7 +519,7 @@ function MoneyStep(props: {
         <legend className="muted">Where the total comes from</legend>
         {[
           ["page", "32auctions' total", "Needs the organizer sign-in below."],
-          ["bids", "Add up the current bids", "No sign-in needed; leaves out donations."],
+          ["bids", "Add up the bids", "No sign-in needed; leaves out donations and Buy Now."],
           ["none", "Don't show the auction's total", "Only cash and pledges added at the venue."],
         ].map(([value, label, hint]) => (
           <label key={value} className="choice">
@@ -745,6 +734,12 @@ function CelebrateStep({ event, update }: { event: FundraiserEvent; update: Upda
           : "None yet."}{" "}
         Name a special one (like "$10,000: a new puppy play yard") on the Event tab.
       </p>
+      {every > 0 && upTo / every > MAX_MILESTONES && (
+        <p className="warning">
+          That's more than {MAX_MILESTONES}, the most an event can have: these stop at $
+          {(every * MAX_MILESTONES).toLocaleString()}.
+        </p>
+      )}
 
       <h2 className="card__sub">A big goal (optional)</h2>
       <p className="muted">Shown with a progress bar in the info bar, and celebrated when it's reached.</p>
@@ -796,11 +791,6 @@ function CelebrateStep({ event, update }: { event: FundraiserEvent; update: Upda
 
 // --- 6. Ask Me ------------------------------------------------------------------
 
-/** Past this many characters, an appeal's text shrinks on the TV to fit. */
-const LONG_APPEAL = 300;
-
-type DraftRound = FundraiserEvent["askMeRounds"][number];
-
 function AskMeStep(props: {
   event: FundraiserEvent;
   update: Update;
@@ -808,116 +798,24 @@ function AskMeStep(props: {
   onEditing: (index: number) => void;
 }) {
   const { event, update } = props;
-  const [rounds, setRounds] = useState<DraftRound[]>(event.askMeRounds);
-  useAutosave(
-    rounds,
-    (v) =>
-      void update(
-        { askMeRounds: v.map((r) => ({ ...r, title: r.title.trim() })) },
-        v.length ? `Ask Me ${Math.min(props.editing, v.length - 1) + 1} of ${v.length}` : "no planned Ask Me rounds",
-      ).catch(() => {}),
-  );
-  const edit = (index: number, patch: Partial<DraftRound>) =>
-    setRounds((rs) => rs.map((r, i) => (i === index ? { ...r, ...patch } : r)));
-  const move = (index: number, by: number) => {
-    const to = index + by;
-    if (to < 0 || to >= rounds.length) return;
-    setRounds((rs) => {
-      const next = [...rs];
-      [next[index], next[to]] = [next[to]!, next[index]!];
-      return next;
-    });
-    props.onEditing(to);
-  };
-
   return (
     <Question
       title="Plan the Ask Me appeals"
       lead="Each appeal gets its own moment on the TV. During the show, the Live tab walks through them in order: Ask Me 1 of 3, 2 of 3…"
     >
-      {rounds.length === 0 && (
-        <p className="muted">
-          No appeals planned. Ask Me can still run as one appeal (its title and message are on the Event tab).
-        </p>
-      )}
-      <ol className="appeals">
-        {rounds.map((round, i) => (
-          <li
-            key={round.id}
-            className={`appeal${i === props.editing ? " appeal--editing" : ""}`}
-            onFocus={() => props.onEditing(i)}
-            onPointerDown={() => props.onEditing(i)}
-          >
-            <div className="appeal__head">
-              <strong>Ask Me {i + 1}</strong>
-              <span className="grow" />
-              <button
-                type="button"
-                aria-label={`Move Ask Me ${i + 1} up`}
-                disabled={i === 0}
-                onClick={() => move(i, -1)}
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                aria-label={`Move Ask Me ${i + 1} down`}
-                disabled={i === rounds.length - 1}
-                onClick={() => move(i, 1)}
-              >
-                ↓
-              </button>
-              <button
-                type="button"
-                disabled={round.raised !== null}
-                title={round.raised !== null ? "Already run tonight" : undefined}
-                onClick={() => {
-                  setRounds((rs) => rs.filter((_, j) => j !== i));
-                  props.onEditing(Math.max(0, i - 1));
-                }}
-              >
-                Remove
-              </button>
-            </div>
-            <input
-              aria-label={`Ask Me ${i + 1} title`}
-              placeholder="Title, e.g. Fund a kennel"
-              maxLength={120}
-              value={round.title}
-              onChange={(e) => edit(i, { title: e.target.value })}
-            />
-            <textarea
-              aria-label={`Ask Me ${i + 1} message`}
-              rows={4}
-              maxLength={1200}
-              placeholder={
-                "What the room should know, e.g.\nEvery **$250** builds one new kennel.\n- Shelter for a dog in need\n- Built by local volunteers"
-              }
-              value={round.message}
-              onChange={(e) => edit(i, { message: e.target.value })}
-            />
-            <span className="muted">
-              {round.message.length > LONG_APPEAL
-                ? `${round.message.length} characters: the TV shrinks the text to fit. Shorter reads better from across the room.`
-                : `${round.message.length} characters`}
-            </span>
-          </li>
-        ))}
-      </ol>
-      <button
-        type="button"
-        disabled={rounds.length >= 20}
-        onClick={() => {
-          setRounds((rs) => [...rs, { id: id(), title: "", message: "", raised: null }]);
-          props.onEditing(rounds.length);
-        }}
-      >
-        {rounds.length ? "Add another appeal" : "Add an appeal"}
-      </button>
-      <p className="muted">
-        Messages can use **bold**, *italics*, lists (start lines with "- " or "1. "), and # headings. The preview shows
-        the appeal you're editing.
-      </p>
+      <AskMeRoundsEditor
+        event={event}
+        editing={props.editing}
+        onEditing={props.onEditing}
+        save={(rounds, editing) =>
+          void update(
+            { askMeRounds: rounds.map((r) => ({ ...r, title: r.title.trim() })) },
+            rounds.length
+              ? `Ask Me ${Math.min(editing, rounds.length - 1) + 1} of ${rounds.length}`
+              : "no planned Ask Me rounds",
+          ).catch(() => {})
+        }
+      />
       <fieldset className="choices">
         <legend className="card__sub">Does Ask Me money also go into the auction?</legend>
         <label className="choice">
@@ -960,20 +858,11 @@ function ExtrasStep({ event, update }: { event: FundraiserEvent; update: Update 
   const [cta, setCta] = useState(event.callToAction);
   const [announcements, setAnnouncements] = useState(event.announcements.join("\n"));
   useAutosave(cta, (v) => void update({ callToAction: v.trim() }, "your call to action").catch(() => {}));
-  useAutosave(
-    announcements,
-    (v) =>
-      void update(
-        {
-          announcements: v
-            .split("\n")
-            .map((l) => l.trim())
-            .filter(Boolean)
-            .slice(0, 20),
-        },
-        "your announcements",
-      ).catch(() => {}),
-  );
+  useAutosave(announcements, (v) => {
+    if (!announcementsProblem(v)) {
+      void update({ announcements: parseAnnouncements(v) }, "your announcements").catch(() => {});
+    }
+  });
   return (
     <Question title="Anything to tell the room?" lead="Both optional, and both can change during the show.">
       <label className="field">
@@ -986,15 +875,7 @@ function ExtrasStep({ event, update }: { event: FundraiserEvent; update: Update 
         />
         <span className="muted">Shows in the info bar between items.</span>
       </label>
-      <label className="field">
-        <span>Announcements, one per line (**bold** and *italics* work)</span>
-        <textarea
-          rows={4}
-          placeholder={"Dessert auction opens at 8:00\nThank you to our volunteers"}
-          value={announcements}
-          onChange={(e) => setAnnouncements(e.target.value)}
-        />
-      </label>
+      <AnnouncementsField value={announcements} onChange={setAnnouncements} />
       <p className="muted">
         Logos (sponsors, or the causes you help) are added on the Event tab: open Show content, then Look and logos, and
         use Add logos. Prizes and bid wars are there too.

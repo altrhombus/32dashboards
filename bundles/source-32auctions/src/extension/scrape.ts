@@ -47,6 +47,7 @@ export function normalizeCards(cards: { card: ScrapedCard; pageUrl: string }[]) 
       id,
       title: card.title ?? "Untitled",
       imageUrl: card.pictureUrl ? new URL(card.pictureUrl, pageUrl).href : null,
+      url: card.href ? new URL(card.href, pageUrl).href : null,
       currentBid: parseMoney(card.price),
       value: parseMoney(card.value),
       bidCount: parseCount(card.bids),
@@ -55,6 +56,16 @@ export function normalizeCards(cards: { card: ScrapedCard; pageUrl: string }[]) 
       available: /^\s*buy now/i.test(card.price ?? "") ? parseCount(card.remaining) : null,
     };
   });
+}
+
+/**
+ * What's been bid so far. An item with no bids shows its opening price, and a
+ * Buy Now item its price, whether anyone has bought it or not; neither is
+ * money raised, so only items with bids count.
+ */
+export function sumOfBids(items: { currentBid: number | null; bidCount: number | null }[]): number {
+  const sum = items.reduce((total, item) => total + (item.bidCount ? (item.currentBid ?? 0) : 0), 0);
+  return Math.round(sum * 100) / 100;
 }
 
 /** Scrapes every item page plus the summary page for one auction. */
@@ -79,7 +90,7 @@ export async function scrapeAuction(options: ScrapeOptions): Promise<PollResult>
   const count = `${items.length} item${items.length === 1 ? "" : "s"}`;
   if (config.totalFrom === "none") return { total: 0, items, status: `${count}; the auction's total isn't shown` };
   if (config.totalFrom === "bids") {
-    const sum = Math.round(items.reduce((total, item) => total + (item.currentBid ?? 0), 0) * 100) / 100;
+    const sum = sumOfBids(items);
     return { total: sum, items, status: `${formatCurrency(sum)} in current bids · ${count}` };
   }
 
