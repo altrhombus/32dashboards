@@ -945,6 +945,36 @@ function OpenOnPhone() {
   );
 }
 
+/** The dashboard's other tabs, by their routes in NodeCG's dashboard. */
+const DASHBOARD_TABS = [
+  { label: "Event", route: "workspace/event" },
+  { label: "New event", route: "fullbleed/setup" },
+  { label: "Screens", route: "workspace/screens" },
+  { label: "Layouts", route: "fullbleed/builder" },
+  { label: "Sources", route: "workspace/sources" },
+];
+
+/**
+ * On its own page (the phone link, or NodeCG's pop-out) the console has no
+ * dashboard tabs above it, which on a tablet or laptop looks like they've gone
+ * missing. These lead back. Inside the dashboard they'd repeat its tabs, so
+ * they're left out there.
+ */
+function DashboardLinks() {
+  if (window.top !== window) return null;
+  // The sign-in cookie this page set covers the dashboard too.
+  return (
+    <nav className="dashboard-links" aria-label="Dashboard tabs">
+      <span className="muted">Dashboard:</span>
+      {DASHBOARD_TABS.map((t) => (
+        <a key={t.route} href={`/dashboard/#${t.route}`}>
+          {t.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 // --- Phone layout ---------------------------------------------------------------
 
 type PhoneTab = "money" | "askMe" | "auction" | "scenes" | "more";
@@ -1180,6 +1210,7 @@ function Console() {
               <RecentActions history={history} onUndo={undoAction} />
               <Incentives event={event!} total={live.total} act={act} />
               <Moments moments={moments} act={act} />
+              <DashboardLinks />
             </>
           )}
         </main>
@@ -1206,6 +1237,7 @@ function Console() {
       {offline}
       <header className="strip">{status}</header>
       <div className="strip__tools">
+        <DashboardLinks />
         <OpenOnPhone />
       </div>
 

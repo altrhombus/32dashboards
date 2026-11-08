@@ -80,4 +80,7 @@ schema changes need a NodeCG restart. Run
 throwaway database, including phone-sized screens and what a TV link can
 and can't do; build the bundles first. Where Playwright's Chromium can't
 run, start Edge or Chrome with `--remote-debugging-port=9333` and set
-`E2E_CDP_URL=http://127.0.0.1:9333`.
+`E2E_CDP_URL=http://127.0.0.1:9333`. For Safari's engine (iPads, Macs), set
+`E2E_BROWSER=webkit`; where WebKit can't install, `pnpm e2e:webkit-server`
+runs it in a container (podman) and `E2E_WEBKIT_URL=ws://127.0.0.1:3123/`
+connects to it. CI runs both.

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { chromium, test as base, type Browser, type Page } from "@playwright/test";
+import { chromium, webkit, test as base, type Browser, type Page } from "@playwright/test";
 import { ADMIN_PASSWORD, RUNTIME_FILE } from "./constants.js";
 
 export const LIVE = "/bundles/fundraiser-core/dashboard/live.html?standalone=true";
@@ -19,8 +19,15 @@ export const send = (page: Page, name: string, bundle: string, data?: unknown) =
 export const test = base.extend<object, { sharedBrowser: Browser }>({
   sharedBrowser: [
     async ({ playwright: _ }, use) => {
-      const url = process.env.E2E_CDP_URL;
-      const browser = url ? await chromium.connectOverCDP(url) : await chromium.launch();
+      const cdp = process.env.E2E_CDP_URL;
+      const webkitServer = process.env.E2E_WEBKIT_URL;
+      const browser = webkitServer
+        ? await webkit.connect(webkitServer)
+        : cdp
+          ? await chromium.connectOverCDP(cdp)
+          : process.env.E2E_BROWSER === "webkit"
+            ? await webkit.launch()
+            : await chromium.launch();
       await use(browser);
       await browser.close();
     },

@@ -22,6 +22,8 @@
   --action-ink: #0d1430;
   --radius: 10px;
   --target: 44px;
+  /* Native controls (checkboxes, date pickers, scrollbars) draw dark to match; Safari draws them light otherwise. */
+  color-scheme: dark;
   font-family:
     "Segoe UI Variable Text",
     "Segoe UI",
@@ -281,6 +283,19 @@ textarea {
 textarea {
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Safari ignores a select's background unless it draws the select itself, so draw the arrow here. */
+select {
+  appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%239aa5c4' stroke-width='2'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+a {
+  color: var(--action);
 }
 
 button {

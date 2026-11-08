@@ -56,3 +56,12 @@ jobs:
 
       - name: Run the browser tests
         run: pnpm e2e
+
+      # Safari's engine: iPads and Macs at the venue.
+      - name: Install WebKit
+        run: pnpm exec playwright install --with-deps webkit
+
+      - name: Run the browser tests in WebKit
+        run: pnpm e2e
+        env:
+          E2E_BROWSER: webkit

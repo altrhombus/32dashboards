@@ -126,6 +126,18 @@ test.describe("guard rails", () => {
     );
     expect(tabs.map((t) => t.toLowerCase())).toEqual(["live", "event", "new event", "screens", "layouts", "sources"]);
   });
+
+  test("shows the dashboard's tabs, and the console on its own page leads back to them", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await signIn(page);
+    await page.goto("/dashboard/");
+    await page.waitForURL(/#fullbleed\/live/);
+    await expect(page.locator("paper-tab.workspaceTab", { hasText: "Sources" })).toBeVisible();
+    await page.goto(LIVE);
+    await page.getByRole("navigation", { name: "Dashboard tabs" }).getByRole("link", { name: "Screens" }).click();
+    await page.waitForURL(/#workspace\/screens/);
+    await expect(page.locator("paper-tab.workspaceTab", { hasText: "Screens" })).toBeVisible();
+  });
 });
 
 test.describe("the live auction", () => {

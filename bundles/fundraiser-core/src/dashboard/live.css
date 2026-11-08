@@ -404,11 +404,17 @@ h2 {
   background: var(--raise-hi);
   border: 1px solid var(--line);
   transform: translate(-50%, 140%);
-  transition: transform 0.2s ease-out;
+  /* Hidden once it has slid away, so its edge doesn't peek over the bottom of the screen. */
+  visibility: hidden;
+  transition:
+    transform 0.2s ease-out,
+    visibility 0s 0.2s;
 }
 
 .feedback--shown {
   transform: translate(-50%, 0);
+  visibility: visible;
+  transition: transform 0.2s ease-out;
 }
 
 .feedback--error {
@@ -456,8 +462,32 @@ h2 {
 
 .strip__tools {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
   justify-content: flex-end;
   margin-top: -10px;
+}
+
+.dashboard-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  align-items: center;
+  margin-right: auto;
+}
+
+.dashboard-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.console--phone .dashboard-links {
+  padding: 4px 4px 0;
+  border-top: 1px solid var(--line);
 }
 
 .phone-link {
