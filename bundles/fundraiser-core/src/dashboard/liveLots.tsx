@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { errorText, uploadAsset, useAutosave } from "@32dashboards/nodecg-react";
 import { lotFinished, type FundraiserEvent, type LiveLot } from "@32dashboards/schema/core";
 import { formatExact } from "@32dashboards/ui";
+import { rebase } from "./rebase.js";
 import "./askMeRounds.css";
 
 const newId = () => crypto.randomUUID();
@@ -35,16 +36,19 @@ export function LiveLotsEditor({ event, save }: { event: FundraiserEvent; save: 
   const [problem, setProblem] = useState<string | null>(null);
   useAutosave(lots, save);
 
-  // An item sold on another device: take its state, keeping whatever is being typed here.
-  const show = JSON.stringify(event.liveLots.map((l) => [l.id, l.soldFor, l.passed]));
-  const firstRun = useRef(true);
+  // A change on another device (an item sold, a starting bid changed on the phone): take it,
+  // keeping whatever is being typed here. How an item went always comes from the show.
+  const show = JSON.stringify(event.liveLots);
+  const before = useRef(event.liveLots);
   useEffect(() => {
-    if (firstRun.current) {
-      firstRun.current = false;
-      return;
-    }
+    if (before.current === event.liveLots) return;
+    const was = before.current;
+    before.current = event.liveLots;
     setLots((local) =>
-      event.liveLots.map((saved) => ({ ...(local.find((l) => l.id === saved.id) ?? saved), ...state(saved) })),
+      rebase(local, was, event.liveLots).map((lot) => ({
+        ...lot,
+        ...state(event.liveLots.find((saved) => saved.id === lot.id)!),
+      })),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show]);

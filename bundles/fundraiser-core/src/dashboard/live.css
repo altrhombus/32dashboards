@@ -652,6 +652,18 @@ h2 {
   min-height: var(--target);
 }
 
+.live-pad__start {
+  display: grid;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--raise-hi);
+}
+
+.live-pad__start button {
+  min-height: 40px;
+}
+
 .live-pad__raise {
   min-height: 88px;
   font-size: 2rem;
@@ -810,6 +822,15 @@ h2 {
   padding: 6px 10px;
   border-radius: 8px;
   color: var(--muted);
+}
+
+.askme__plan li {
+  align-items: center;
+}
+
+.askme__switch {
+  min-height: 40px;
+  padding: 0 12px;
 }
 
 .askme__plan li[data-state="done"] {

@@ -41,6 +41,34 @@ test.describe("the phone console", () => {
     await expect(tap.getByRole("button", { name: "Undo" })).toBeVisible();
   });
 
+  test("shows the amounts the appeal calls out", async ({ page }) => {
+    await page.locator(".phone-tabs button", { hasText: "Ask Me" }).click();
+    const pad = page.locator(".askme__pad");
+    await expect(pad.getByRole("button")).toHaveText(["+$500", "+$100", "+$50"]);
+  });
+
+  test("keeps a typed amount for the next gift", async ({ page }) => {
+    await page.locator(".phone-tabs button", { hasText: "Ask Me" }).click();
+    await page.getByLabel("Other Ask Me amount").fill("200");
+    const add = page.getByRole("button", { name: "Add $200" });
+    await add.click();
+    await expect(page.locator(".askme__total")).toHaveText("$200");
+    await add.click();
+    await expect(page.locator(".askme__total")).toHaveText("$400");
+    await page.getByLabel("Other Ask Me amount").click();
+    await page.keyboard.type("75");
+    await expect(page.getByRole("button", { name: "Add $75" })).toBeVisible();
+  });
+
+  test("switches to another round at the last minute", async ({ page }) => {
+    await page.locator(".phone-tabs button", { hasText: "Ask Me" }).click();
+    await expect(page.locator(".askme__head")).toContainText("First appeal");
+    await page.getByRole("button", { name: "Start now" }).click();
+    await expect(page.locator(".askme__head")).toContainText("Ask Me 1 of 2 · Second appeal");
+    await page.getByRole("button", { name: "+$100" }).click();
+    await expect(page.getByRole("button", { name: "Start now" })).toHaveCount(0);
+  });
+
   test("asks twice before skipping a round", async ({ page }) => {
     await page.locator(".phone-tabs button", { hasText: "Ask Me" }).click();
     await page.getByRole("button", { name: /^Skip round 1/ }).click();
@@ -138,6 +166,24 @@ test.describe("the live auction", () => {
     await page.getByRole("button", { name: "Tap again: SOLD for $1,000" }).click();
     await expect(page.locator(".askme__head")).toContainText("Chef's dinner for ten");
     await expect(page.locator(".askme__plan")).toContainText("$1,000 · #42");
+  });
+
+  test("changes the starting bid from the phone before bidding opens", async ({ page }) => {
+    await auction(page);
+    await expect(page.locator(".live-pad__start")).toContainText("Starting bid: $500");
+    await page.locator(".live-pad__start").getByRole("button", { name: "Change" }).click();
+    await page.getByLabel("Starting bid").fill("400");
+    await page.getByRole("button", { name: "Save $400" }).click();
+    await expect(page.locator(".live-pad__start")).toContainText("Starting bid: $400");
+    await page.getByRole("button", { name: "Open at $400" }).click();
+    await expect(page.locator(".askme__total")).toHaveText("$400");
+    await expect(page.locator(".live-pad__start")).toHaveCount(0);
+  });
+
+  test("shows the starting bid with the bid off the TV too", async ({ page }) => {
+    await auction(page);
+    await page.getByLabel(/Show bids on the TV/).click();
+    await expect(page.locator(".live-pad__start")).toContainText("Starting bid: $500");
   });
 
   test("works with the bid off the TV: the price goes in at SOLD", async ({ page }) => {

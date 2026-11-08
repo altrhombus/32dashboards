@@ -31,6 +31,7 @@ import { formatExact, formatTotal } from "@32dashboards/ui";
 import "@32dashboards/nodecg-react/panel.css";
 import "./live.css";
 import { AmountForm } from "./amountForm.js";
+import { AmountsInput, amountListProblem, parseAmountList } from "./askMeRounds.js";
 import type { Act, Undo } from "./console.js";
 import { LivePad } from "./livePad.js";
 import { send } from "./send.js";
@@ -495,16 +496,44 @@ function finishRound(event: FundraiserEvent, act: Act, onAir = false) {
   );
 }
 
+/**
+ * Moves a planned round to another place among the rounds still to come, for a
+ * last-minute change of order: "Start now" swaps it in for the round on now
+ * (only while that one has raised nothing), "Do next" puts it after it. Undo
+ * puts the order back.
+ */
+function moveRound(event: FundraiserEvent, from: number, to: number, act: Act) {
+  const before = event.askMeRounds;
+  const moved = before[from]!;
+  const after = before.filter((_, i) => i !== from);
+  after.splice(to, 0, moved);
+  const name = moved.title || `Ask Me ${from + 1}`;
+  act(
+    send("updateEvent", { eventId: event.id, patch: { askMeRounds: after } }),
+    to === event.askMeCurrent ? `${name} is on now.` : `${name} is next.`,
+    () => send("updateEvent", { eventId: event.id, patch: { askMeRounds: before } }),
+    "askMe",
+  );
+}
+
 /** Fixes the appeal on now from the console: a typo noticed mid-show shouldn't need another tab. */
 function EditAppeal({ event, act }: { event: FundraiserEvent; act: Act }) {
   const progress = askMeProgress(event);
   const [title, setTitle] = useState(progress.title);
   const [message, setMessage] = useState(progress.message);
-  const dirty = title !== progress.title || message !== progress.message;
+  const appeal = progress.roundId ? event.askMeRounds.find((r) => r.id === progress.roundId)! : event.askMe;
+  const savedAmounts = appeal.amounts.join(", ");
+  const [amountsText, setAmountsText] = useState(savedAmounts);
+  const dirty = title !== progress.title || message !== progress.message || amountsText !== savedAmounts;
   const save = () => {
+    const amounts = parseAmountList(amountsText) ?? [];
     const patch = progress.roundId
-      ? { askMeRounds: event.askMeRounds.map((r) => (r.id === progress.roundId ? { ...r, title, message } : r)) }
-      : { askMe: { title, message } };
+      ? {
+          askMeRounds: event.askMeRounds.map((r) =>
+            r.id === progress.roundId ? { ...r, title, message, amounts } : r,
+          ),
+        }
+      : { askMe: { title, message, amounts } };
     act(send("updateEvent", { eventId: event.id, patch }), "Saved the appeal. The TVs have it.", undefined, "askMe");
   };
   return (
@@ -519,7 +548,8 @@ function EditAppeal({ event, act }: { event: FundraiserEvent; act: Act }) {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
-        <button type="button" disabled={!dirty} onClick={save}>
+        <AmountsInput label="Amount buttons" message={message} text={amountsText} onText={setAmountsText} />
+        <button type="button" disabled={!dirty || Boolean(amountListProblem(amountsText))} onClick={save}>
           Save the appeal
         </button>
       </div>
@@ -589,9 +619,29 @@ function AskMePad(props: {
               data-state={planned.raised !== null ? "done" : i === event.askMeCurrent ? "now" : "later"}
             >
               <span className="clamp-1">{planned.title || `Ask Me ${i + 1}`}</span>
-              <span className="num">
-                {planned.raised !== null ? formatExact(planned.raised) : i === event.askMeCurrent ? "now" : ""}
-              </span>
+              {planned.raised !== null ? (
+                <span className="num">{formatExact(planned.raised)}</span>
+              ) : i === event.askMeCurrent ? (
+                <span>now</span>
+              ) : amount === 0 ? (
+                <button
+                  type="button"
+                  className="askme__switch"
+                  onClick={() => moveRound(event, i, event.askMeCurrent, act)}
+                >
+                  Start now
+                </button>
+              ) : i > event.askMeCurrent + 1 ? (
+                <button
+                  type="button"
+                  className="askme__switch"
+                  onClick={() => moveRound(event, i, event.askMeCurrent + 1, act)}
+                >
+                  Do next
+                </button>
+              ) : (
+                <span>next</span>
+              )}
             </li>
           ))}
         </ol>

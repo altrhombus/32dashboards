@@ -3,6 +3,7 @@ import { useAutosave } from "@32dashboards/nodecg-react";
 import { formatExact } from "@32dashboards/ui";
 import { MAX_ASK_ME_AMOUNTS, askMeAmounts, type FundraiserEvent } from "@32dashboards/schema/core";
 import { parseAmount } from "./amount.js";
+import { rebase } from "./rebase.js";
 import "./askMeRounds.css";
 
 /** Past this many characters, an appeal's text shrinks on the TV to fit. */
@@ -29,19 +30,19 @@ export function AskMeRoundsEditor(props: {
   const [rounds, setRounds] = useState<DraftRound[]>(event.askMeRounds);
   useAutosave(rounds, (v) => props.save(v, editing));
 
-  // A round finished on another device: take its state, keeping whatever is being typed here.
-  const show = JSON.stringify(event.askMeRounds.map((r) => [r.id, r.raised]));
-  const firstRun = useRef(true);
+  // A change on another device (a round finished, reordered or edited on the phone): take it,
+  // keeping whatever is being typed here. What a round raised always comes from the show.
+  const show = JSON.stringify(event.askMeRounds);
+  const before = useRef(event.askMeRounds);
   useEffect(() => {
-    if (firstRun.current) {
-      firstRun.current = false;
-      return;
-    }
+    if (before.current === event.askMeRounds) return;
+    const was = before.current;
+    before.current = event.askMeRounds;
     setRounds((local) =>
-      event.askMeRounds.map((saved) => {
-        const mine = local.find((r) => r.id === saved.id);
-        return mine ? { ...saved, title: mine.title, message: mine.message, amounts: mine.amounts } : saved;
-      }),
+      rebase(local, was, event.askMeRounds).map((round) => ({
+        ...round,
+        raised: event.askMeRounds.find((saved) => saved.id === round.id)!.raised,
+      })),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show]);
@@ -174,6 +175,12 @@ function AmountsField(props: {
   onChange: (amounts: number[]) => void;
 }) {
   const [text, setText] = useState(props.appeal.amounts.join(", "));
+  // Changed on the phone: show the new list, unless it's what's typed here.
+  const saved = JSON.stringify(props.appeal.amounts);
+  useEffect(() => {
+    if (JSON.stringify(parseAmountList(text)) !== saved) setText(props.appeal.amounts.join(", "));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saved]);
   return (
     <AmountsInput
       label={props.label}

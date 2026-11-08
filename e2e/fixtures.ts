@@ -51,7 +51,7 @@ export async function liveEvent(page: Page, name = LONG_NAME) {
       askMeRounds: ["First appeal", "Second appeal"].map((title) => ({
         id: crypto.randomUUID(),
         title,
-        message: "Every **$250** helps.\n- One\n- Two",
+        message: "**$500** builds a kennel.\n- $100 feeds a dog for a month\n- $50 pays for a checkup",
         raised: null,
       })),
     },

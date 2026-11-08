@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { formatExact } from "@32dashboards/ui";
 import { parseAmount } from "./amount.js";
+
+/** setSelectionRange rather than select(): iOS Safari ignores select() on a tap. */
+const selectAll = (input: HTMLInputElement) => input.setSelectionRange(0, input.value.length);
 
 /**
  * A typed-in amount beside the preset buttons ("Other amount" + Add, and optionally Take off). The amount stays
@@ -13,6 +16,7 @@ export function AmountForm({
   onSubtract,
   compact,
   addLabel = "Add",
+  placeholder,
 }: {
   label: string;
   onAdd: (amount: number) => void;
@@ -20,8 +24,10 @@ export function AmountForm({
   onSubtract?: (amount: number) => void;
   compact?: boolean;
   addLabel?: string;
+  placeholder?: string;
 }) {
   const [text, setText] = useState("");
+  const justFocused = useRef(false);
   const amount = parseAmount(text);
   const done = (run: (amount: number) => void) => {
     if (amount === null) return;
@@ -39,14 +45,20 @@ export function AmountForm({
         inputMode="decimal"
         enterKeyHint="done"
         aria-label={label}
-        placeholder={compact ? "$" : "Other amount"}
+        placeholder={placeholder ?? (compact ? "$" : "Other amount")}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onFocus={(e) => {
-          // Safari drops a selection made during focus, so select on the next frame.
-          const input = e.currentTarget;
-          requestAnimationFrame(() => input.select());
+          selectAll(e.currentTarget);
+          justFocused.current = true;
         }}
+        // Lifting the finger (or mouse button) puts a cursor where it was, so select again
+        // once the tap that focused the box is done; later taps place the cursor as usual.
+        onClick={(e) => {
+          if (justFocused.current) selectAll(e.currentTarget);
+          justFocused.current = false;
+        }}
+        onBlur={() => (justFocused.current = false)}
       />
       <button type="submit" className="primary" disabled={amount === null}>
         {amount !== null && !compact ? `${addLabel} ${formatExact(amount)}` : addLabel}

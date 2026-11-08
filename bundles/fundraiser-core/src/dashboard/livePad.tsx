@@ -59,6 +59,48 @@ function BidControls({ event, lot, act }: { event: FundraiserEvent; lot: LiveLot
   );
 }
 
+/**
+ * The item's starting bid, checked and changed from the phone before bidding
+ * opens: plans change at the podium. Saved on the item, so the TV shows it too.
+ */
+function StartingBid({ event, lot, act }: { event: FundraiserEvent; lot: LiveLot; act: Act }) {
+  const [changing, setChanging] = useState(false);
+  const save = (startingBid: number | null) => {
+    const previous = lot.startingBid;
+    const withBid = (bid: number | null) =>
+      event.liveLots.map((l) => (l.id === lot.id ? { ...l, startingBid: bid } : l));
+    setChanging(false);
+    act(
+      send("updateEvent", { eventId: event.id, patch: { liveLots: withBid(startingBid) } }),
+      startingBid === null ? "No starting bid for this item." : `Starting bid: ${formatExact(startingBid)}.`,
+      () => send("updateEvent", { eventId: event.id, patch: { liveLots: withBid(previous) } }),
+      "live",
+    );
+  };
+  return (
+    <div className="live-pad__start">
+      <div className="row">
+        <span className="grow">
+          {lot.startingBid !== null ? `Starting bid: ${formatExact(lot.startingBid)}` : "No starting bid set"}
+        </span>
+        <button type="button" aria-expanded={changing} onClick={() => setChanging(!changing)}>
+          {changing ? "Cancel" : lot.startingBid !== null ? "Change" : "Set one"}
+        </button>
+      </div>
+      {changing && (
+        <>
+          <AmountForm label="Starting bid" addLabel="Save" placeholder="New bid" onAdd={save} />
+          {lot.startingBid !== null && (
+            <button type="button" onClick={() => save(null)}>
+              No starting bid
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Selling the item up now: the price, from the bid or typed in, and an optional paddle number. */
 function SoldControls({ event, lot, act }: { event: FundraiserEvent; lot: LiveLot; act: Act }) {
   const [price, setPrice] = useState("");
@@ -160,6 +202,7 @@ export function LivePad({ event, onAir, act }: { event: FundraiserEvent; onAir: 
       {progress.done && <p className="muted">Every item has had its turn. The TVs say thank you.</p>}
 
       {/* key: a new item starts with a clean slate */}
+      {lot && lot.currentBid === null && <StartingBid key={`start-${lot.id}`} event={event} lot={lot} act={act} />}
       {lot && event.liveShowBid && <BidControls key={`bid-${lot.id}`} event={event} lot={lot} act={act} />}
       {lot && <SoldControls key={`sold-${lot.id}`} event={event} lot={lot} act={act} />}
 
