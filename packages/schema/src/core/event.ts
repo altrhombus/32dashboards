@@ -42,6 +42,8 @@ export const AskMeRoundSchema = z.object({
   id: z.string().uuid(),
   title: z.string().trim().max(120).default(""),
   message: z.string().max(1200).default(""),
+  /** The amount buttons on the console for this round, in order. Empty: from the message, or the usual ones. */
+  amounts: z.array(z.number().finite().positive().max(1_000_000)).max(8).default([]),
   raised: z.number().finite().nonnegative().nullable().default(null),
 });
 export type AskMeRound = z.infer<typeof AskMeRoundSchema>;

@@ -460,8 +460,6 @@ function Money({
   );
 }
 
-const ASK_ME_AMOUNTS = [10, 25, 50, 100, 250, 500];
-
 /**
  * Finishes the Ask Me round on now (the TV wraps it up, and adds it to the
  * total if the event does) and moves on to the next planned round, with
@@ -571,14 +569,17 @@ function AskMePad(props: {
         )}
       </div>
       <span className="askme__total num">{formatExact(event.askMe.total)}</span>
-      <div className="askme__pad">
-        {ASK_ME_AMOUNTS.map((d) => (
+      <div
+        className={`askme__pad${progress.amounts.length % 3 && progress.amounts.length % 2 === 0 ? " askme__pad--pairs" : ""}`}
+      >
+        {progress.amounts.map((d) => (
           <button key={d} type="button" className="askme__amount" onClick={() => add(d)}>
             +{formatExact(d)}
           </button>
         ))}
       </div>
-      <AmountForm label="Other Ask Me amount" onAdd={add} />
+      {/* key: a new round starts with an empty box */}
+      <AmountForm key={`amount-${progress.roundId}`} label="Other Ask Me amount" onAdd={add} />
       {!progress.done && <EditAppeal key={`${progress.roundId}-${progress.title}`} event={event} act={act} />}
       {progress.count > 0 && (
         <ol className="askme__plan" aria-label="Tonight's Ask Me rounds">

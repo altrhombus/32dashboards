@@ -115,7 +115,7 @@ describe("fundraiser-core extension", () => {
     const { fake } = setup();
     const eventId = await createActiveEvent(fake);
     const scene = () => fake.replicant<{ id: string; message: string | null }>("scene").value;
-    const round = (title: string) => ({ id: crypto.randomUUID(), title, message: "", raised: null });
+    const round = (title: string) => ({ id: crypto.randomUUID(), title, message: "", amounts: [], raised: null });
     await fake.send("updateEvent", { eventId, patch: { askMeRounds: [round("One"), round("Two")] } });
     await fake.send("switchScene", { id: "intermission", message: "Dessert" });
     await fake.send("switchScene", { id: "askMe" });

@@ -494,6 +494,10 @@ h2 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
+/* 2, 4 or 8 amounts fill whole rows two at a time. */
+.askme__pad--pairs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 
 .askme__amount {
   min-height: 64px;

@@ -38,7 +38,7 @@ const validEvent: EventConfig = {
     backgroundMotion: false,
   },
   announcements: ["Doors open at 6pm"],
-  askMe: { enabled: false, title: "Ask Me Spotlight", message: "", total: 0 },
+  askMe: { enabled: false, title: "Ask Me Spotlight", message: "", total: 0, amounts: [] },
   incentives: [validIncentive],
   sponsors: [],
   scraperSource: {

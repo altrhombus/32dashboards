@@ -131,8 +131,8 @@ describe("kiosk layouts", () => {
 
   it("shows the planned round on now, then tonight's thanks once all are done", () => {
     const rounds = [
-      { id: id(50), title: "Fund a kennel", message: "Kennels", raised: 1250 },
-      { id: id(51), title: "Vet care", message: "Every **$50** pays for a checkup.", raised: null },
+      { id: id(50), title: "Fund a kennel", message: "Kennels", amounts: [], raised: 1250 },
+      { id: id(51), title: "Vet care", message: "Every **$50** pays for a checkup.", amounts: [], raised: null },
     ];
     const view = (askMeCurrent: number) => {
       const event = { ...worstEvent, askMeRounds: rounds, askMeCurrent, askMeRaised: 1250 };

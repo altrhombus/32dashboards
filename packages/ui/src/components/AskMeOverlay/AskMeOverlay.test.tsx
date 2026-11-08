@@ -2,7 +2,13 @@ import { act, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AskMeOverlay } from "./AskMeOverlay.js";
 
-const askMe = (total: number) => ({ enabled: true, title: "Fund a kennel", message: "Raise your paddle", total });
+const askMe = (total: number) => ({
+  enabled: true,
+  title: "Fund a kennel",
+  message: "Raise your paddle",
+  total,
+  amounts: [],
+});
 
 describe("AskMeOverlay", () => {
   afterEach(() => vi.useRealTimers());

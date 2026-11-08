@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useAutosave } from "@32dashboards/nodecg-react";
 import { formatExact } from "@32dashboards/ui";
-import type { FundraiserEvent } from "@32dashboards/schema/core";
+import { MAX_ASK_ME_AMOUNTS, askMeAmounts, type FundraiserEvent } from "@32dashboards/schema/core";
+import { parseAmount } from "./amount.js";
 import "./askMeRounds.css";
 
 /** Past this many characters, an appeal's text shrinks on the TV to fit. */
@@ -39,7 +40,7 @@ export function AskMeRoundsEditor(props: {
     setRounds((local) =>
       event.askMeRounds.map((saved) => {
         const mine = local.find((r) => r.id === saved.id);
-        return mine ? { ...saved, title: mine.title, message: mine.message } : saved;
+        return mine ? { ...saved, title: mine.title, message: mine.message, amounts: mine.amounts } : saved;
       }),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -125,6 +126,11 @@ export function AskMeRoundsEditor(props: {
                 value={round.message}
                 onChange={(e) => edit(i, { message: e.target.value })}
               />
+              <AmountsField
+                label={`Ask Me ${i + 1} amount buttons`}
+                appeal={round}
+                onChange={(amounts) => edit(i, { amounts })}
+              />
               <span className="muted">
                 {round.message.length > LONG_APPEAL
                   ? `${round.message.length} characters: the TV shrinks the text to fit. Shorter reads better from across the room.`
@@ -138,7 +144,7 @@ export function AskMeRoundsEditor(props: {
         type="button"
         disabled={rounds.length >= 20}
         onClick={() => {
-          setRounds((rs) => [...rs, { id: newId(), title: "", message: "", raised: null }]);
+          setRounds((rs) => [...rs, { id: newId(), title: "", message: "", amounts: [], raised: null }]);
           onEditing(rounds.length);
         }}
       >
@@ -148,5 +154,73 @@ export function AskMeRoundsEditor(props: {
         Saved as you type. Messages can use **bold**, *italics*, lists (start lines with "- " or "1. "), and # headings.
       </p>
     </>
+  );
+}
+
+/** "200, 100, 50, 25" -> [200, 100, 50, 25]; null if any of it isn't an amount. */
+export function parseAmountList(text: string): number[] | null {
+  const parts = text.split(/[,\s]+/).filter(Boolean);
+  const amounts = parts.map(parseAmount);
+  return amounts.every((a) => a !== null) ? (amounts as number[]) : null;
+}
+
+/**
+ * The amount buttons the console shows for an appeal. Left empty, they're the amounts in
+ * the message (so the notes and the buttons agree), or the usual ones.
+ */
+function AmountsField(props: {
+  label: string;
+  appeal: { amounts: number[]; message: string };
+  onChange: (amounts: number[]) => void;
+}) {
+  const [text, setText] = useState(props.appeal.amounts.join(", "));
+  return (
+    <AmountsInput
+      label={props.label}
+      message={props.appeal.message}
+      text={text}
+      onText={(next) => {
+        setText(next);
+        const amounts = amountListProblem(next) ? null : parseAmountList(next);
+        if (amounts) props.onChange(amounts);
+      }}
+    />
+  );
+}
+
+/** Why a typed list of amounts can't be used, or null if it can. */
+export function amountListProblem(text: string): string | null {
+  const parsed = parseAmountList(text);
+  if (parsed === null) return "Amounts only, with commas between them, like 200, 100, 50, 25.";
+  if (parsed.length > MAX_ASK_ME_AMOUNTS) return `Up to ${MAX_ASK_ME_AMOUNTS} amounts.`;
+  return null;
+}
+
+/** The typed list of amount buttons, saying what's used when it's left empty. */
+export function AmountsInput(props: { label: string; message: string; text: string; onText: (text: string) => void }) {
+  const { text } = props;
+  const parsed = parseAmountList(text);
+  const problem = amountListProblem(text);
+  const fallback = askMeAmounts({ amounts: [], message: props.message });
+  const fallbackText = fallback.amounts.map((a) => formatExact(a)).join(", ");
+  return (
+    <label className="field">
+      <span>Amount buttons on the phone</span>
+      <input
+        aria-label={props.label}
+        inputMode="decimal"
+        placeholder={fallbackText}
+        value={text}
+        onChange={(e) => props.onText(e.target.value)}
+      />
+      <span className={problem ? "error" : "muted"}>
+        {problem ??
+          (parsed!.length
+            ? "In this order, biggest ask first if that's how it's called."
+            : fallback.from === "message"
+              ? `Empty, so the amounts in the message: ${fallbackText}.`
+              : `Empty, so the usual ones: ${fallbackText}. Or put amounts like $200 in the message.`)}
+      </span>
+    </label>
   );
 }
