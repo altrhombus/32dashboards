@@ -1,7 +1,12 @@
 import { useState } from "react";
+import { formatExact } from "@32dashboards/ui";
 import { parseAmount } from "./amount.js";
 
-/** A typed-in amount beside the preset buttons ("Other amount" + Add, and optionally Take off). */
+/**
+ * A typed-in amount beside the preset buttons ("Other amount" + Add, and optionally Take off). The amount stays
+ * after it's added, so the same gift can be added again with one tap; tapping into the box selects it, so typing
+ * replaces it. Give it a new `key` to clear it, such as when the Ask Me round changes.
+ */
 export function AmountForm({
   label,
   onAdd,
@@ -21,7 +26,6 @@ export function AmountForm({
   const done = (run: (amount: number) => void) => {
     if (amount === null) return;
     run(amount);
-    setText("");
   };
   return (
     <form
@@ -38,9 +42,14 @@ export function AmountForm({
         placeholder={compact ? "$" : "Other amount"}
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onFocus={(e) => {
+          // Safari drops a selection made during focus, so select on the next frame.
+          const input = e.currentTarget;
+          requestAnimationFrame(() => input.select());
+        }}
       />
       <button type="submit" className="primary" disabled={amount === null}>
-        {addLabel}
+        {amount !== null && !compact ? `${addLabel} ${formatExact(amount)}` : addLabel}
       </button>
       {onSubtract && (
         <button type="button" disabled={amount === null} onClick={() => done(onSubtract)}>
