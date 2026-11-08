@@ -34,6 +34,9 @@ export const UpdateEventMessageSchema = z
       sponsors: true,
       milestones: true,
       milestoneStyle: true,
+      liveLots: true,
+      liveInTotal: true,
+      liveShowBid: true,
       bidWars: true,
       prizes: true,
       callToAction: true,
@@ -186,6 +189,27 @@ export const ReopenAskMeRoundMessageSchema = z
   .strict();
 export type ReopenAskMeRoundMessage = z.infer<typeof ReopenAskMeRoundMessageSchema>;
 
+const lotId = z.string().uuid();
+
+/** Raises (or, undoing, lowers) the running bid on the live item up now. The server adds, so quick taps all count. */
+export const NudgeLiveBidMessageSchema = z.object({ eventId, lotId, delta: z.number().finite() }).strict();
+
+/** Sets the running bid on the live item up now to an exact amount, or (null) back to no bids yet. */
+export const SetLiveBidMessageSchema = z
+  .object({ eventId, lotId, amount: z.number().finite().nonnegative().nullable() })
+  .strict();
+
+/** The live item up now sold; the next one comes up. Celebrated on the TV. */
+export const SellLiveLotMessageSchema = z
+  .object({ eventId, lotId, amount: z.number().finite().positive(), paddle: z.string().trim().max(20).optional() })
+  .strict();
+
+/** The live item up now didn't sell; the next one comes up. */
+export const PassLiveLotMessageSchema = z.object({ eventId, lotId }).strict();
+
+/** Undoes selling or passing: goes back to the most recently finished item. */
+export const ReopenLiveLotMessageSchema = z.object({ eventId, lotId }).strict();
+
 /** Message name -> payload schema. */
 export const coreMessageSchemas = {
   createEvent: CreateEventMessageSchema,
@@ -209,6 +233,11 @@ export const coreMessageSchemas = {
   connectionInfo: ConnectionInfoMessageSchema,
   finishAskMeRound: FinishAskMeRoundMessageSchema,
   reopenAskMeRound: ReopenAskMeRoundMessageSchema,
+  nudgeLiveBid: NudgeLiveBidMessageSchema,
+  setLiveBid: SetLiveBidMessageSchema,
+  sellLiveLot: SellLiveLotMessageSchema,
+  passLiveLot: PassLiveLotMessageSchema,
+  reopenLiveLot: ReopenLiveLotMessageSchema,
 } as const;
 export type CoreMessageName = keyof typeof coreMessageSchemas;
 export type CoreMessagePayload<N extends CoreMessageName> = z.input<(typeof coreMessageSchemas)[N]>;

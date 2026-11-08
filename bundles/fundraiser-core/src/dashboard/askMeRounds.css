@@ -64,7 +64,14 @@
   z-index: 5;
 }
 
-.appeal input,
+.live-lot__photo {
+  max-width: 120px;
+  max-height: 80px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.appeal input:not([type="file"]),
 .appeal textarea {
   width: 100%;
   box-sizing: border-box;

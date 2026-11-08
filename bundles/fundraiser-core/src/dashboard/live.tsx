@@ -30,7 +30,9 @@ import { askMeProgress, screenPresence } from "@32dashboards/schema/core";
 import { formatExact, formatTotal } from "@32dashboards/ui";
 import "@32dashboards/nodecg-react/panel.css";
 import "./live.css";
-import { parseAmount } from "./amount.js";
+import { AmountForm } from "./amountForm.js";
+import type { Act, Undo } from "./console.js";
+import { LivePad } from "./livePad.js";
 import { send } from "./send.js";
 
 /*
@@ -56,9 +58,6 @@ interface Feedback {
   undo?: () => void;
 }
 
-/** Puts something back. Resolves once the laptop has done it, or rejects with why it couldn't. */
-type Undo = () => Promise<unknown>;
-
 /** Something this device did, kept so any recent action can be undone, not just the last one. */
 interface Action {
   id: number;
@@ -69,8 +68,6 @@ interface Action {
   undo?: Undo;
   undone?: boolean;
 }
-
-type Act = (promise: Promise<unknown>, done: string, undo?: Undo, tag?: string) => void;
 
 const HISTORY_LIMIT = 30;
 
@@ -213,6 +210,7 @@ const SCENES: { id: SceneId; name: string; what: string }[] = [
   { id: "noBids", name: "No bids yet", what: "Items with no bids, with QR codes to bid" },
   { id: "intermission", name: "Intermission", what: "Your message and a countdown" },
   { id: "askMe", name: "Ask Me", what: "The Ask Me spotlight, full screen" },
+  { id: "liveAuction", name: "Live auction", what: "The item up now, its bid, and SOLD" },
   { id: "celebration", name: "Celebration", what: "Thank-you screen with the final total" },
 ];
 
@@ -371,54 +369,6 @@ function ScreenLayouts(props: {
 
 const VENUE_AMOUNTS = [20, 50, 100, 500];
 
-/** A typed-in amount beside the preset buttons ("Other amount" + Add, and optionally Take off). */
-function AmountForm({
-  label,
-  onAdd,
-  onSubtract,
-  compact,
-}: {
-  label: string;
-  onAdd: (amount: number) => void;
-  /** Offers "Take off" for the same amount, to fix a total without negative numbers. */
-  onSubtract?: (amount: number) => void;
-  compact?: boolean;
-}) {
-  const [text, setText] = useState("");
-  const amount = parseAmount(text);
-  const done = (run: (amount: number) => void) => {
-    if (amount === null) return;
-    run(amount);
-    setText("");
-  };
-  return (
-    <form
-      className={`row amount-form${compact ? " amount-form--compact" : ""}`}
-      onSubmit={(e) => {
-        e.preventDefault();
-        done(onAdd);
-      }}
-    >
-      <input
-        inputMode="decimal"
-        enterKeyHint="done"
-        aria-label={label}
-        placeholder={compact ? "$" : "Other amount"}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
-      <button type="submit" className="primary" disabled={amount === null}>
-        Add
-      </button>
-      {onSubtract && (
-        <button type="button" disabled={amount === null} onClick={() => done(onSubtract)}>
-          Take off
-        </button>
-      )}
-    </form>
-  );
-}
-
 function Money({
   live,
   event,
@@ -446,6 +396,7 @@ function Money({
         <span className="money__amount">{formatTotal(live.total)}</span>
         <span className="muted">
           {formatTotal(live.rawTotal)} from {sourceLabel}, {formatExact(live.adjustment)} at the venue
+          {live.liveRaised > 0 && live.event?.liveInTotal && `, ${formatExact(live.liveRaised)} from the live auction`}
           {live.askMeRaised > 0 && live.event?.askMeInTotal && `, ${formatExact(live.askMeRaised)} from Ask Me`}
         </span>
       </div>
@@ -792,6 +743,8 @@ function describeMoment(m: DonationMoment): string {
       return `Incentive met: ${m.name}`;
     case "askme-round":
       return `${m.count ? `Ask Me ${m.number} of ${m.count}` : "Ask Me round"}${m.title ? ` (${m.title})` : ""}: ${formatExact(m.amount)} raised`;
+    case "live-sold":
+      return `Sold: ${m.title || "live item"} for ${formatExact(m.amount)}${m.paddle ? ` to paddle ${m.paddle}` : ""}`;
     case "last-call":
       return m.minutesLeft === 0
         ? "Bidding closed"
@@ -943,11 +896,12 @@ function OpenOnPhone() {
 
 // --- Phone layout ---------------------------------------------------------------
 
-type PhoneTab = "money" | "askMe" | "scenes" | "more";
+type PhoneTab = "money" | "askMe" | "auction" | "scenes" | "more";
 
 const PHONE_TABS: { id: PhoneTab; label: string }[] = [
   { id: "money", label: "Money" },
   { id: "askMe", label: "Ask Me" },
+  { id: "auction", label: "Auction" },
   { id: "scenes", label: "Scenes" },
   { id: "more", label: "More" },
 ];
@@ -1046,6 +1000,7 @@ function Console() {
   const sceneId = scene?.id;
   useEffect(() => {
     if (sceneId === "askMe") setTab("askMe");
+    if (sceneId === "liveAuction") setTab("auction");
   }, [sceneId]);
 
   if (!events || !live || !scene) return <p className="console-loading">Connecting to NodeCG…</p>;
@@ -1161,6 +1116,8 @@ function Console() {
             </>
           ) : tab === "askMe" ? (
             <AskMePad event={event!} onAir={scene.id === "askMe"} history={history} onUndo={undoAction} act={act} />
+          ) : tab === "auction" ? (
+            <LivePad event={event!} onAir={scene.id === "liveAuction"} act={act} />
           ) : tab === "scenes" ? (
             <>
               {preview}
@@ -1213,6 +1170,7 @@ function Console() {
         <div className="desk">
           <div className="desk__main">
             {scene.id === "askMe" && <AskMePad event={event} onAir history={history} onUndo={undoAction} act={act} />}
+            {scene.id === "liveAuction" && <LivePad event={event} onAir act={act} />}
             <Money live={live} event={event} sourceLabel={sourceLabel} act={act} />
             <BidWars event={event} act={act} />
             <Incentives event={event} total={live.total} act={act} />

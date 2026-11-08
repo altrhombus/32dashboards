@@ -46,6 +46,26 @@ export const AskMeRoundSchema = z.object({
 });
 export type AskMeRound = z.infer<typeof AskMeRoundSchema>;
 
+/**
+ * One item in the live auction after the silent one closes. These aren't on
+ * the auction site, so everything about them lives here. `currentBid`,
+ * `soldFor`, `paddle` and `passed` describe how it went: the console sets
+ * them, and editing the list leaves them alone.
+ */
+export const LiveLotSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().trim().max(120).default(""),
+  description: z.string().max(400).default(""),
+  imageUrl: z.string().max(1000).nullable().default(null),
+  value: z.number().finite().nonnegative().nullable().default(null),
+  startingBid: z.number().finite().nonnegative().nullable().default(null),
+  currentBid: z.number().finite().nonnegative().nullable().default(null),
+  soldFor: z.number().finite().positive().nullable().default(null),
+  paddle: z.string().trim().max(20).default(""),
+  passed: z.boolean().default(false),
+});
+export type LiveLot = z.infer<typeof LiveLotSchema>;
+
 /** How many announcements an event can have, and how long each can be. */
 export const MAX_ANNOUNCEMENTS = 50;
 export const MAX_ANNOUNCEMENT_LENGTH = 200;
@@ -104,6 +124,14 @@ export const FundraiserEventSchema = z.object({
   askMeRounds: z.array(AskMeRoundSchema).max(20).default([]),
   /** Which planned round is on now (an index into askMeRounds); past the end once all are done. */
   askMeCurrent: z.number().int().nonnegative().default(0),
+  /** The live auction's items, in order. */
+  liveLots: z.array(LiveLotSchema).max(30).default([]),
+  /** Which item is up now (an index into liveLots); past the end once all are done. */
+  liveCurrent: z.number().int().nonnegative().default(0),
+  /** Whether what the live auction sold is added to the total on the TVs. Off by default, so nothing counts twice. */
+  liveInTotal: z.boolean().default(false),
+  /** Whether the TVs show the running bid. Off: the item alone, and the price arrives with SOLD. */
+  liveShowBid: z.boolean().default(true),
   /** Case-insensitive title substrings; matching items are hidden from displays. */
   filters: z.array(z.string().min(1).max(100)).max(100).default([]),
   createdAt: timestamp(),

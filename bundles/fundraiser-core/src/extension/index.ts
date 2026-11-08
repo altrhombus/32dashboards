@@ -303,6 +303,40 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   }));
 
   command("nudgeBidWar", (state, input) => ({ state: core.nudgeBidWar(state, input, deps) }));
+  command("nudgeLiveBid", (state, { eventId, lotId, delta }) => ({
+    state: core.nudgeLiveBid(state, eventId, lotId, delta, deps),
+  }));
+  command("setLiveBid", (state, { eventId, lotId, amount }) => ({
+    state: core.setLiveBid(state, eventId, lotId, amount, deps),
+  }));
+  command("passLiveLot", (state, { eventId, lotId }) => ({ state: core.passLiveLot(state, eventId, lotId, deps) }));
+  listenForCommand(nodecg, "sellLiveLot", coreMessageSchemas.sellLiveLot, (input) => {
+    const before = read();
+    const after = core.sellLiveLot(before, input, deps);
+    write(before, after);
+    const lot = after.events.find((e) => e.id === input.eventId)?.liveLots.find((l) => l.id === input.lotId);
+    if (lot && after.activeEventId === input.eventId) {
+      recordMoments([
+        {
+          kind: "live-sold",
+          id: deps.newId(),
+          eventId: input.eventId,
+          at: deps.now(),
+          lotId: lot.id,
+          title: lot.title,
+          amount: lot.soldFor!,
+          paddle: lot.paddle,
+          imageUrl: lot.imageUrl,
+        },
+      ]);
+    }
+  });
+  listenForCommand(nodecg, "reopenLiveLot", coreMessageSchemas.reopenLiveLot, ({ eventId, lotId }) => {
+    const before = read();
+    const after = core.reopenLiveLot(before, eventId, lotId, deps);
+    write(before, after);
+    lowerPeak(after);
+  });
   command("pinIncentive", (state, { eventId, incentiveId }) => ({
     state: core.pinIncentive(state, eventId, incentiveId, deps),
   }));
@@ -319,7 +353,7 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
   const switchTo = (id: SceneId, countdownTo: string | null = null, message: string | null = null) => {
     const current = scene.value;
     if (id === "askMe" && current && current.id !== "askMe") {
-      beforeAskMe = ["welcome", "main", "noBids", "intermission"].includes(current.id)
+      beforeAskMe = ["welcome", "main", "noBids", "intermission", "liveAuction"].includes(current.id)
         ? { id: current.id, countdownTo: current.countdownTo, message: current.message }
         : { id: "main", countdownTo: null, message: null };
     }
@@ -348,7 +382,8 @@ export default function fundraiserCore(nodecg: NodeCG.ServerAPI): FundraiserCore
       if (remaining > at || remaining <= at - LAST_CALL_WINDOW_MS || lastCallsSent.has(key)) continue;
       lastCallsSent.add(key);
       recordMoments([{ kind: "last-call", id: deps.newId(), eventId: event.id, at: deps.now(), minutesLeft }]);
-      if (minutesLeft === 0 && event.celebrateAtClose && !["celebration", "askMe"].includes(scene.value?.id ?? "")) {
+      const staysOn = ["celebration", "askMe", "liveAuction"];
+      if (minutesLeft === 0 && event.celebrateAtClose && !staysOn.includes(scene.value?.id ?? "")) {
         switchTo("celebration");
       }
     }

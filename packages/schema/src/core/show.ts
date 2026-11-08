@@ -98,7 +98,7 @@ export function segmentSecondsFor(config: InfoBarConfig, kind: InfoBarSegmentKin
 export type InfoBarConfig = z.infer<typeof InfoBarConfigSchema>;
 
 /** The show's current state. Every output (venue TV now, stream later) renders its own layout per scene. */
-export const SCENE_IDS = ["welcome", "main", "noBids", "intermission", "askMe", "celebration"] as const;
+export const SCENE_IDS = ["welcome", "main", "noBids", "intermission", "askMe", "liveAuction", "celebration"] as const;
 export const SceneIdSchema = z.enum(SCENE_IDS);
 export type SceneId = z.infer<typeof SceneIdSchema>;
 

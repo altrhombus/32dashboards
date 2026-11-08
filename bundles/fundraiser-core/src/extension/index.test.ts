@@ -465,6 +465,42 @@ describe("fundraiser-core extension", () => {
       expect(kinds()).toEqual(["milestone", "total-increase", "milestone", "total-increase"]);
     });
 
+    it("stamps a sold live item on the TV, and doesn't thank a live sale as a donation", async () => {
+      const { fake, eventId, sent, kinds } = await show();
+      const lotId = "00000000-0000-4000-8000-000000000099";
+      const lot = { id: lotId, title: "Lake house" };
+      await fake.send("updateEvent", { eventId, patch: { liveLots: [lot] } });
+      await fake.send("sellLiveLot", { eventId, lotId, amount: 900, paddle: "42" });
+      expect(kinds()).toEqual(["live-sold"]);
+      expect(sent()[0]).toMatchObject({ title: "Lake house", amount: 900, paddle: "42" });
+    });
+
+    it("lets a sale added to the total reach a milestone, and undoing it reach it again", async () => {
+      const { fake, eventId, kinds } = await show();
+      const lotId = "00000000-0000-4000-8000-000000000099";
+      await fake.send("updateEvent", { eventId, patch: { liveInTotal: true, liveLots: [{ id: lotId, title: "A" }] } });
+      await fake.send("sellLiveLot", { eventId, lotId, amount: 1200 });
+      expect(kinds()).toEqual(["milestone", "live-sold"]);
+      await fake.send("reopenLiveLot", { eventId, lotId });
+      await fake.send("sellLiveLot", { eventId, lotId, amount: 1200 });
+      expect(kinds()).toEqual(["milestone", "live-sold", "milestone", "live-sold"]);
+    });
+
+    it("leaves the TVs on the live auction when bidding closes", async () => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date("2026-11-07T20:00:00.000Z"));
+        const { fake, eventId } = await show();
+        const endDateTime = "2026-11-07T20:00:30.000Z";
+        await fake.send("updateEvent", { eventId, patch: { endDateTime, celebrateAtClose: true } });
+        await fake.send("switchScene", { id: "liveAuction" });
+        await vi.advanceTimersByTimeAsync(40_000);
+        expect(fake.replicant<{ id: string }>("scene").value.id).toBe("liveAuction");
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it("clears the moments list", async () => {
       const { fake, eventId } = await show();
       await fake.send("nudgeAdjustment", { eventId, delta: 20 });

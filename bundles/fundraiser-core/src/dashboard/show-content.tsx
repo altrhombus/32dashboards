@@ -17,6 +17,7 @@ import {
 import { SponsorCarousel, formatAmount, useLogoCheck, validateTheme } from "@32dashboards/ui";
 import "@32dashboards/nodecg-react/panel.css";
 import { AskMeRoundsEditor } from "./askMeRounds.js";
+import { LiveLotsEditor } from "./liveLots.js";
 import { AnnouncementsField, MilestoneStyleField, announcementsProblem } from "./fields.js";
 import { send } from "./send.js";
 import { isoToLocalInput, localInputToIso } from "./setupPlan.js";
@@ -926,6 +927,24 @@ function ShowContent() {
             onChange={(askMeInTotal) => save({ askMeInTotal })}
           />
           <AskMeRounds event={event} show={appealsOpen} save={save} />
+        </Section>
+        <Section
+          title={`Live auction (${event.liveLots.length})`}
+          hint="Items sold live after the silent auction closes. They aren't on the auction site, so add them here."
+        >
+          <SaveToggle
+            checked={event.liveShowBid}
+            label="Show the running bid on the TVs"
+            hint="Off if nobody will be keeping up with the bidding: the TVs show the item alone, and you enter the price at SOLD. You can change this during the show."
+            onChange={(liveShowBid) => save({ liveShowBid })}
+          />
+          <SaveToggle
+            checked={event.liveInTotal}
+            label="Add live auction sales to the total on the TVs"
+            hint="Leave this off if these sales also go into the auction site, so they aren't counted twice. You can change this during the show."
+            onChange={(liveInTotal) => save({ liveInTotal })}
+          />
+          <LiveLotsEditor event={event} save={(liveLots) => save({ liveLots })} />
         </Section>
         <Section
           title={`Prizes (${event.prizes.length})`}

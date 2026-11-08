@@ -67,6 +67,18 @@
           "gif",
           "avif"
         ]
+      },
+      {
+        "name": "live-items",
+        "title": "Live auction photos",
+        "allowedTypes": [
+          "png",
+          "jpg",
+          "jpeg",
+          "webp",
+          "gif",
+          "avif"
+        ]
       }
     ]
   },

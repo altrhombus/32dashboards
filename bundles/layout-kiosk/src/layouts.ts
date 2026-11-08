@@ -45,6 +45,14 @@ const noBids: BlockLayoutInput = {
   overlays: [{ component: "toasts" }, { component: "milestoneSpotlight" }, { component: "askMeWrap" }],
 };
 
+const liveAuction: BlockLayoutInput = {
+  blocks: [
+    { id: "header", component: "header", x: 0, y: 0, w: 24, h: 2 },
+    { id: "liveAuction", component: "liveAuction", x: 0, y: 2, w: 24, h: 22 },
+  ],
+  overlays: [{ component: "liveSold" }, { component: "milestoneBanner" }],
+};
+
 const intermission: BlockLayoutInput = {
   blocks: [
     { id: "header", component: "header", x: 0, y: 0, w: 24, h: 2 },
@@ -82,6 +90,7 @@ const builtInInputs: Record<ScreenView, { name: string; blocks: BlockLayoutInput
     name: "Ask Me",
     blocks: fullScreen("askMe", [{ component: "askMeWrap" }, { component: "milestoneBanner" }]),
   },
+  liveAuction: { name: "Live auction", blocks: liveAuction },
   celebration: { name: "Celebration", blocks: fullScreen("grandCelebration", [{ component: "milestoneBanner" }]) },
   standby: { name: "Standby", blocks: fullScreen("standby") },
 };
