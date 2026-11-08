@@ -18,5 +18,3 @@ bundles/*/schemas/
 
 # The pre-NodeCG apps and their reference copies, due to be retired
 # (ADR-0001 action item 6); not worth reformatting.
-apps/
-legacy/

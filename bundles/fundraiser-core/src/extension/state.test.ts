@@ -140,7 +140,7 @@ describe("adjustment", () => {
   });
 });
 
-const round = (id: string, title: string) => ({ id, title, message: "", raised: null });
+const round = (id: string, title: string) => ({ id, title, message: "", amounts: [], raised: null });
 
 describe("Ask Me rounds", () => {
   it("adds a repeating appeal's round to the total, starts again at $0, and won't add it twice", () => {
@@ -449,7 +449,7 @@ describe("detectThresholdMoments", () => {
 
 describe("editing while the show runs", () => {
   const rounds = (deps: core.Deps) =>
-    ["One", "Two", "Three"].map((title) => ({ id: deps.newId(), title, message: "", raised: null }));
+    ["One", "Two", "Three"].map((title) => ({ id: deps.newId(), title, message: "", amounts: [], raised: null }));
 
   function running() {
     const { state, eventId, deps } = withEvent();

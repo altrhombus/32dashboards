@@ -9,7 +9,6 @@ export * from "./theme/palettes.js";
 export * from "./theme/fromImage.js";
 export * from "./hooks/useCountdown.js";
 export * from "./hooks/useAnimatedNumber.js";
-export * from "./hooks/useSSE.js";
 export * from "./hooks/useRotation.js";
 export * from "./components/KioskHeader/KioskHeader.js";
 export * from "./components/CountdownClock/CountdownClock.js";

@@ -23,7 +23,8 @@
     "demo": "node scripts/demo-event.mjs",
     "backup": "bash scripts/backup.sh",
     "restore": "bash scripts/restore.sh",
-    "e2e": "playwright test --config e2e/playwright.config.ts"
+    "e2e": "playwright test --config e2e/playwright.config.ts",
+    "e2e:webkit-server": "podman run --rm --init --network host mcr.microsoft.com/playwright:v1.57.0-noble npx -y playwright@1.57.0 run-server --port 3123 --host 127.0.0.1"
   },
   "dependencies": {
     "nodecg": "2.8.0"

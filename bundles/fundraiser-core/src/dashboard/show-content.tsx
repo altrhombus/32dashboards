@@ -16,7 +16,7 @@ import {
 } from "@32dashboards/schema/core";
 import { SponsorCarousel, formatAmount, useLogoCheck, validateTheme } from "@32dashboards/ui";
 import "@32dashboards/nodecg-react/panel.css";
-import { AskMeRoundsEditor } from "./askMeRounds.js";
+import { AmountsInput, AskMeRoundsEditor, amountListProblem, parseAmountList } from "./askMeRounds.js";
 import { LiveLotsEditor } from "./liveLots.js";
 import { AnnouncementsField, MilestoneStyleField, announcementsProblem } from "./fields.js";
 import { send } from "./send.js";
@@ -674,6 +674,7 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
     announcements: event.announcements.join("\n"),
     askMeTitle: event.askMe.title,
     askMeMessage: event.askMe.message,
+    askMeAmounts: event.askMe.amounts.join(", "),
   };
   const [draft, setDraft, dirty] = useDraft(saved);
   const field = (key: keyof typeof saved) => ({
@@ -690,7 +691,11 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
           causeName: draft.causeName.trim(),
           endDateTime: localInputToIso(draft.endDateTime),
           announcements: parseAnnouncements(draft.announcements),
-          askMe: { title: draft.askMeTitle, message: draft.askMeMessage },
+          askMe: {
+            title: draft.askMeTitle,
+            message: draft.askMeMessage,
+            amounts: parseAmountList(draft.askMeAmounts) ?? [],
+          },
         },
       }),
     );
@@ -727,11 +732,22 @@ function EventDetails({ event, run }: { event: FundraiserEvent; run: Run }) {
         <span>Ask Me message (Markdown: **bold**, - lists)</span>
         <textarea rows={5} maxLength={1200} {...field("askMeMessage")} />
       </label>
+      <AmountsInput
+        label="Ask Me amount buttons"
+        message={draft.askMeMessage}
+        text={draft.askMeAmounts}
+        onText={(askMeAmounts) => setDraft({ ...draft, askMeAmounts })}
+      />
       <div className="row">
         <button
           type="button"
           className="primary"
-          disabled={!dirty || !draft.name.trim() || Boolean(announcementsProblem(draft.announcements))}
+          disabled={
+            !dirty ||
+            !draft.name.trim() ||
+            Boolean(announcementsProblem(draft.announcements)) ||
+            Boolean(amountListProblem(draft.askMeAmounts))
+          }
           onClick={save}
         >
           Save details

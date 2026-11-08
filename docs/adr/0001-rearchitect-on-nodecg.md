@@ -568,8 +568,9 @@ still limits who can try.
        firewall rules as scripts, plus a runbook (including opening the
        kiosk URL full-screen). Backup/restore (NodeCG `db/` and
        `wsl --export`). Native and Docker fallbacks documented.
-6. [ ] **Retire** `apps/api`, `apps/scraper`, `apps/admin`, `apps/display`
-       once parity is reached. Git history preserves them.
+6. [x] **Retire** `apps/api`, `apps/scraper`, `apps/admin`, `apps/display`
+       once parity is reached. Git history preserves them. Done after the
+       first event (2026-11), along with `legacy/` and the Docker setup.
 7. [x] **Adjustment not reaching displays:** deferred to the rebuild and
        fixed in `fundraiser-core` (Phase 2). The core adds the adjustment
        into the derived `liveState` that graphics read. The legacy stack
