@@ -81,11 +81,3 @@ throwaway database, including phone-sized screens and what a TV link can
 and can't do; build the bundles first. Where Playwright's Chromium can't
 run, start Edge or Chrome with `--remote-debugging-port=9333` and set
 `E2E_CDP_URL=http://127.0.0.1:9333`.
-
-## Legacy stack
-
-`apps/` (React display and admin, Express API, Python scraper, deployed
-with `infra/docker-compose.yml`) is the previous architecture. It's kept
-until the NodeCG stack has run a real event, then removed (ADR-0001, action
-item 6). The original single-file implementation is under
-[`legacy/`](legacy/) for reference. Neither runs in production.

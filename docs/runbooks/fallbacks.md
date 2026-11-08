@@ -32,8 +32,7 @@ and neither is exercised regularly; rehearse before relying on one.
 
 ## Docker
 
-There's no maintained image for the NodeCG stack (`infra/docker-compose.yml`
-runs the legacy apps, which are being retired). A container needs Node 24,
+There's no maintained image for the NodeCG stack. A container needs Node 24,
 the repo with `pnpm install` and `pnpm bundles:build` run inside it (the
 native SQLite module must be built for the container's platform), port 9090
 published, and `db/`, `assets/`, and `cfg/` mounted as volumes so data

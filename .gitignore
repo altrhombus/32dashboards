@@ -4,9 +4,6 @@ dist/
 *.log
 .env
 .env.local
-apps/api/data/
-apps/scraper/.venv/
-apps/scraper/__pycache__/
 **/__pycache__/
 .DS_Store
 
